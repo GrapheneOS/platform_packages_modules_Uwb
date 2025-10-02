@@ -38,7 +38,7 @@ import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 import static android.ranging.uwb.UwbRangingParams.DURATION_1_MS;
 import static android.ranging.uwb.UwbRangingParams.DURATION_2_MS;
 
-import static com.android.server.ranging.RangingUtils.bitset;
+import static com.android.server.ranging.common.RangingUtils.bitset;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -64,7 +64,7 @@ import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceRole;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 

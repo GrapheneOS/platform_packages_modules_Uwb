@@ -48,7 +48,7 @@ import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 
@@ -135,7 +135,7 @@ public class RangingInjector {
      */
     public @NonNull RangingAdapter createAdapter(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @NonNull ListeningExecutorService executor
     ) {
         switch (config.getTechnology()) {

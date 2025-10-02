@@ -16,9 +16,11 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
-import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.util.Log;
@@ -27,26 +29,25 @@ import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
-import com.android.server.ranging.RangingUtils;
+import com.android.server.ranging.common.ConfigurationUtils;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
-import java.util.Set;
 
 public class RawInitiatorRangingSession extends BaseRangingSession implements RangingSession {
     private static final String TAG = RawInitiatorRangingSession.class.getSimpleName();
 
     public RawInitiatorRangingSession(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
-        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
-                adapterExecutor);
+        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
     }
 
     @Override
@@ -57,8 +58,10 @@ public class RawInitiatorRangingSession extends BaseRangingSession implements Ra
             mSessionListener.onSessionClosed(RangingUtils.InternalReason.INTERNAL_ERROR);
             return;
         }
+        ImmutableSet<TechnologyConfig> configs = ConfigurationUtils.groupByTechnology(
+                config.getRawRangingDevices(), mSessionConfig, DEVICE_ROLE_INITIATOR);
 
-        super.start(mSessionConfig.getTechnologyConfigs(Set.copyOf(config.getRawRangingDevices())));
+        super.start(configs);
     }
 
     @Override

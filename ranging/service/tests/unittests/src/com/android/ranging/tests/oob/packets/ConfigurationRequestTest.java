@@ -17,7 +17,7 @@
 package com.android.server.ranging.tests.oob.packets;
 
 
-import static com.android.server.ranging.RangingUtils.Conversions.hexStringToByteArray;
+import static com.android.server.ranging.common.RangingUtils.hexStringToByteArray;
 
 import static com.google.common.truth.Truth.assertThat;
 

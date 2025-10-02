@@ -19,7 +19,7 @@ package com.android.server.ranging.session;
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
-import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
@@ -31,12 +31,12 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobController.OobConnection;
 import com.android.server.ranging.oob.OobInitiatorProtocol;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
@@ -65,16 +65,14 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
 
     public OobInitiatorRangingSession(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
-                adapterExecutor);
+        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
         mOobExecutor = oobExecutor;
         mOobConnections = new ConcurrentHashMap<>();
         mPendingResponses = new ConcurrentHashMap<>();
@@ -90,8 +88,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
         }
 
         try {
-            mProtocol = new OobInitiatorProtocol(
-                    mSessionConfig.getSessionConfig(), config, mSessionHandle, mInjector);
+            mProtocol = new OobInitiatorProtocol(mSessionConfig, config, mSessionHandle, mInjector);
         } catch (RangingEngine.ConfigSelectionException e) {
             Log.w(TAG, "Provided config incompatible with local capabilities: ", e);
             mSessionListener.onSessionClosed(InternalReason.UNSUPPORTED);

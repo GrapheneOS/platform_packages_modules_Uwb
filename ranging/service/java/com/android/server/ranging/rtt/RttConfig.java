@@ -29,11 +29,11 @@ import androidx.annotation.NonNull;
 import com.android.ranging.flags.Flags;
 import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import java.util.Objects;
 
-public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
+public class RttConfig implements ConfigurationManager.UnicastTechnologyConfig {
 
     private final SessionConfig mSessionConfig;
     private final RttRangingParams mRangingParams;

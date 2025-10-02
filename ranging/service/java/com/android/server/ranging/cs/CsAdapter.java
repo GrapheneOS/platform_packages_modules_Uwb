@@ -20,8 +20,8 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingUtils.InternalReason;
-import static com.android.server.ranging.RangingUtils.convertBluetoothReasonCode;
+import static com.android.server.ranging.common.RangingUtils.InternalReason;
+import static com.android.server.ranging.common.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.Nullable;
 import android.app.AlarmManager;
@@ -51,10 +51,10 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils;
-import com.android.server.ranging.RangingUtils.StateMachine;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.util.DataNotificationManager;
+import com.android.server.ranging.common.DataNotificationManager;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.common.StateMachine;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -127,7 +127,7 @@ public class CsAdapter implements RangingAdapter {
 
     @Override
     public void start(
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @Nullable AttributionSource nonPrivilegedAttributionSource,
             @NonNull Callback callback
     ) {

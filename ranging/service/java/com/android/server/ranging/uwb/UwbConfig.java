@@ -32,7 +32,7 @@ import com.android.ranging.uwb.backend.internal.RangingParameters;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 import com.android.ranging.uwb.backend.internal.UwbRangeLimitsConfig;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;

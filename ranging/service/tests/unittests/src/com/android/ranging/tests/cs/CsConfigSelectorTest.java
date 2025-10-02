@@ -22,7 +22,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.Technology;
 import com.android.server.ranging.oob.packets.UnknownCapabilities;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

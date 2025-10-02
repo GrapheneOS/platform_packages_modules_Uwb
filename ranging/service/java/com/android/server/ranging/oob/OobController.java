@@ -28,7 +28,7 @@ import android.util.Pair;
 import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.common.StateMachine;
 
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.FluentFuture;

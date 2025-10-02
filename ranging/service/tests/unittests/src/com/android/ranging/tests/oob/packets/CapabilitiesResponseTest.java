@@ -16,9 +16,9 @@
 
 package com.android.server.ranging.tests.oob.packets;
 
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
-import static com.android.server.ranging.RangingUtils.bitset;
-import static com.android.server.ranging.RangingUtils.technologyBitset;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.bitset;
+import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import static com.google.common.truth.Truth.assertThat;
 
