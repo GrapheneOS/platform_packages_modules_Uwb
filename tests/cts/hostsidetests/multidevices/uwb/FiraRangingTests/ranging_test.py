@@ -1754,8 +1754,8 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     """
 
     asserts.skip_if(
-        self._get_uci_version(self.initiator) & 0xFF < 3
-        or self._get_uci_version(self.responder) & 0xFF < 3,
+        not self.initiator.ad.uwb.getSpecificationInfo()["fira"]["logical_link_support"]
+        or not self.responder.ad.uwb.getSpecificationInfo()["fira"]["logical_link_support"],
         "Logical link mode data transfer is not supported on one or both devices."
     )
 

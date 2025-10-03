@@ -1356,8 +1356,8 @@ public class UwbManagerTest {
     public void testDlTdoaRangingSession() throws Exception {
         FiraSpecificationParams params = getFiraSpecificationParams();
         FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
-        // DlTDoA is supported only for devices with FiRa 2.0 support.
-        assumeTrue(firaProtocolVersion.getMajor() >= 2);
+        assumeTrue(params.getRangingRoundCapabilities().contains(
+                FiraParams.RangingRoundCapabilityFlag.HAS_OWR_DL_TDOA_SUPPORT));
 
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(2, 0))
@@ -1438,8 +1438,8 @@ public class UwbManagerTest {
 
         FiraSpecificationParams params = getFiraSpecificationParams();
         FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
-        // Advertising profile is supported only for devices with FiRa 2.0 support.
-        assumeTrue(firaProtocolVersion.getMajor() >= 2);
+        assumeTrue(params.getRangingRoundCapabilities().contains(
+                FiraParams.RangingRoundCapabilityFlag.HAS_OWR_AOA_SUPPORT));
 
         // Setup the Fira Configuration Parameters.
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
@@ -2652,8 +2652,7 @@ public class UwbManagerTest {
         Assume.assumeTrue(Flags.uwbFira3025q4());
         FiraSpecificationParams params = getFiraSpecificationParams();
         FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
-        // Logical link mode is supported only for devices with FiRa 3.0 support.
-        assumeTrue(firaProtocolVersion.getMajor() >= 3);
+        assumeTrue(params.hasLogicalLinkSupport());
 
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
