@@ -32,3 +32,13 @@ flag {
     description: "This flags controls updates to ranging stack for 25Q4"
     bug: "398835649"
 }
+
+flag {
+    name: "ranging_technology_transitioning"
+    namespace: "uwb"
+    description: "This flag controls technology transitioning during an ongoing ranging session"
+    bug: "448471949"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
