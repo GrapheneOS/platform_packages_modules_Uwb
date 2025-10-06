@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.util;
+package com.android.server.ranging.common;
 
 import static android.ranging.DataNotificationConfig.NOTIFICATION_CONFIG_DISABLE;
 import static android.ranging.DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE;

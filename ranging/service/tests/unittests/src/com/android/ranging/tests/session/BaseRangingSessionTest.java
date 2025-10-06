@@ -34,9 +34,9 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.RangingPreference;
 import android.ranging.RangingMeasurement;
 import android.ranging.SensorFusionParams;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
@@ -48,13 +48,11 @@ import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.session.BaseRangingSession;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
-import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
-import com.android.server.ranging.session.RawInitiatorRangingSession;
+import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -86,15 +84,15 @@ public class BaseRangingSessionTest {
     private @Mock AttributionSource mMockAttributionSource;
     private @Mock SessionHandle mMockSessionHandle;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingInjector mMockInjector;
-    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingSessionConfig mMockConfig;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) SessionConfig mMockConfig;
     private @Mock RangingServiceManager.SessionListener mMockSessionListener;
     private Map<TechnologyConfig, RangingAdapter> mMockAdapters;
     private BaseRangingSession mSession;
     private @Mock Context mMockContext;
     private @Mock AlarmManager mMockAlarmManager;
 
-    private void configureSession(Set<TechnologyConfig> technologyConfigs) {
-        // Create some mock adapters for this session.
+    private void setupMocksForConfigs(Set<TechnologyConfig> technologyConfigs) {
+        // Create some mock adapters for the session.
         for (TechnologyConfig config : technologyConfigs) {
             RangingAdapter adapter = mock(RangingAdapter.class);
             when(adapter.isDynamicUpdatePeersSupported()).thenReturn(true);
@@ -102,11 +100,6 @@ public class BaseRangingSessionTest {
             when(mMockInjector.createAdapter(any(), eq(config), any())).thenReturn(
                     adapter);
         }
-
-        // Start the session
-        when(mMockConfig.getTechnologyConfigs(any())).thenReturn(
-                ImmutableSet.copyOf(technologyConfigs)
-        );
     }
 
     /**
@@ -184,16 +177,15 @@ public class BaseRangingSessionTest {
 
     @Before
     public void setup() {
-        when(mMockConfig.getSessionConfig().getSensorFusionParams()).thenReturn(
+        when(mMockConfig.getSensorFusionParams()).thenReturn(
                 new SensorFusionParams.Builder().setSensorFusionEnabled(true).build()
         );
         when(mMockInjector.getContext()).thenReturn(mMockContext);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
 
-        mSession = new RawInitiatorRangingSession(
-                mMockAttributionSource, mock(RangingPreference.class), mMockSessionHandle,
-                mMockInjector, mMockConfig, mMockSessionListener,
-                MoreExecutors.newDirectExecutorService());
+        mSession = new BaseRangingSession(
+                mMockAttributionSource, mMockSessionHandle, mMockInjector, mMockConfig,
+                mMockSessionListener, MoreExecutors.newDirectExecutorService());
 
         mMockAdapters = Maps.newHashMap();
     }
@@ -203,7 +195,7 @@ public class BaseRangingSessionTest {
         RangingDevice peer = mock(RangingDevice.class);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peer));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
@@ -217,7 +209,7 @@ public class BaseRangingSessionTest {
                 mockTechnologyConfig(UWB, peer),
                 mockTechnologyConfig(RTT, peer));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
@@ -232,7 +224,7 @@ public class BaseRangingSessionTest {
                 mockTechnologyConfig(UWB, peers.get(0)),
                 mockTechnologyConfig(UWB, peers.get(1)));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
@@ -246,7 +238,7 @@ public class BaseRangingSessionTest {
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, peers));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
@@ -258,7 +250,7 @@ public class BaseRangingSessionTest {
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, mock(RangingDevice.class)));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
@@ -270,7 +262,7 @@ public class BaseRangingSessionTest {
         RangingDevice peer = mock(RangingDevice.class);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peer));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
@@ -290,7 +282,7 @@ public class BaseRangingSessionTest {
                 mockTechnologyConfig(UWB, peer),
                 mockTechnologyConfig(RTT, peer));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
@@ -310,7 +302,7 @@ public class BaseRangingSessionTest {
         Set<RangingDevice> peers = Set.of(mock(RangingDevice.class), mock(RangingDevice.class));
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peers));
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
@@ -329,7 +321,7 @@ public class BaseRangingSessionTest {
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
@@ -349,7 +341,7 @@ public class BaseRangingSessionTest {
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
 
         ArgumentCaptor<RangingAdapter.Callback> adapterCallbacks =
@@ -369,7 +361,7 @@ public class BaseRangingSessionTest {
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
@@ -388,7 +380,7 @@ public class BaseRangingSessionTest {
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         verify(mMockAdapters.get(config)).start(eq(config), any(), any());
 
@@ -416,7 +408,7 @@ public class BaseRangingSessionTest {
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(configs);
+        setupMocksForConfigs(configs);
         mSession.start(configs);
         verify(mMockAdapters.get(config)).start(eq(config), any(), any());
 

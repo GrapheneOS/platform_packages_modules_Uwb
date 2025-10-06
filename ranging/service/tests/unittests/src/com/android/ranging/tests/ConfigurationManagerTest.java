@@ -35,9 +35,9 @@ import android.util.Pair;
 import androidx.test.filters.SmallTest;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.common.ConfigurationUtils;
+import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -54,9 +54,7 @@ import java.util.Set;
 @SuppressWarnings("ConstantConditions")
 @RunWith(JUnit4.class)
 @SmallTest
-public class RangingSessionConfigTest {
-
-    private RangingSessionConfig mConfig;
+public class ConfigurationManagerTest {
 
     private UwbRangingParams.Builder generateUwbParams(UwbAddress peerAddress) {
         return new UwbRangingParams.Builder(
@@ -73,12 +71,7 @@ public class RangingSessionConfigTest {
     }
 
     @Before
-    public void setup() {
-        mConfig = new RangingSessionConfig.Builder()
-                .setDeviceRole(DEVICE_ROLE_INITIATOR)
-                .setSessionConfig(new SessionConfig.Builder().build())
-                .build();
-    }
+    public void setup() { }
 
     @Test
     public void should_combineIdenticallyConfiguredUwbSessions() {
@@ -97,7 +90,8 @@ public class RangingSessionConfigTest {
                         .build()
         );
 
-        ImmutableSet<TechnologyConfig> tcs = mConfig.getTechnologyConfigs(deviceParams);
+        ImmutableSet<TechnologyConfig> tcs = ConfigurationUtils.groupByTechnology(
+                deviceParams, new SessionConfig.Builder().build(), DEVICE_ROLE_INITIATOR);
 
         Assert.assertEquals(1, tcs.size());
 
@@ -135,7 +129,8 @@ public class RangingSessionConfigTest {
                         .build()
         );
 
-        ImmutableSet<TechnologyConfig> tcs = mConfig.getTechnologyConfigs(deviceParams);
+        ImmutableSet<TechnologyConfig> tcs = ConfigurationUtils.groupByTechnology(
+                deviceParams, new SessionConfig.Builder().build(), DEVICE_ROLE_INITIATOR);
         Assert.assertEquals(2, tcs.size());
 
         for (TechnologyConfig tc : tcs) {

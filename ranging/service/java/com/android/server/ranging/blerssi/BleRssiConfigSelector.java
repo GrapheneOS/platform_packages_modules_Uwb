@@ -18,10 +18,10 @@ package com.android.server.ranging.blerssi;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToString;
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
-import static com.android.server.ranging.RangingUtils.privateAddressIfUserBuild;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 import static com.android.server.ranging.blerssi.BleRssiConfig.BLE_RSSI_UPDATE_RATE_DURATIONS;
 
 import android.ranging.RangingDevice;
@@ -37,12 +37,12 @@ import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.BleRssiCapabilities;
 import com.android.server.ranging.oob.packets.BleRssiConfiguration;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

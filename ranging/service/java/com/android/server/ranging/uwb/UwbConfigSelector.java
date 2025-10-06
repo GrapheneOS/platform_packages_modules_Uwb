@@ -32,7 +32,7 @@ import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS
 import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 
-import static com.android.server.ranging.RangingUtils.bitset;
+import static com.android.server.ranging.common.RangingUtils.bitset;
 
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
@@ -53,14 +53,14 @@ import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceMode;
 import com.android.server.ranging.oob.packets.UwbDeviceRole;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

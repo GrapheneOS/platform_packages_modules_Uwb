@@ -22,7 +22,7 @@ import android.os.Binder;
 import android.os.SystemClock;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -34,14 +34,14 @@ import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.fusion.FilteringFusionEngine;
 import com.android.server.ranging.fusion.FusionEngine;
-import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
-import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -64,12 +64,11 @@ public class BaseRangingSession {
     public static final String NON_PRIVILEGED_RANGING_BG_APP_TIMER_TAG =
             "RangingSessionNonPrivilegedBgAppTimeout";
     private final AttributionSource mAttributionSource;
-    private final RangingPreference mRangingPreference;
     private final ListeningExecutorService mAdapterExecutor;
 
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
-    protected final RangingSessionConfig mSessionConfig;
+    protected final SessionConfig mSessionConfig;
     protected final SessionListener mSessionListener;
 
     private final AlarmManager mAlarmManager;
@@ -87,8 +86,8 @@ public class BaseRangingSession {
     /**
      * Ranging adapters used for this session.
      * <ul>
-     *    <li /> Each {@link TechnologyConfig} provided in the {@link RangingSessionConfig}
-     *    configures a unique adapter.
+     *    <li /> Each {@link TechnologyConfig} provided to {@link start} configures a unique
+     *    adapter.
      *    <li /> One adapter handles ranging for one technology.
      *    <li /> One adapter may handle ranging for multiple peers if the technology supports
      *    multicasting
@@ -114,10 +113,10 @@ public class BaseRangingSession {
 
         Peer(@NonNull RangingDevice device, @NonNull RangingTechnology initialTechnology) {
             technologies = Sets.newConcurrentHashSet(Set.of(initialTechnology));
-            if (mSessionConfig.getSessionConfig().getSensorFusionParams().isSensorFusionEnabled()) {
+            if (mSessionConfig.getSensorFusionParams().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
                         new DataFusers.PreferentialDataFuser(RangingTechnology.UWB),
-                        mSessionConfig.getSessionConfig().isAngleOfArrivalNeeded(), mInjector);
+                        mSessionConfig.isAngleOfArrivalNeeded(), mInjector);
             } else {
                 fusionEngine = new NoOpFusionEngine(device);
             }
@@ -137,16 +136,14 @@ public class BaseRangingSession {
 
     public BaseRangingSession(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
         mInjector = injector;
         mAttributionSource = attributionSource;
-        mRangingPreference = rangingPreference;
         mSessionHandle = sessionHandle;
         mSessionConfig = config;
         mSessionListener = listener;
@@ -520,7 +517,6 @@ public class BaseRangingSession {
         pw.println("---- Dump of RangingSession ----");
         pw.println("Session handle: " + mSessionHandle);
         pw.println("Attribution source: " + mAttributionSource);
-        pw.println("Ranging Preference: " + mRangingPreference);
         pw.println("Config: " + mSessionConfig);
         pw.println("Adapters:");
         for (RangingAdapter adapter : mAdapters.values()) {

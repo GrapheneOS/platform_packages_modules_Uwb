@@ -21,7 +21,7 @@ import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
 
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToString;
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingDevice;
@@ -33,8 +33,9 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleRssiCapabilities;
@@ -48,7 +49,7 @@ import com.android.server.ranging.oob.packets.UnknownCapabilities;
 import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationConfigSelector;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 
 import com.google.common.collect.ImmutableMap;

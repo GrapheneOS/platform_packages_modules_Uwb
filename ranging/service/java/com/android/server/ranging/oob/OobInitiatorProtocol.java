@@ -16,7 +16,7 @@
 
 package com.android.server.ranging.oob;
 
-import static com.android.server.ranging.RangingUtils.technologyBitset;
+import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;

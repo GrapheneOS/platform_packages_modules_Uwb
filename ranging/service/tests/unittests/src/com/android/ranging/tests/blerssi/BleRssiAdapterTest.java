@@ -52,7 +52,7 @@ import androidx.test.filters.SmallTest;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiConfig;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -80,7 +80,7 @@ public class BleRssiAdapterTest {
     @Mock
     private RangingDevice mMockRangingDevice;
     @Mock
-    private RangingSessionConfig.TechnologyConfig mMockTechnologyConfig;
+    private ConfigurationManager.TechnologyConfig mMockTechnologyConfig;
     @Mock
     private com.android.server.ranging.RangingAdapter.Callback mMockCallback;
     @Mock

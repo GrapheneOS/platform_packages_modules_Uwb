@@ -21,7 +21,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -35,7 +35,7 @@ import android.util.Pair;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.Version;
@@ -44,7 +44,7 @@ import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV2;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV2;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

@@ -24,8 +24,8 @@ import android.ranging.raw.RawResponderRangingConfig;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -44,7 +44,7 @@ public interface RangingAdapter {
      * @param config   for the ranging session.
      * @param callback to be called on the occurrence of ranging events.
      */
-    void start(@NonNull RangingSessionConfig.TechnologyConfig config,
+    void start(@NonNull ConfigurationManager.TechnologyConfig config,
             @Nullable AttributionSource nonPrivilegedAttributionSource,
             @NonNull Callback callback);
 

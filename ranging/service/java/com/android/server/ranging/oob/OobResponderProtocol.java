@@ -16,10 +16,10 @@
 
 package com.android.server.ranging.oob;
 
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
-import static com.android.server.ranging.RangingUtils.bitset;
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromIntervalMs;
-import static com.android.server.ranging.RangingUtils.privateAddressIfUserBuild;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.bitset;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromIntervalMs;
+import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingPreference;
@@ -64,7 +64,7 @@ import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV2;
 import com.android.server.ranging.oob.packets.WifiStaRttCapabilities;
 import com.android.server.ranging.oob.packets.WifiStaRttConfiguration;
 import com.android.server.ranging.rtt.RttConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 
 import com.google.common.collect.ImmutableBiMap;

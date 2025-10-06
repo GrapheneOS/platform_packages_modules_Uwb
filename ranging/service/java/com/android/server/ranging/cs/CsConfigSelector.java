@@ -19,9 +19,9 @@ package com.android.server.ranging.cs;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToString;
-import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import android.os.Build;
@@ -38,12 +38,12 @@ import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleCsConfiguration;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

@@ -32,6 +32,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession.Callback;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
@@ -43,14 +44,13 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.metrics.SessionMetricsLogger;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.session.OobInitiatorRangingSession;
 import com.android.server.ranging.session.OobResponderRangingSession;
 import com.android.server.ranging.session.RangingSession;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.session.RawInitiatorRangingSession;
 import com.android.server.ranging.session.RawResponderRangingSession;
 import com.android.server.uwb.util.LruList;
@@ -437,32 +437,29 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         }
 
         public void handleStartRanging(StartRangingArgs args) {
-            RangingSessionConfig config = new RangingSessionConfig.Builder()
-                    .setDeviceRole(args.preference.getDeviceRole())
-                    .setSessionConfig(args.preference().getSessionConfig())
-                    .build();
-
+            SessionConfig sessionConfig = args.preference().getSessionConfig();
             RangingConfig baseParams = args.preference.getRangingParams();
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
                     SessionMetricsLogger.startLogging(
-                            args.handle, config.getDeviceRole(), baseParams.getRangingSessionType(),
-                            args.attributionSource, mRangingInjector));
+                            args.handle, args.preference.getDeviceRole(),
+                            baseParams.getRangingSessionType(), args.attributionSource,
+                            mRangingInjector));
 
             switch (baseParams) {
                 case RawInitiatorRangingConfig params -> startSession(params, args,
-                        new RawInitiatorRangingSession(args.attributionSource, args.preference,
-                                args.handle, mRangingInjector, config, listener, mAdapterExecutor));
+                        new RawInitiatorRangingSession(args.attributionSource, args.handle,
+                                mRangingInjector, sessionConfig, listener, mAdapterExecutor));
                 case RawResponderRangingConfig params -> startSession(params, args,
-                        new RawResponderRangingSession(args.attributionSource, args.preference,
-                                args.handle, mRangingInjector, config, listener, mAdapterExecutor));
+                        new RawResponderRangingSession(args.attributionSource, args.handle,
+                                mRangingInjector, sessionConfig, listener, mAdapterExecutor));
                 case OobInitiatorRangingConfig params -> startSession(params, args,
-                        new OobInitiatorRangingSession(args.attributionSource, args.preference,
-                                args.handle, mRangingInjector, config, listener, mAdapterExecutor,
+                        new OobInitiatorRangingSession(args.attributionSource, args.handle,
+                                mRangingInjector, sessionConfig, listener, mAdapterExecutor,
                                 mOobExecutor));
                 case OobResponderRangingConfig params -> startSession(params, args,
-                        new OobResponderRangingSession(args.attributionSource, args.preference,
-                                args.handle, mRangingInjector, config, listener, mAdapterExecutor,
+                        new OobResponderRangingSession(args.attributionSource, args.handle,
+                                mRangingInjector, sessionConfig, listener, mAdapterExecutor,
                                 mOobExecutor));
                 default -> {
                     Log.e(TAG, "Unknown configuration object " + baseParams.getClass());

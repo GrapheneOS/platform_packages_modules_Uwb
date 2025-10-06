@@ -29,7 +29,7 @@ import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.raw.RawRangingDevice;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 

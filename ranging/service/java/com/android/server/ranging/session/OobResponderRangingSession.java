@@ -16,12 +16,12 @@
 
 package com.android.server.ranging.session;
 
-import static com.android.server.ranging.RangingUtils.technologyBitset;
+import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
-import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
@@ -32,7 +32,7 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils.InternalReason;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobResponderProtocol;
@@ -40,7 +40,7 @@ import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.StopRequest;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
@@ -77,16 +77,14 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
     public OobResponderRangingSession(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
-                adapterExecutor);
+        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
         mOobExecutor = oobExecutor;
         mOobConnectionListener = new OobConnectionListener();
     }

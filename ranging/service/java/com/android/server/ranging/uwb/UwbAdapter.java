@@ -48,11 +48,11 @@ import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.util.DataNotificationManager;
+import com.android.server.ranging.common.DataNotificationManager;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
@@ -139,7 +139,7 @@ public class UwbAdapter implements RangingAdapter {
 
     @Override
     public void start(
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @android.annotation.Nullable AttributionSource nonPrivilegedAttributionSource,
             @NonNull Callback callbacks
     ) {
