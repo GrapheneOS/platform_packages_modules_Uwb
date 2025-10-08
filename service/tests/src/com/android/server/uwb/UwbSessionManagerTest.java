@@ -181,6 +181,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class UwbSessionManagerTest {
     private static final String TEST_CHIP_ID = "testChipId";
@@ -977,6 +978,8 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.mSessionTable.put(mock(SessionHandle.class), mockUwbSession);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         when(mockUwbSession.getSessionState()).thenReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE);
+        AtomicReference<UwbSession.State> apiState = new AtomicReference<>(UwbSession.State.ACTIVE);
+        doReturn(apiState).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
                 TEST_SESSION_ID, SESSION_TOKEN,
@@ -988,6 +991,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onRangingStoppedWithUciReasonCode(
                 eq(mockUwbSession),
                 eq(UwbUciConstants.REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED));
+        assertThat(apiState.get()).isEqualTo(UwbSession.State.STOPPED);
     }
 
     @Test
@@ -997,6 +1001,8 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.mSessionTable.put(mock(SessionHandle.class), mockUwbSession);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         when(mockUwbSession.getSessionState()).thenReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE);
+        AtomicReference<UwbSession.State> apiState = new AtomicReference<>(UwbSession.State.ACTIVE);
+        doReturn(apiState).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
                 TEST_SESSION_ID, SESSION_TOKEN,
@@ -1007,6 +1013,7 @@ public class UwbSessionManagerTest {
         verify(mockUwbSession).setSessionState(eq(UwbUciConstants.UWB_SESSION_STATE_IDLE));
         verify(mUwbSessionNotificationManager, never()).onRangingStoppedWithUciReasonCode(
                 any(), anyInt());
+        assertThat(apiState.get()).isEqualTo(UwbSession.State.STOPPED);
     }
 
     @Test
@@ -1472,6 +1479,7 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
         doReturn(RfTestParams.PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE)).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.stopRanging(mock(SessionHandle.class));
 
@@ -1502,6 +1510,7 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE)).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.stopRanging(mock(SessionHandle.class));
 
@@ -1523,6 +1532,8 @@ public class UwbSessionManagerTest {
         doReturn(PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
         doReturn(0).when(mockUwbSession).getCurrentFiraRangingIntervalMs();
         doNothing().when(mockUwbSession).stopTimers();
+        AtomicReference<UwbSession.State> apiState = new AtomicReference<>(UwbSession.State.ACTIVE);
+        doReturn(apiState).when(mockUwbSession).getApiState();
 
         // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
         // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
@@ -1533,6 +1544,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
+        assertThat(apiState.get()).isEqualTo(UwbSession.State.STOPPING);
     }
 
     @Test
@@ -1545,6 +1557,7 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
+        doReturn(new AtomicReference(UwbSession.State.STOPPED)).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.stopRanging(mock(SessionHandle.class));
 
@@ -1562,11 +1575,14 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ERROR)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
+        AtomicReference<UwbSession.State> apiState = new AtomicReference<>(UwbSession.State.ACTIVE);
+        doReturn(apiState).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.stopRanging(mock(SessionHandle.class));
 
         verify(mUwbSessionNotificationManager).onRangingStopFailed(any(),
                 eq(UwbUciConstants.STATUS_CODE_REJECTED));
+        assertThat(apiState.get()).isEqualTo(UwbSession.State.ACTIVE);
     }
 
     @Test
@@ -5636,7 +5652,9 @@ public class UwbSessionManagerTest {
         UwbSession mockUwbSession = mock(UwbSession.class);
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         mUwbSessionManager.mSessionTable.put(mockSessionHandle, mockUwbSession);
-
+        doReturn(0).when(mockUwbSession).getSessionId();
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE))
+                .when(mockUwbSession).getApiState();
         mUwbSessionManager.deInitSession(mockSessionHandle);
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_DEINIT
@@ -5667,10 +5685,13 @@ public class UwbSessionManagerTest {
         doReturn(true).when(mUwbSessionManager).isExistedSession(any());
         doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
         doReturn(TEST_SESSION_ID).when(mockUwbSession).getSessionId();
+        AtomicReference<UwbSession.State> apiState = new AtomicReference<>(UwbSession.State.ACTIVE);
+        doReturn(apiState).when(mockUwbSession).getApiState();
 
         mUwbSessionManager.deInitSession(mockSessionHandle);
         mTestLooper.dispatchNext();
 
+        assertThat(apiState.get()).isEqualTo(UwbSession.State.CLOSING);
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
     }
 
@@ -5735,7 +5756,6 @@ public class UwbSessionManagerTest {
         // stop processing.
         mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
         mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
-        mTestLooper.dispatchNext();
         mTestLooper.dispatchNext();
 
         // Verify the DeInit steps.
