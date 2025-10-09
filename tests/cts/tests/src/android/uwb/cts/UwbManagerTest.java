@@ -145,6 +145,12 @@ public class UwbManagerTest {
                 requestUwbHwEnabledAndWaitForCompletion(true, mUwbManager, true);
             }
             mDefaultChipId = mUwbManager.getDefaultChipId();
+            // Clear oem extension callback if registered.
+            UwbOemExtensionCallback uwbOemExtensionCallback =
+                    new UwbOemExtensionCallback(new CountDownLatch(1));
+            mUwbManager.registerUwbOemExtensionCallback(
+                    Executors.newSingleThreadExecutor(), uwbOemExtensionCallback);
+            mUwbManager.unregisterUwbOemExtensionCallback(uwbOemExtensionCallback);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
