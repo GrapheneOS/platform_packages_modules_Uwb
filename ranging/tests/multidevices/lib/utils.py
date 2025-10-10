@@ -161,12 +161,10 @@ def reset_wifi_state(
     ad: android device object.
   """
   ad.ranging.setWifiEnabled(False)
-  time.sleep(2)
-  asserts.assert_false(ad.ranging.isWifiEnabled(), 'Wifi did not stop')
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.WIFI_RTT, False, timeout_s=60),
+                        "Wifi RTT is not disabled while resetting")
+
   ad.ranging.setWifiEnabled(True)
-  time.sleep(2)
-  asserts.assert_true(ad.ranging.isWifiEnabled(), 'Wifi did not stop')
-  # Check for WIFI RTT availability
   asserts.assert_true(_is_technology_state(ad, RangingTechnology.WIFI_RTT, True, timeout_s=60),
                       "Wifi RTT is not enabled in ranging API")
 
