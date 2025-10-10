@@ -23,27 +23,26 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
-import android.util.Pair;
 
-import com.android.server.ranging.RangingEngine;
-import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.oob.packets.WifiDeviceRole;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV2;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV2;
+import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
@@ -52,10 +51,10 @@ import com.google.common.collect.ImmutableSet;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
-public class RttConfigSelector extends RangingEngine.ConfigSelector {
+public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static boolean sLocalPeriodicRangingSupport = false;
@@ -64,13 +63,14 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
     private final SessionConfig mSessionConfig;
 
     private final OobInitiatorRangingConfig mOobConfig;
-    private final Version mOobVersion;
 
     private final Map<RangingDevice, RttDeviceConfig> mRangingDevices = new ConcurrentHashMap<>();
     public static ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
             RTT_UPDATE_RATE_DURATIONS;
 
-    private static boolean isCapableOfConfig(
+    private @Nullable SelectedRttConfig mSelectedConfig = null;
+
+    public static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable RttRangingCapabilities capabilities) {
 
@@ -91,24 +91,12 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
     public RttConfigSelector(
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
-            @NonNull Version oobVersion,
             @Nullable RttRangingCapabilities capabilities
-    ) throws ConfigSelectionException {
-        if (!isCapableOfConfig(oobConfig, capabilities)) {
-            throw new ConfigSelectionException(
-                    "Local device is incapable of provided RTT config",
-                    InternalReason.UNSUPPORTED);
-        }
-
+    ) {
         mSessionConfig = sessionConfig;
-        mOobVersion = oobVersion;
         mOobConfig = oobConfig;
     }
 
-    @Override
-    public boolean hasPeersToConfigure() {
-        return !mRangingDevices.isEmpty();
-    }
 
     @Override
     public void addPeerCapabilities(
@@ -118,12 +106,14 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
             case WifiNanRttCapabilitiesV1 capabilities -> mRangingDevices.put(
                     peer,
                     new RttDeviceConfig(getServiceName(peer),
-                            sLocalPeriodicRangingSupport && capabilities.getPeriodic()));
+                            sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
+                            1));
             // TODO: Correctly handle V2
             case WifiNanRttCapabilitiesV2 capabilities -> mRangingDevices.put(
                     peer,
                     new RttDeviceConfig(getServiceName(peer),
-                            sLocalPeriodicRangingSupport && capabilities.getPeriodic()));
+                            sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
+                            2));
             default -> throw new ConfigSelectionException(
                     "Peer " + peer + " expected Wifi RTT capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
@@ -132,12 +122,19 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
     }
 
     @Override
-    public @NonNull Pair<
-            ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, Configuration>
-    > selectConfigs() throws ConfigSelectionException {
-        SelectedRttConfig configs = new SelectedRttConfig();
-        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
+    public @NonNull Set<TechnologyConfig> selectLocalConfigs(
+            @NonNull Set<RangingDevice> peers
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedRttConfig();
+        return mSelectedConfig.getLocalConfigs(peers);
+    }
+
+    @Override
+    public @NonNull Configuration selectRemoteConfig(
+            @NonNull RangingDevice peer
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedRttConfig();
+        return mSelectedConfig.getPeerConfig(peer);
     }
 
     private class SelectedRttConfig {
@@ -153,41 +150,39 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
         }
 
         @NonNull
-        public ImmutableSet<TechnologyConfig> getLocalConfigs() {
-            return mRangingDevices.entrySet().stream()
-                    .map((entry -> new RttConfig(DEVICE_ROLE_INITIATOR,
-                            new RttRangingParams.Builder(entry.getValue().mServiceName)
-                                    .setPeriodicRangingHwFeatureEnabled(
-                                            entry.getValue().mUsePeriodicRangingFeature)
-                                    .build(),
-                            mSessionConfig,
-                            entry.getKey())))
-                    .collect(ImmutableSet.toImmutableSet());
+        public ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
+            return peers.stream().map(peer -> {
+                RttDeviceConfig config = mRangingDevices.get(peer);
+                return new RttConfig(
+                        DEVICE_ROLE_INITIATOR,
+                        new RttRangingParams.Builder(config.mServiceName)
+                                .setPeriodicRangingHwFeatureEnabled(
+                                        config.mUsePeriodicRangingFeature)
+                                .build(),
+                        mSessionConfig,
+                        peer);
+            }).collect(ImmutableSet.toImmutableSet());
         }
 
         @NonNull
-        public ImmutableMap<RangingDevice, Configuration> getPeerConfigs() {
-            return mRangingDevices.keySet().stream().collect(ImmutableMap.toImmutableMap(
-                    Function.identity(),
-                    peer -> {
-                        RttDeviceConfig config = mRangingDevices.get(peer);
-                        if (mOobVersion.toByte() == 1) {
-                            return new WifiNanRttConfigurationV1.Builder()
-                                    .setDeviceRole(WifiDeviceRole.Responder)
-                                    .setServiceName(
-                                            config.mServiceName.getBytes(StandardCharsets.UTF_8))
-                                    .setPeriodic(config.mUsePeriodicRangingFeature)
-                                    .build();
-                        } else {
-                            // TODO: Correctly handle V2
-                            return new WifiNanRttConfigurationV2.Builder()
-                                    .setDeviceRole(WifiDeviceRole.Responder)
-                                    .setServiceName(
-                                            config.mServiceName.getBytes(StandardCharsets.UTF_8))
-                                    .setPeriodic(config.mUsePeriodicRangingFeature)
-                                    .build();
-                        }
-                    }));
+        public Configuration getPeerConfig(RangingDevice peer) {
+            RttDeviceConfig config = mRangingDevices.get(peer);
+            if (config.mOobVersion == 1) {
+                return new WifiNanRttConfigurationV1.Builder()
+                        .setDeviceRole(WifiDeviceRole.Responder)
+                        .setServiceName(
+                                config.mServiceName.getBytes(StandardCharsets.UTF_8))
+                        .setPeriodic(config.mUsePeriodicRangingFeature)
+                        .build();
+            } else {
+                // TODO: Correctly handle V2
+                return new WifiNanRttConfigurationV2.Builder()
+                        .setDeviceRole(WifiDeviceRole.Responder)
+                        .setServiceName(
+                                config.mServiceName.getBytes(StandardCharsets.UTF_8))
+                        .setPeriodic(config.mUsePeriodicRangingFeature)
+                        .build();
+            }
         }
     }
 
@@ -213,10 +208,12 @@ public class RttConfigSelector extends RangingEngine.ConfigSelector {
     private static class RttDeviceConfig {
         String mServiceName;
         boolean mUsePeriodicRangingFeature;
+        int mOobVersion;
 
-        RttDeviceConfig(String serviceName, boolean usePeriodicRangingFeature) {
+        RttDeviceConfig(String serviceName, boolean usePeriodicRangingFeature, int oobVersion) {
             mServiceName = serviceName;
             mUsePeriodicRangingFeature = usePeriodicRangingFeature;
+            mOobVersion = oobVersion;
         }
     }
 
