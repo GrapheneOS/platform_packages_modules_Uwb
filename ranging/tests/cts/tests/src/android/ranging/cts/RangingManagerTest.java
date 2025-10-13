@@ -56,7 +56,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
-import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.rtt.WifiRttManager;
@@ -225,10 +224,6 @@ public class RangingManagerTest {
             if (!wifiManager.isWifiEnabled()) {
                 wifiManager.setWifiEnabled(true);
             }
-
-            ConnectivityManager connectivityManager =
-                    mContext.getSystemService(ConnectivityManager.class);
-            assertNotNull("Connectivity Manager", connectivityManager);
 
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
