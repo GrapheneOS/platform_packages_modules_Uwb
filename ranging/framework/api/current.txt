@@ -50,6 +50,7 @@ package android.ranging {
     method @Nullable public android.ranging.RangingMeasurement getDistance();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public double getDistanceStandardDeviationMeters();
     method @Nullable public android.ranging.RangingMeasurement getElevation();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.RangingDataExtras getRangingDataExtras();
     method public int getRangingTechnology();
     method public int getRssi();
     method public long getTimestampMillis();
@@ -57,6 +58,15 @@ package android.ranging {
     method public boolean hasRssi();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingData> CREATOR;
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class RangingDataExtras implements android.os.Parcelable {
+    method public int describeContents();
+    method @Nullable public android.ranging.ble.cs.BleCsSpecificData getBleCsSpecificData();
+    method @Nullable public android.ranging.uwb.UwbSpecificData getUwbSpecificData();
+    method @Nullable public android.ranging.wifi.rtt.WifiRttSpecificData getWifiRttSpecificData();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingDataExtras> CREATOR;
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingDevice implements android.os.Parcelable {
@@ -208,6 +218,13 @@ package android.ranging.ble.cs {
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setRangingUpdateRate(int);
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setSecurityLevel(int);
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setSightType(int);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class BleCsSpecificData implements android.os.Parcelable {
+    method public int describeContents();
+    method public double getDelaySpreadMeters();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.ble.cs.BleCsSpecificData> CREATOR;
   }
 
 }
@@ -463,6 +480,16 @@ package android.ranging.uwb {
     method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setSubSessionKeyInfo(@NonNull byte[]);
   }
 
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class UwbSpecificData implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getNonLineOfSight();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbSpecificData> CREATOR;
+    field public static final int LOS = 0; // 0x0
+    field public static final int LOS_UNDETERMINED = 255; // 0xff
+    field public static final int NLOS = 1; // 0x1
+  }
+
 }
 
 package android.ranging.wifi.rtt {
@@ -507,6 +534,18 @@ package android.ranging.wifi.rtt {
     method @NonNull public android.ranging.wifi.rtt.RttStationRangingParams build();
     method @NonNull public android.ranging.wifi.rtt.RttStationRangingParams.Builder setChannelWidth(int);
     method @NonNull public android.ranging.wifi.rtt.RttStationRangingParams.Builder setRangingUpdateRate(int);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class WifiRttSpecificData implements android.os.Parcelable {
+    method public int describeContents();
+    method public double getDistanceStandardDeviationMeters();
+    method @NonNull public byte[] getLci();
+    method public int getMeasurementBandwidth();
+    method public int getMeasurementChannelFrequencyMHz();
+    method public int getNumAttemptedMeasurements();
+    method public int getNumSuccessfulMeasurements();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.rtt.WifiRttSpecificData> CREATOR;
   }
 
 }

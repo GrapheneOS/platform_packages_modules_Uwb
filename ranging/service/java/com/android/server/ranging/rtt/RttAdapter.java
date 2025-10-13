@@ -24,10 +24,12 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
+import android.ranging.wifi.rtt.WifiRttSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -282,6 +284,17 @@ public class RttAdapter implements RangingAdapter {
                         .setMeasurement(position.getElevation().getValue())
                         .build());
             }
+            dataBuilder.setRangingDataExtras(new RangingDataExtras.Builder()
+                    .setRttSpecificData(new WifiRttSpecificData.Builder()
+                            .setNumSuccessfulMeasurements(position.getNumSuccessfulMeasurements())
+                            .setNumAttemptedMeasurements(position.getNumAttemptedMeasurements())
+                            .setMeasurementBandwidth((int) position.getMeasurementBandwidth())
+                            .setMeasurementChannelFrequencyMHz(
+                                    position.getMeasurementChannelFrequencyMHz())
+                            .setLci(position.getLci())
+                            .setDistanceStandardDeviationMeters(position.getDistanceStdDevMeters())
+                            .build())
+                    .build());
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
                     mCallbacks.onRangingData(mPeerDevice, dataBuilder.build());

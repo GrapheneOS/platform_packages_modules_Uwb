@@ -134,7 +134,8 @@ final class Conversions {
                     altitude,
                     dlTdoaMeasurement,
                     measurement.getElapsedRealtimeNanos(),
-                    measurement.getRssiDbm());
+                    measurement.getRssiDbm(),
+                    measurement.getLineOfSight());
         }
         return new RangingPosition(
                 distance, azimuth, altitude, measurement.getElapsedRealtimeNanos());

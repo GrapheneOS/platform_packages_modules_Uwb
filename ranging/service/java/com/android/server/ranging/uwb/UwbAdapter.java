@@ -25,6 +25,7 @@ import android.content.Context;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
@@ -32,6 +33,7 @@ import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.uwb.UwbSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -317,6 +319,13 @@ public class UwbAdapter implements RangingAdapter {
             if (position.getRssiDbm() != RangingPosition.RSSI_UNKNOWN) {
                 dataBuilder.setRssi(position.getRssiDbm());
             }
+            dataBuilder.setRangingDataExtras(
+                    new RangingDataExtras.Builder().setUwbSpecificData(
+                            new UwbSpecificData.Builder()
+                                    .setNonLineOfSight(position.getNlos())
+                                    .build()
+                    ).build()
+            );
 
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {

@@ -47,6 +47,7 @@ public final class RangingData implements Parcelable {
     private final double mDelaySpreadMeters;
     private final /* @android.bluetooth.le.Nadm */ byte mDetectedAttackLevel;
     private final double mVelocityMetersPerSec;
+    private final RangingDataExtras mRangingDataExtras;
 
 
     private RangingData(Builder builder) {
@@ -69,6 +70,7 @@ public final class RangingData implements Parcelable {
         mDelaySpreadMeters = builder.mDelaySpreadMeters;
         mDetectedAttackLevel = builder.mDetectedAttackLevel;
         mVelocityMetersPerSec = builder.mVelocityMetersPerSec;
+        mRangingDataExtras = builder.mRangingDataExtras;
     }
 
     private RangingData(Parcel in) {
@@ -86,6 +88,8 @@ public final class RangingData implements Parcelable {
         mDelaySpreadMeters = in.readDouble();
         mDetectedAttackLevel = in.readByte();
         mVelocityMetersPerSec = in.readDouble();
+        mRangingDataExtras = in.readParcelable(RangingDataExtras.class.getClassLoader(),
+                RangingDataExtras.class);
     }
 
     public static final @NonNull Creator<RangingData> CREATOR = new Creator<>() {
@@ -262,6 +266,17 @@ public final class RangingData implements Parcelable {
         return mTimestamp;
     }
 
+    /**
+     * Gets the extra ranging data associated with this ranging data.
+     *
+     * @return {@link RangingDataExtras}
+     */
+    @Nullable
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public RangingDataExtras getRangingDataExtras() {
+        return mRangingDataExtras;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -279,6 +294,7 @@ public final class RangingData implements Parcelable {
         dest.writeDouble(mDelaySpreadMeters);
         dest.writeByte(mDetectedAttackLevel);
         dest.writeDouble(mVelocityMetersPerSec);
+        dest.writeParcelable(mRangingDataExtras, flags);
     }
 
     /**
@@ -297,6 +313,7 @@ public final class RangingData implements Parcelable {
         private double mDelaySpreadMeters = Double.NaN;
         private /* @android.bluetooth.le.Nadm */ byte mDetectedAttackLevel = (byte) 0xff;
         private double mVelocityMetersPerSec = Double.NaN;
+        private RangingDataExtras mRangingDataExtras = null;
 
         /**
          * Sets the ranging technology.
@@ -441,6 +458,18 @@ public final class RangingData implements Parcelable {
         @NonNull
         public Builder setVelocityMetersPerSec(double velocity) {
             mVelocityMetersPerSec = velocity;
+            return this;
+        }
+
+        /**
+         * Set additional ranging data.
+         *
+         * @param rangingDataExtras the additional ranging data
+         * @return the additional ranging data
+         */
+        @NonNull
+        public Builder setRangingDataExtras(RangingDataExtras rangingDataExtras) {
+            mRangingDataExtras = rangingDataExtras;
             return this;
         }
 

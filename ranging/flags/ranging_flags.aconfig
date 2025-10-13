@@ -42,3 +42,10 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+flag {
+    name: "ranging_stack_updates_26_q_2"
+    is_exported: true
+    namespace: "uwb"
+    description: "This flags controls updates to ranging stack for 26Q2"
+    bug: "433583754"
+}

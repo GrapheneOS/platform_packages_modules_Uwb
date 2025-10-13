@@ -39,10 +39,12 @@ import android.content.Context;
 import android.os.CancellationSignal;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
+import android.ranging.ble.cs.BleCsSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -338,6 +340,12 @@ public class CsAdapter implements RangingAdapter {
                                 .setError(result.getErrorAltitudeAngle())
                                 .build());
                     }
+                    dataBuilder.setRangingDataExtras(
+                            new RangingDataExtras.Builder()
+                                    .setBleCsSpecificData(new BleCsSpecificData.Builder()
+                                            .setDelaySpreadMeters(result.getDelaySpreadMeters())
+                                            .build())
+                                    .build());
                     synchronized (mStateMachine) {
                         if (mStateMachine.getState() == State.STARTED) {
                             mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());

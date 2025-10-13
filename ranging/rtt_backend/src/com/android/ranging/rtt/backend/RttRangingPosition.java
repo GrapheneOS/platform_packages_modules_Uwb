@@ -34,6 +34,10 @@ public class RttRangingPosition {
     private int mRssi;
     Azimuth mAzimuth;
     Elevation mElevation;
+    private int mNumAttemptedMeasurements;
+    private int mMeasurementBandwidth;
+    private int mMeasurementChannelFrequencyMHz;
+    private byte[] mLci;
 
     /**
      * Create Ranging Position for RTT from RangingResult
@@ -46,6 +50,10 @@ public class RttRangingPosition {
         mAzimuth = null;
         mElevation = null;
         mRangingTimestampMillis = rangingResult.getRangingTimestampMillis();
+        mNumAttemptedMeasurements = rangingResult.getNumAttemptedMeasurements();
+        mMeasurementBandwidth = rangingResult.getMeasurementBandwidth();
+        mMeasurementChannelFrequencyMHz = rangingResult.getMeasurementChannelFrequencyMHz();
+        mLci = rangingResult.getLci();
     }
 
     /**
@@ -119,5 +127,21 @@ public class RttRangingPosition {
         public int getValue() {
             return 0;
         }
+    }
+
+    public int getMeasurementBandwidth() {
+        return mMeasurementBandwidth;
+    }
+
+    public int getNumAttemptedMeasurements() {
+        return mNumAttemptedMeasurements;
+    }
+
+    public int getMeasurementChannelFrequencyMHz() {
+        return mMeasurementChannelFrequencyMHz;
+    }
+
+    public byte[] getLci() {
+        return mLci;
     }
 }
