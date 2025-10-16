@@ -556,6 +556,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       try:
           self._ble_bond()
+      except Exception as e:
+          asserts.skip("Failed to create ble bond", str(e))
+
+      try:
           initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
@@ -1078,7 +1082,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_bond()
+        self._ble_bond()
+    except Exception as e:
+        asserts.skip("Failed to create ble bond", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=RawInitiatorRangingParams(
@@ -1189,7 +1197,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_bond()
+        self._ble_bond()
+    except Exception as e:
+        asserts.skip("Failed to create ble bond", str(e))
+
+    try:
       session.start_and_assert_opened(check_responders=False)
       session.assert_received_data(technologies=[RangingTechnology.BLE_CS], check_responders=False)
     finally:
@@ -1215,7 +1227,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self._enable_bt()
 
       try:
-        self._ble_bond()
+          self._ble_bond()
+      except Exception as e:
+          asserts.skip("Failed to create ble bond", str(e))
+
+      try:
         initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
