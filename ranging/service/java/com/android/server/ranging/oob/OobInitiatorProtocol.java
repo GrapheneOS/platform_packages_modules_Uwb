@@ -16,24 +16,27 @@
 
 package com.android.server.ranging.oob;
 
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
-import android.ranging.RangingDevice;
-import android.ranging.SessionConfig;
-import android.ranging.SessionHandle;
+import android.ranging.RangingCapabilities;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobInitiatorRangingConfig;
 import android.util.Log;
 
-import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleRssiCapabilities;
+import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponse;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.StopRequest;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.TechnologySet;
+import com.android.server.ranging.oob.packets.UnknownCapabilities;
 import com.android.server.ranging.oob.packets.Version;
-
-import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,20 +46,15 @@ public class OobInitiatorProtocol {
 
     private static final String TAG = OobInitiatorProtocol.class.getSimpleName();
 
-    private final RangingEngine mEngine;
-    private final Map<RangingDevice, Version> mPeerVersions;
+    private final RangingInjector mInjector;
+    private final Map<OobHandle, Version> mPeerVersions;
 
-    public OobInitiatorProtocol(
-            SessionConfig sessionConfig, OobInitiatorRangingConfig oobConfig,
-            SessionHandle sessionHandle, RangingInjector injector
-    ) throws RangingEngine.ConfigSelectionException {
+    public OobInitiatorProtocol(RangingInjector injector) {
+        mInjector = injector;
         mPeerVersions = new HashMap<>();
-        mEngine = new RangingEngine(
-                sessionConfig, oobConfig, sessionHandle, injector, mPeerVersions);
     }
 
-    public byte[] getCapabilitiesRequest() {
-        ImmutableSet<RangingTechnology> technologies = mEngine.getRequestedTechnologies();
+    public byte[] getCapabilitiesRequest(Set<RangingTechnology> technologies) {
         Log.v(TAG, "Requesting technologies " + technologies + " based on local capabilities");
 
         return new CapabilitiesRequest.Builder()
@@ -66,22 +64,66 @@ public class OobInitiatorProtocol {
                 .toBytes();
     }
 
-    public RangingEngine.SelectedConfig getConfigurations(
-            Map<OobHandle, byte[]> responses
-    ) throws RangingEngine.ConfigSelectionException {
-        for (OobHandle handle : responses.keySet()) {
-            CapabilitiesResponse response = CapabilitiesResponse.fromBytes(responses.get(handle));
-            Log.v(TAG, "Received " + response + " from " + handle.getRangingDevice());
-            mPeerVersions.put(handle.getRangingDevice(), response.getVersion());
-            mEngine.addPeerCapabilities(handle.getRangingDevice(), response);
+    public Map<Technology, Capabilities> getCapabilitiesFromResponse(
+            OobHandle handle, byte[] responseBytes
+    ) {
+        CapabilitiesResponse response = CapabilitiesResponse.fromBytes(responseBytes);
+        Map<Technology, Capabilities> capabilities =
+                new HashMap<>(response.getCapabilities().length);
+
+        for (Capabilities caps : response.getCapabilities()) {
+            @RangingCapabilities.RangingTechnologyAvailability int availability = mInjector
+                    .getCapabilitiesProvider().getCapabilities().getTechnologyAvailability()
+                    .get(Byte.toUnsignedInt(caps.getTechnology().toByte()));
+            if (availability != RangingCapabilities.ENABLED) {
+                Log.v(TAG, "Skipping " + caps.getTechnology() +  " supported by "
+                        + handle.getRangingDevice() + " because its availability is "
+                        + availability);
+                continue;
+            }
+
+            switch (caps) {
+                case BleCsCapabilities csCaps -> {
+                    if (mInjector.isRemoteDeviceBluetoothBonded(
+                            macAddressToString(csCaps.getAddress()))) {
+                        capabilities.remove(Technology.BleRssi);
+                        capabilities.put(Technology.BleCs, csCaps);
+                    } else {
+                        Log.v(TAG, "Skipping " + Technology.BleCs
+                                + " because no Bluetooth bond exists with peer");
+                    }
+                }
+                case BleRssiCapabilities bleRssiCaps -> {
+                    if (!capabilities.containsKey(Technology.BleCs)) {
+                        capabilities.put(Technology.BleRssi, bleRssiCaps);
+                    }
+                }
+                case UnknownCapabilities unknown ->
+                        Log.w(TAG, "Capabilities response with unknown capabilities " + unknown);
+                default -> capabilities.put(caps.getTechnology(), caps);
+            }
         }
 
-        return mEngine.selectConfigs();
+        mPeerVersions.put(handle, response.getVersion());
+        return capabilities;
+    }
+
+    public ConfigurationRequest getConfigurationRequest(
+            OobHandle handle, Set<Configuration> configurations
+    ) {
+        TechnologySet technologies = technologyBitset(configurations.stream().map(
+                c -> RangingTechnology.fromByte(c.getTechnology().toByte())).toList());
+        return new ConfigurationRequest.Builder()
+                .setVersion(mPeerVersions.get(handle))
+                .setTechnologiesToConfigure(technologies)
+                .setTechnologiesToStart(technologies)
+                .setConfigs(configurations.toArray(new Configuration[0]))
+                .build();
     }
 
     public byte[] getStopRequest(OobHandle handle, Set<RangingTechnology> technologies) {
         return new StopRequest.Builder()
-                .setVersion(mPeerVersions.get(handle.getRangingDevice()))
+                .setVersion(mPeerVersions.get(handle))
                 .setTechnologiesToStop(technologyBitset(technologies))
                 .build()
                 .toBytes();
