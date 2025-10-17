@@ -75,7 +75,8 @@ public class AliroEncoderTest {
                     .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
                     .setMacModeOffset(0)
                     .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
-                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
+                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78,
+                            0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
 
     private static final String RANGE_DATA_NTF_CONFIG_DISABLED_TLV = "0E0100";
     private static final String RANGE_DATA_NTF_CONFIG_ENABLED_TLV = "0E0101";
@@ -87,7 +88,8 @@ public class AliroEncoderTest {
     private static final String TEST_ALIRO_OPEN_RANGING_TLV =
             "00010104010905010109048001000011010103010"
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                    + "A901004510057805780578057805780578057805782B080100000000000000";
+                    + "A9010045200578057805780578057805780578057805780578057805780578057805780578"
+                    + "2B080100000000000000";
     private static final String TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT =
             TEST_ALIRO_OPEN_RANGING_TLV + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
     private static final byte[] TEST_ALIRO_OPEN_RANGING_TLV_DATA =
@@ -139,7 +141,9 @@ public class AliroEncoderTest {
         byte[] testAliroOpenRangingAbsoluteInitiationTimeTlvData =
                 UwbUtil.getByteArray("00010104010905010109048001000011010103010"
                         + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                        + "A901004510057805780578057805780578057805782B0810270000000000000E0100");
+                        + "A90100"
+                        + "45200578057805780578057805780578057805780578057805780578057805780578"
+                        + "2B0810270000000000000E0100");
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(18);
         assertThat(tlvs.getByteArray()).isEqualTo(

@@ -291,4 +291,5 @@ public class CapabilityParam {
 
     // Aliro specific
     public static final int ALIRO_SUPPORTED_MAC_MODES = 0xAC;
+    public static final int ALIRO_SUPPORTED_PROTOCOL_VERSION = 0xAD;
 }
