@@ -222,7 +222,8 @@ class DistanceMeasurementManager {
 
     void stop() {
         if (mCancellationSignal.get() != null) {
-            printLog("Stop ranging with device: " + mTargetDevice.getName());
+            printLog("Stop ranging with device: "
+                    + ((mTargetDevice != null) ? mTargetDevice.getName() : "null"));
             mCancellationSignal.get().cancel();
             mCancellationSignal.set(null);
         }
