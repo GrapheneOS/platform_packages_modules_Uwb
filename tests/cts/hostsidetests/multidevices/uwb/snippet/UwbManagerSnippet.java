@@ -46,6 +46,7 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraLogicalLinkInfo;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
@@ -939,6 +940,30 @@ public class UwbManagerSnippet implements Snippet {
         return builder.build();
     }
 
+    private DlTDoARangingRoundsUpdate generateDlTDoARangingRoundsUpdate(JSONObject j)
+            throws JSONException {
+        if (j == null) {
+            return null;
+        }
+        DlTDoARangingRoundsUpdate.Builder builder = new DlTDoARangingRoundsUpdate.Builder();
+
+        // keep-sorted start block=yes
+        if (j.has("noOfRangingRounds")) {
+            builder.setNoOfRangingRounds(j.getInt("noOfRangingRounds"));
+        }
+        if (j.has("rangingRoundIndexes")) {
+            JSONArray jRangingRoundIndexesArray = j.getJSONArray("rangingRoundIndexes");
+            builder.setRangingRoundIndexes(convertJSONArrayToByteArray(jRangingRoundIndexesArray));
+        }
+        if (j.has("sessionId")) {
+            builder.setSessionId(j.getLong("sessionId"));
+        }
+        // keep-sorted end
+
+        return builder.build();
+    }
+
+
     private RangingMeasurement getRangingMeasurement(String key, JSONArray jArray)
             throws JSONException {
         byte[] bArray = convertJSONArrayToByteArray(jArray);
@@ -1044,6 +1069,17 @@ public class UwbManagerSnippet implements Snippet {
         // Hold on to the shell permission until the session is stopped to get the ranging reports.
         adoptShellPermission();
         rangingSessionCallback.rangingSession.removeControlee(params.toBundle());
+    }
+
+    /** Reconfigures DL TDoA ranging rounds. */
+    @Rpc(description = "DL TDoA Ranging rounds update")
+    public void updateRangingRoundsDtTagFiraRangingSession(String key, JSONObject config)
+            throws Throwable {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+        DlTDoARangingRoundsUpdate params = generateDlTDoARangingRoundsUpdate(config);
+        // Hold on to the shell permission until the session is stopped to get the ranging reports.
+        adoptShellPermission();
+        rangingSessionCallback.rangingSession.updateRangingRoundsDtTag(params.toBundle());
     }
 
     /**

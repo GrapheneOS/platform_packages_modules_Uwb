@@ -36,26 +36,36 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.UserHandle;
 import android.permission.PermissionManager;
+import android.ranging.RangingCapabilities;
+import android.ranging.SessionConfig;
+import android.ranging.SessionHandle;
+import android.ranging.oob.OobInitiatorRangingConfig;
 import android.util.Log;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
+import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
+import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
+import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.rtt.RttStationConfigSelector;
+import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
+import com.android.server.ranging.uwb.UwbConfigSelector;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -97,12 +107,12 @@ public class RangingInjector {
         sInstance = this;
     }
 
-     public static RangingInjector getInstance() {
+    public static RangingInjector getInstance() {
         return Objects.requireNonNull(sInstance);
     }
 
     @VisibleForTesting
-    public  static void setInstance(RangingInjector rangingInjector) {
+    public static void setInstance(RangingInjector rangingInjector) {
         sInstance = rangingInjector;
     }
 
@@ -135,7 +145,7 @@ public class RangingInjector {
      */
     public @NonNull RangingAdapter createAdapter(
             @NonNull AttributionSource attributionSource,
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @NonNull ListeningExecutorService executor
     ) {
         switch (config.getTechnology()) {
@@ -147,7 +157,7 @@ public class RangingInjector {
             case RTT:
             case RTT_STATION:
                 return new RttAdapter(
-                   mContext, this, executor, config.getDeviceRole(), config.getTechnology());
+                        mContext, this, executor, config.getDeviceRole(), config.getTechnology());
             case RSSI:
                 return new BleRssiAdapter(mContext, this);
             default:
@@ -175,6 +185,52 @@ public class RangingInjector {
                 throw new IllegalArgumentException(
                         "CapabilitiesAdapter does not exist for technology " + technology);
         }
+    }
+
+    public @NonNull ConfigurationManager.ConfigSelector createConfigSelector(
+            @NonNull RangingTechnology technology, @NonNull SessionHandle sessionHandle,
+            @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig
+    ) {
+        RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
+        return switch (technology) {
+            case RangingTechnology.UWB -> new UwbConfigSelector(
+                    sessionConfig, oobConfig, sessionHandle, capabilities.getUwbCapabilities());
+            case RangingTechnology.CS -> new CsConfigSelector(
+                    sessionConfig, oobConfig, capabilities.getCsCapabilities());
+            case RangingTechnology.RTT -> new RttConfigSelector(
+                    sessionConfig, oobConfig, capabilities.getRttRangingCapabilities());
+            case RangingTechnology.RSSI -> new BleRssiConfigSelector(
+                    sessionConfig, oobConfig, capabilities.getBleRssiCapabilities());
+            case RangingTechnology.RTT_STATION -> new RttStationConfigSelector(
+                    sessionConfig, oobConfig, capabilities.getRttStationRangingCapabilities());
+        };
+    }
+
+    public boolean isLocalDeviceCapableOfConfig(
+            @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig
+    ) {
+        RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
+        if (capabilities.getUwbCapabilities() != null && !UwbConfigSelector
+                .isCapableOfConfig(sessionConfig, oobConfig, capabilities.getUwbCapabilities()))
+            return false;
+
+        if (capabilities.getCsCapabilities() != null && !CsConfigSelector
+                .isCapableOfConfig(oobConfig, capabilities.getCsCapabilities()))
+            return false;
+
+        if (capabilities.getRttRangingCapabilities() != null && !RttConfigSelector
+                .isCapableOfConfig(oobConfig, capabilities.getRttRangingCapabilities()))
+            return false;
+
+        if (capabilities.getBleRssiCapabilities() != null && !BleRssiConfigSelector
+                .isCapableOfConfig(oobConfig, capabilities.getBleRssiCapabilities()))
+            return false;
+
+        if (capabilities.getRttStationRangingCapabilities() != null && !RttStationConfigSelector
+                .isCapableOfConfig(oobConfig, capabilities.getRttStationRangingCapabilities()))
+            return false;
+
+        return true;
     }
 
     public void enforceRangingPermissionForPreflight(
@@ -311,6 +367,7 @@ public class RangingInjector {
     public void setOverridePackageImportance(String packageName, int importance) {
         sOverridePackageImportance.put(packageName, importance);
     }
+
     public void resetOverridePackageImportance(String packageName) {
         sOverridePackageImportance.remove(packageName);
     }
@@ -333,7 +390,12 @@ public class RangingInjector {
 
     public boolean isRangingTechnologyEnabled(RangingTechnology rangingTechnology) {
         return Arrays.asList(getDeviceConfigFacade().getTechnologyPreferenceList()).contains(
-                rangingTechnology.toString()
-        );
+                rangingTechnology.toString());
+    }
+
+    public List<RangingTechnology> getTechnologyRanking() {
+        return Arrays.stream(mDeviceConfigFacade.getTechnologyPreferenceList())
+                .map(RangingTechnology::fromName)
+                .toList();
     }
 }

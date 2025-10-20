@@ -19,7 +19,9 @@ package com.android.server.ranging.cs;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import android.os.Build;
@@ -29,27 +31,26 @@ import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.server.ranging.RangingEngine;
-import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleCsConfiguration;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
-import java.util.function.Function;
 
-public class CsConfigSelector implements RangingEngine.ConfigSelector {
+public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
     private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
@@ -57,7 +58,9 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
 
     private final Set<@BleCsRangingCapabilities.SecurityLevel Integer> mSecurityLevels;
 
-    private static boolean isCapableOfConfig(
+    private @Nullable SelectedCsConfig mSelectedConfig = null;
+
+    public static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable BleCsRangingCapabilities capabilities
     ) {
@@ -78,12 +81,7 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable BleCsRangingCapabilities capabilities
-    ) throws ConfigSelectionException {
-        if (!isCapableOfConfig(oobConfig, capabilities)) {
-            throw new ConfigSelectionException(
-                    "Local device CS capabilities is incompatible with provided config",
-                    InternalReason.UNSUPPORTED);
-        }
+    ) {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mPeerAddresses = HashBiMap.create();
@@ -92,29 +90,31 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        CsOobCapabilities capabilities = response.getCsCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException("Peer " + peer + " does not support CS",
+        if (!(baseCapabilities instanceof BleCsCapabilities capabilities)) {
+            throw new ConfigSelectionException(
+                    "Peer " + peer + " expected CS capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
-        mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
+        mPeerAddresses.put(peer, macAddressToString(capabilities.getAddress()));
     }
 
     @Override
-    public boolean hasPeersToConfigure() {
-        return !mPeerAddresses.isEmpty();
+    public @NonNull Set<TechnologyConfig> selectLocalConfigs(
+            @NonNull Set<RangingDevice> peers
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedCsConfig();
+        return mSelectedConfig.getLocalConfigs(peers);
     }
 
     @Override
-    public @NonNull Pair<
-            ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
-    > selectConfigs() throws ConfigSelectionException {
-        SelectedCsConfig configs = new SelectedCsConfig();
-        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
+    public @NonNull Configuration selectRemoteConfig(
+            @NonNull RangingDevice peer
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedCsConfig();
+        return mSelectedConfig.getPeerConfig();
     }
 
     private class SelectedCsConfig {
@@ -126,10 +126,10 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
             mSecurityLevel = selectSecurityLevel();
         }
 
-        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
-            return mPeerAddresses.entrySet().stream()
-                    .map((entry) -> {
-                        String bleAddress = entry.getValue();
+        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
+            return peers.stream()
+                    .map((peer) -> {
+                        String bleAddress = mPeerAddresses.get(peer);
                         if ("user".equals(Build.TYPE)) {
                             bleAddress = FAKE_BLE_ADDRESS;
                         }
@@ -142,15 +142,16 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
                                                 BleCsRangingParams.SIGHT_TYPE_NON_LINE_OF_SIGHT)
                                         .build(),
                                 mSessionConfig,
-                                entry.getKey());
+                                peer);
                     })
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            CsOobConfig config = CsOobConfig.builder().build();
-            return mPeerAddresses.keySet().stream()
-                    .collect(ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));
+        public @NonNull Configuration getPeerConfig() {
+            return new BleCsConfiguration.Builder()
+                    .setSecurityLevel((byte) mSecurityLevel)
+                    .setAddress(macAddressToBytes(FAKE_BLE_ADDRESS))
+                    .build();
         }
     }
 

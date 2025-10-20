@@ -129,7 +129,6 @@ public class CapabilityParam {
     public static final int OBSERVER = 0X40;
     public static final int DT_ANCHOR = 0X80;
     public static final int DT_TAG = 0X01; // First bit of 2nd byte of Device Role
-    public static final int DATA_TRANSFER = 0x02;
 
     public static final int OWR_UL_TDOA = 0x01;
     public static final int SS_TWR_DEFERRED = 0x02;
@@ -140,6 +139,8 @@ public class CapabilityParam {
     public static final int OWR_AOA = 0x40;
     public static final int ESS_TWR_NON_DEFERRED = 0x80;
     public static final int ADS_TWR = 0x01; // First bit of 2nd byte of Ranging Method
+    public static final int DATA_TRANSFER = 0x02;
+    public static final int ALIRO_DS_TWR_DEFERRED = 0x08;
 
     public static final int STATIC_STS = 0x1;
     public static final int DYNAMIC_STS = 0x2;

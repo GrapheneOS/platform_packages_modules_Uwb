@@ -78,7 +78,7 @@ public abstract class RadarParams extends Params {
     @IntRange(from = -32768, to = 32767)
     public @interface SweepOffset {}
 
-    public static final int SWEEP_OFFSET_DEFAULT = 0;
+    public static final int SWEEP_OFFSET_DEFAULT = 20;
 
     /** Preamble duration: Default is 128 symbols */
     @Retention(RetentionPolicy.SOURCE)

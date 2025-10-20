@@ -406,6 +406,9 @@ impl TryFrom<uwb_uci_packets::TestResponse> for UciResponse {
             TestResponseChild::TestSrRxRsp(evt) => {
                 Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
             }
+            TestResponseChild::TestSsTwrRsp(evt) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            }
             TestResponseChild::StopRfTestRsp(evt) => {
                 Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
             }

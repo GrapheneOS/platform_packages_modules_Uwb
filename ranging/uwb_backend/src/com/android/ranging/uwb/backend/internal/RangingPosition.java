@@ -16,6 +16,8 @@
 
 package com.android.ranging.uwb.backend.internal;
 
+import static android.uwb.RangingMeasurement.LOS_UNDETERMINED;
+
 import androidx.annotation.IntRange;
 import androidx.annotation.Nullable;
 
@@ -34,6 +36,8 @@ public class RangingPosition {
     private final long mElapsedRealtimeNanos;
     private final int mRssi;
 
+    private final int mNlos;
+
     public RangingPosition(
             RangingMeasurement distance,
             @Nullable RangingMeasurement azimuth,
@@ -44,7 +48,8 @@ public class RangingPosition {
                 elevation,
                 null, // DlTdoaMeasurement
                 elapsedRealtimeNanos,
-                RSSI_UNKNOWN);
+                RSSI_UNKNOWN,
+                LOS_UNDETERMINED);
     }
 
     public RangingPosition(
@@ -53,13 +58,15 @@ public class RangingPosition {
             @Nullable RangingMeasurement elevation,
             @Nullable DlTdoaMeasurement dlTdoaMeasurement,
             long elapsedRealtimeNanos,
-            int rssi) {
+            int rssi,
+            int nLos) {
         this.mDistance = distance;
         this.mAzimuth = azimuth;
         this.mElevation = elevation;
         this.mDlTdoaMeasurement = dlTdoaMeasurement;
         this.mElapsedRealtimeNanos = elapsedRealtimeNanos;
         this.mRssi = rssi;
+        this.mNlos = nLos;
     }
 
     /** Gets the distance in meters of the ranging device, or null if not available. */
@@ -102,6 +109,10 @@ public class RangingPosition {
         return mDlTdoaMeasurement;
     }
 
+    public int getNlos() {
+        return mNlos;
+    }
+
     @Override
     public String toString() {
         String formatted =
@@ -120,6 +131,7 @@ public class RangingPosition {
         if (mDlTdoaMeasurement != null) {
             formatted += String.format(Locale.US, " | dlTdoa: %s", mDlTdoaMeasurement);
         }
+        formatted += String.format(Locale.US, " | nLos: %d", mNlos);
         return formatted;
     }
 }

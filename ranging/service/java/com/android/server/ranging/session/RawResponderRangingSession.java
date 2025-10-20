@@ -16,8 +16,11 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -26,11 +29,14 @@ import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
-import com.android.server.ranging.RangingUtils;
+import com.android.server.ranging.common.ConfigurationUtils;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import java.util.Set;
+import java.util.Collections;
 
 public class RawResponderRangingSession extends BaseRangingSession implements RangingSession {
     private static final String TAG = RawResponderRangingSession.class.getSimpleName();
@@ -39,7 +45,7 @@ public class RawResponderRangingSession extends BaseRangingSession implements Ra
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
@@ -55,7 +61,11 @@ public class RawResponderRangingSession extends BaseRangingSession implements Ra
             return;
         }
 
-        super.start(mSessionConfig.getTechnologyConfigs(Set.of(config.getRawRangingDevice())));
+        ImmutableSet<TechnologyConfig> configs = ConfigurationUtils.groupByTechnology(
+                Collections.singleton(config.getRawRangingDevice()), mSessionConfig,
+                DEVICE_ROLE_RESPONDER);
+
+        super.start(configs);
     }
 
     @Override

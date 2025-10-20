@@ -25,6 +25,7 @@ import android.content.Context;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
@@ -32,6 +33,7 @@ import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.uwb.UwbSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -48,11 +50,11 @@ import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.util.DataNotificationManager;
+import com.android.server.ranging.common.DataNotificationManager;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
@@ -139,7 +141,7 @@ public class UwbAdapter implements RangingAdapter {
 
     @Override
     public void start(
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @android.annotation.Nullable AttributionSource nonPrivilegedAttributionSource,
             @NonNull Callback callbacks
     ) {
@@ -317,6 +319,13 @@ public class UwbAdapter implements RangingAdapter {
             if (position.getRssiDbm() != RangingPosition.RSSI_UNKNOWN) {
                 dataBuilder.setRssi(position.getRssiDbm());
             }
+            dataBuilder.setRangingDataExtras(
+                    new RangingDataExtras.Builder().setUwbSpecificData(
+                            new UwbSpecificData.Builder()
+                                    .setNonLineOfSight(position.getNlos())
+                                    .build()
+                    ).build()
+            );
 
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {

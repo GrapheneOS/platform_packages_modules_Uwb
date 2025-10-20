@@ -29,6 +29,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.OobData;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
@@ -37,6 +38,7 @@ import android.content.IntentFilter;
 import android.os.ParcelUuid;
 import android.util.Log;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
@@ -96,12 +98,13 @@ public final class BluetoothGattMultiDevicesClient {
                     }
                 };
         scanner.startScan(
-            null,
-            new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .setLegacy(false)
-                .build(),
-            callback);
+                List.of(new ScanFilter.Builder().setServiceUuid(
+                        new ParcelUuid(UUID.fromString(uuid))).build()),
+                new ScanSettings.Builder()
+                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                        .setLegacy(false)
+                        .build(),
+                callback);
         boolean timeout = false;
         try {
             timeout = !serverFoundBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);

@@ -65,6 +65,8 @@ public class RfTestEncoderTest {
                     .setPreambleDuration(0)
                     .setPrfMode(FiraParams.PRF_MODE_HPRF)
                     .setStsSegmentCount(1)
+                    .setSecureRangingNefaLevel(1)
+                    .setSecureRangingCswLength(FiraParams.SECURE_RANGING_CSW_LENGTH_DEFAULT)
                     .setNumberOfPackets(1000)
                     .setTgap(2000)
                     .setTstart(450)
@@ -76,7 +78,7 @@ public class RfTestEncoderTest {
                     .setStsIndexAutoIncr(0)
                     .setStsDetectBitmap(0);
 
-    private static final int TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_NUMBER = 15;
+    private static final int TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_NUMBER = 17;
     private static final int TEST_RFTEST_PARAMS_TLV_NUMBER = 10;
 
     private static final String CHANNEL_NUMBER_TLV = "040105";
@@ -94,6 +96,8 @@ public class RfTestEncoderTest {
     private static final String PRF_MODE_TLV = "1F0101";
     private static final String NUMBER_OF_STS_SEGMENTS_TLV = "290101";
     private static final String DEST_MAC_ADDRESS_TLV = "07020406";
+    private static final String SECURE_RANGING_NEFA_LEVEL_TLV = "4A0101";
+    private static final String SECURE_RANGING_CSW_LENGTH_TLV = "4B0104";
 
     private static final byte[] TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_DATA =
             UwbUtil.getByteArray(CHANNEL_NUMBER_TLV
@@ -110,6 +114,8 @@ public class RfTestEncoderTest {
                     + PREAMBLE_DURATION_TLV
                     + PRF_MODE_TLV
                     + NUMBER_OF_STS_SEGMENTS_TLV
+                    + SECURE_RANGING_NEFA_LEVEL_TLV
+                    + SECURE_RANGING_CSW_LENGTH_TLV
                     + DEST_MAC_ADDRESS_TLV);
 
     private static final String NUM_PACKETS = "000764000000280010";

@@ -18,43 +18,46 @@ package com.android.server.ranging.blerssi;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
-import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.blerssi.BleRssiConfig.BLE_RSSI_UPDATE_RATE_DURATIONS;
+import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
+import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 
-import android.os.Build;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.server.ranging.RangingEngine;
-import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.oob.packets.BleRssiCapabilities;
+import com.android.server.ranging.oob.packets.BleRssiConfiguration;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.function.Function;
+import java.util.Set;
 
-public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
-    private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
+public class BleRssiConfigSelector extends ConfigurationManager.ConfigSelector {
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final String mLocalAddress;
     private final BiMap<RangingDevice, String> mPeerAddresses;
 
-    private static boolean isCapableOfConfig(
+    private @Nullable SelectedBleRssiConfig mSelectedConfig = null;
+
+    public static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig, BleRssiRangingCapabilities capabilities
     ) {
         if (capabilities == null) return false;
@@ -66,42 +69,41 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable BleRssiRangingCapabilities capabilities
-    ) throws ConfigSelectionException {
-        if (!isCapableOfConfig(oobConfig, capabilities)) {
-            throw new ConfigSelectionException(
-                    "Local device is incapable of provided BLE RSSI config",
-                    InternalReason.UNSUPPORTED);
-        }
+    ) {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mLocalAddress = capabilities.getBluetoothAddress();
         mPeerAddresses = HashBiMap.create();
     }
 
+    @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        BleRssiOobCapabilities capabilities = response.getBleRssiCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException("Peer " + peer + " does not support BLE RSSI",
+        if (!(baseCapabilities instanceof BleRssiCapabilities capabilities)) {
+            throw new ConfigSelectionException(
+                    "Peer " + peer + " expected BLE RSSI capabilities " + "but got "
+                            + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
-        mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
+        mPeerAddresses.put(peer, macAddressToString(capabilities.getAddress()));
     }
 
     @Override
-    public boolean hasPeersToConfigure() {
-        return !mPeerAddresses.isEmpty();
+    public @NonNull Set<TechnologyConfig> selectLocalConfigs(
+            @NonNull Set<RangingDevice> peers
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedBleRssiConfig();
+        return mSelectedConfig.getLocalConfigs(peers);
     }
 
     @Override
-    public @NonNull Pair<
-            ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
-    > selectConfigs() throws ConfigSelectionException {
-        SelectedBleRssiConfig configs = new SelectedBleRssiConfig();
-        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
+    public @NonNull Configuration selectRemoteConfig(
+            @NonNull RangingDevice peer
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedBleRssiConfig();
+        return mSelectedConfig.getPeerConfig();
     }
 
     private class SelectedBleRssiConfig {
@@ -111,30 +113,25 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
             mRangingUpdateRate = selectRangingUpdateRate();
         }
 
-        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
-            return mPeerAddresses.entrySet().stream()
-                    .map((entry) -> {
-                        String address = entry.getValue();
-                        if ("user".equals(Build.TYPE)) {
-                            address = FAKE_BLE_ADDRESS;
-                        }
+        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
+            return peers.stream()
+                    .map((peer) -> {
+                        String address = mPeerAddresses.get(peer);
                         return new BleRssiConfig(
                                 DEVICE_ROLE_INITIATOR,
-                                new BleRssiRangingParams.Builder(address)
+                                new BleRssiRangingParams.Builder(privateAddressIfUserBuild(address))
                                         .setRangingUpdateRate(mRangingUpdateRate)
                                         .build(),
                                 mSessionConfig,
-                                entry.getKey());
+                                peer);
                     })
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            BleRssiOobConfig config = BleRssiOobConfig.builder()
-                    .setBluetoothAddress(mLocalAddress)
+        public @NonNull Configuration getPeerConfig() {
+            return new BleRssiConfiguration.Builder()
+                    .setAddress(macAddressToBytes(mLocalAddress))
                     .build();
-            return mPeerAddresses.keySet().stream().collect(
-                    ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));
         }
     }
 

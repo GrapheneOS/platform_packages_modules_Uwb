@@ -24,10 +24,12 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
+import android.ranging.wifi.rtt.WifiRttSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -42,11 +44,11 @@ import com.android.ranging.rtt.backend.RttServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
-import com.android.server.ranging.session.RangingSessionConfig;
-import com.android.server.ranging.util.DataNotificationManager;
+import com.android.server.ranging.common.DataNotificationManager;
+import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
@@ -155,7 +157,7 @@ public class RttAdapter implements RangingAdapter {
 
     @Override
     public void start(
-            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @NonNull ConfigurationManager.TechnologyConfig config,
             @Nullable AttributionSource nonPrivilegedAttributionSource,
             @NonNull Callback callbacks
     ) {
@@ -282,6 +284,17 @@ public class RttAdapter implements RangingAdapter {
                         .setMeasurement(position.getElevation().getValue())
                         .build());
             }
+            dataBuilder.setRangingDataExtras(new RangingDataExtras.Builder()
+                    .setRttSpecificData(new WifiRttSpecificData.Builder()
+                            .setNumSuccessfulMeasurements(position.getNumSuccessfulMeasurements())
+                            .setNumAttemptedMeasurements(position.getNumAttemptedMeasurements())
+                            .setMeasurementBandwidth((int) position.getMeasurementBandwidth())
+                            .setMeasurementChannelFrequencyMHz(
+                                    position.getMeasurementChannelFrequencyMHz())
+                            .setLci(position.getLci())
+                            .setDistanceStandardDeviationMeters(position.getDistanceStdDevMeters())
+                            .build())
+                    .build());
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
                     mCallbacks.onRangingData(mPeerDevice, dataBuilder.build());

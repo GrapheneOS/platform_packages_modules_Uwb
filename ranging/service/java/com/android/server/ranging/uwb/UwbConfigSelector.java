@@ -32,6 +32,8 @@ import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS
 import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 
+import static com.android.server.ranging.common.RangingUtils.bitset;
+
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
@@ -41,8 +43,6 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
-import android.util.Log;
-import android.util.Pair;
 import android.util.Range;
 
 import androidx.annotation.NonNull;
@@ -50,31 +50,34 @@ import androidx.annotation.Nullable;
 
 import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
-import com.android.server.ranging.RangingEngine;
-import com.android.server.ranging.RangingEngine.ConfigSelectionException;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.UwbCapabilities;
+import com.android.server.ranging.oob.packets.UwbConfiguration;
+import com.android.server.ranging.oob.packets.UwbDeviceMode;
+import com.android.server.ranging.oob.packets.UwbDeviceRole;
+import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Selects a {@link UwbConfig} from local and peer device capabilities */
-public class UwbConfigSelector implements RangingEngine.ConfigSelector {
+public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
     private static final String TAG = UwbConfigSelector.class.getSimpleName();
 
     private static final Set<@UwbComplexChannel.UwbPreambleCodeIndex Integer> HPRF_INDEXES =
@@ -84,7 +87,6 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
 
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
-    private final SessionHandle mSessionHandle;
     private final BiMap<RangingDevice, UwbAddress> mPeerAddresses;
 
     private final Set<@UwbRangingParams.ConfigId Integer> mConfigIds;
@@ -94,7 +96,9 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
     private long mMinRangingIntervalMs;
     private final String mCountryCode;
 
-    private static boolean isCapableOfConfig(
+    private @Nullable SelectedUwbConfig mSelectedConfig = null;
+
+    public static boolean isCapableOfConfig(
             @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable UwbRangingCapabilities capabilities
     ) {
@@ -136,18 +140,11 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull OobInitiatorRangingConfig oobConfig,
             @NonNull SessionHandle sessionHandle,
             @Nullable UwbRangingCapabilities capabilities
-    ) throws ConfigSelectionException {
-        if (!isCapableOfConfig(sessionConfig, oobConfig, capabilities)) {
-            throw new ConfigSelectionException("Local device is incapable of provided UWB config",
-                    InternalReason.UNSUPPORTED);
-        }
-
+    ) {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
-        mSessionHandle = sessionHandle;
         mPeerAddresses = HashBiMap.create();
         mConfigIds = new HashSet<>(capabilities.getSupportedConfigIds());
-        Log.v(TAG, "Locally supported channels: " + capabilities.getSupportedChannels());
         mChannels = new HashSet<>(capabilities.getSupportedChannels());
         mPreambleIndexes = new HashSet<>(capabilities.getSupportedPreambleIndexes());
         mMinSlotDurationMs = Collections.min(capabilities.getSupportedSlotDurations());
@@ -161,73 +158,73 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
      */
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        UwbOobCapabilities capabilities = response.getUwbCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException("Peer " + peer + " does not support UWB",
+        if (!(baseCapabilities instanceof UwbCapabilities capabilities)) {
+            throw new ConfigSelectionException(
+                    "Peer " + peer + " expected UWB capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
-        if (!capabilities.getSupportedDeviceRole().contains(UwbOobConfig.OobDeviceRole.INITIATOR)) {
-            throw new ConfigSelectionException("Peer does not support initiator role",
+        if ((capabilities.getRoles() & UwbDeviceRole.Initiator.toByte()) != 1) {
+            throw new ConfigSelectionException(
+                    "Peer does not support initiator role",
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
-        mPeerAddresses.put(peer, capabilities.getUwbAddress());
-        mConfigIds.retainAll(capabilities.getSupportedConfigIds());
-        mChannels.retainAll(capabilities.getSupportedChannels());
-        Log.v(TAG, "Add peer with supported channels " + capabilities.getSupportedChannels()
-                + " set of selectable channels updated to " + mChannels);
-        mPreambleIndexes.retainAll(capabilities.getSupportedPreambleIndexes());
+        // If we've already selected a config, invalidate it
+        mSelectedConfig = null;
+
+        mPeerAddresses.put(peer, UwbAddress.fromBytes(capabilities.getAddress()));
+        mConfigIds.retainAll(bitset(capabilities.getConfigIds()));
+        mChannels.retainAll(bitset(capabilities.getChannels()));
+        mPreambleIndexes.retainAll(bitset(capabilities.getPreambleIndexes(), i -> i + 1));
         mMinSlotDurationMs = Math.max(
-                mMinSlotDurationMs, capabilities.getMinimumSlotDurationMs());
+                mMinSlotDurationMs, Byte.toUnsignedInt(capabilities.getMinSlotDuration()));
         mMinRangingIntervalMs = Math.max(
-                mMinRangingIntervalMs, capabilities.getMinimumRangingIntervalMs());
+                mMinRangingIntervalMs, Short.toUnsignedLong(capabilities.getMinInterval()));
     }
 
     @Override
-    public boolean hasPeersToConfigure() {
-        return !mPeerAddresses.isEmpty();
+    public @NonNull Set<TechnologyConfig> selectLocalConfigs(
+            @NonNull Set<RangingDevice> peers
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig();
+        return mSelectedConfig.getLocalConfigs(peers);
     }
 
     @Override
-    public @NonNull Pair<
-            ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
-    > selectConfigs() throws ConfigSelectionException {
-        SelectedUwbConfig configs = new SelectedUwbConfig();
-        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
+    public @NonNull Configuration selectRemoteConfig(
+            @NonNull RangingDevice peer
+    ) throws ConfigSelectionException {
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig();
+        return mSelectedConfig.getPeerConfig(peer);
     }
 
     private class SelectedUwbConfig {
-        private final int mSessionId;
         private final UwbAddress mLocalAddress;
         private final @UwbRangingParams.ConfigId int mConfigId;
         private final @UwbComplexChannel.UwbChannel int mChannel;
         private final @UwbComplexChannel.UwbPreambleCodeIndex int mPreambleIndex;
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
-        private final byte[] mSessionKeyInfo;
 
         SelectedUwbConfig() throws ConfigSelectionException {
-            mSessionId = mSessionHandle.hashCode();
             mLocalAddress = UwbAddress.createRandomShortAddress();
             mConfigId = selectConfigId();
             mChannel = selectChannel();
             mPreambleIndex = selectPreambleIndex();
             mRangingUpdateRate = selectRangingUpdateRate();
-            mSessionKeyInfo = selectSessionKeyInfo();
         }
 
         // For now, each GRAPI responder will be a UWB initiator for a unicast session. In the
         // future we can look into combining these into a single multicast session somehow.
 
-        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
-            return mPeerAddresses.keySet().stream().map(
-                    (device) -> new UwbConfig.Builder(
+        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
+            return peers.stream().map(
+                    peer -> new UwbConfig.Builder(
                             new UwbRangingParams.Builder(
-                                    mSessionId, mConfigId, mLocalAddress,
-                                    mPeerAddresses.get(device))
-                                    .setSessionKeyInfo(mSessionKeyInfo)
+                                    peer.hashCode(), mConfigId, mLocalAddress,
+                                    mPeerAddresses.get(peer))
+                                    .setSessionKeyInfo(selectSessionKeyInfo(peer))
                                     .setComplexChannel(new UwbComplexChannel.Builder()
                                             .setChannel(mChannel)
                                             .setPreambleIndex(mPreambleIndex)
@@ -237,29 +234,26 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
                                     .build())
                             .setSessionConfig(mSessionConfig)
                             .setDeviceRole(DEVICE_ROLE_RESPONDER)
-                            .setPeerAddresses(ImmutableBiMap.of(device, mPeerAddresses.get(device)))
+                            .setPeerAddresses(ImmutableBiMap.of(peer, mPeerAddresses.get(peer)))
                             .build())
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            UwbOobConfig config = UwbOobConfig.builder()
-                    .setUwbAddress(mLocalAddress)
-                    .setSessionId(mSessionId)
-                    .setSelectedConfigId(mConfigId)
-                    .setSelectedChannel(mChannel)
-                    .setSelectedPreambleIndex(mPreambleIndex)
-                    .setSelectedRangingIntervalMs(Utils.getRangingTimingParams((int) mConfigId)
+        public @NonNull Configuration getPeerConfig(RangingDevice peer) {
+            return new UwbConfiguration.Builder()
+                    .setAddress(mLocalAddress.getAddressBytes())
+                    .setSessionId(peer.hashCode())
+                    .setConfigId((byte) mConfigId)
+                    .setChannel((byte) mChannel)
+                    .setPreambleIndex((byte) mPreambleIndex)
+                    .setInterval((short) Utils.getRangingTimingParams((int) mConfigId)
                             .getRangingInterval((int) mRangingUpdateRate))
-                    .setSelectedSlotDurationMs(mMinSlotDurationMs)
-                    .setSessionKey(mSessionKeyInfo)
-                    .setCountryCode(mCountryCode)
-                    .setDeviceRole(UwbOobConfig.OobDeviceRole.INITIATOR)
-                    .setDeviceMode(UwbOobConfig.OobDeviceMode.CONTROLLER)
+                    .setSlotDuration((byte) mMinSlotDurationMs)
+                    .setSessionKey(selectSessionKeyInfo(peer))
+                    .setCountryCode(mCountryCode.getBytes(StandardCharsets.US_ASCII))
+                    .setDeviceRole(UwbDeviceRole.Initiator)
+                    .setDeviceMode(UwbDeviceMode.Controller)
                     .build();
-
-            return mPeerAddresses.keySet().stream()
-                    .collect(ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));
         }
     }
 
@@ -280,14 +274,14 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
                 InternalReason.PEER_CAPABILITIES_MISMATCH);
     }
 
-    private byte[] selectSessionKeyInfo() {
+    private byte[] selectSessionKeyInfo(RangingDevice peer) {
         byte[] sessionKeyInfo;
         if (mOobConfig.getSecurityLevel() == SECURITY_LEVEL_BASIC) {
             sessionKeyInfo = new byte[8];
         } else {
             sessionKeyInfo = new byte[16];
         }
-        new Random().nextBytes(sessionKeyInfo);
+        new Random(peer.hashCode()).nextBytes(sessionKeyInfo);
         return sessionKeyInfo;
     }
 

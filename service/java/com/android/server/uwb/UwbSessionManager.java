@@ -18,13 +18,13 @@ package com.android.server.uwb;
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
 import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
-import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_PDU_SIZE;
-import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_TRANSMIT_WINDOW_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_PORT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_RECEIVE_WINDOW_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_REPEAT_COUNT_MAX;
-import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
-import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_PORT;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_TRANSMIT_WINDOW_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.DEVICE_TYPE_CONTROLLER;
 import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
@@ -135,6 +135,7 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
+import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestSessionStatus;
 import com.google.uwb.support.rftest.RfTestStartSessionParams;
@@ -163,6 +164,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class UwbSessionManager implements INativeUwbManager.SessionNotification,
@@ -678,6 +680,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 uwbSession, reasonCode);
                         mUwbMetrics.longRangingStopEvent(uwbSession);
                     }
+                    uwbSession.getApiState().set(UwbSession.State.STOPPED);
                 } else if (prevState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                     //mSessionNotificationManager.onRangingReconfigureFailed(
                     //      uwbSession, reasonCode);
@@ -886,6 +889,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.i(TAG, "Max Fira Sessions Exceeded");
             maxSessionsExceeded = !tryMakeSpaceForFiraSession(
                     uwbSession.getStackSessionPriority());
+        } else if (protocolName.equals(RadarParams.PROTOCOL_NAME)
+                && getSessionCount() != 0) {
+            Log.i(TAG, "Radar session is not allow when other sessions are in progress");
+            maxSessionsExceeded = true;
         }
 
         if (!maxSessionsExceeded && getSessionCount() >= getMaxSupportedSessionCount(chipId)) {
@@ -917,10 +924,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
+        if (!protocolName.equals(RadarParams.PROTOCOL_NAME)) {
+            deInitRadarSessions();
+        }
+
         mSessionTable.put(sessionHandle, uwbSession);
         addToNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
         mEventTask.execute(SESSION_OPEN_RANGING, uwbSession);
         return;
+    }
+
+    private void deInitRadarSessions() {
+        for (SessionHandle sessionHandle : mSessionTable.keySet()) {
+            if (mSessionTable.get(sessionHandle).mProtocolName.equals(RadarParams.PROTOCOL_NAME)) {
+                deInitSession(sessionHandle);
+            }
+        }
     }
 
     private boolean tryMakeSpaceForFiraSession(int priorityThreshold) {
@@ -953,8 +972,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        int sessionId = getSessionId(sessionHandle);
-        Log.i(TAG, "deinitSession() - sessionId: " + sessionId
+        UwbSession uwbSession = getUwbSession(sessionHandle);
+
+        if (uwbSession.getApiState()
+                .getAndSet(UwbSession.State.CLOSING) == UwbSession.State.CLOSING) {
+            Log.i(TAG, "Ignored deinitSession() - sessionHandle: "
+                    + sessionHandle + ", already closing");
+            return;
+        }
+        Log.i(TAG, "deinitSession() - sessionId: " + uwbSession.getSessionId()
                 + ", sessionHandle: " + sessionHandle);
         mEventTask.execute(SESSION_DEINIT, sessionHandle, STATUS_CODE_OK);
         return;
@@ -1139,10 +1165,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         int sessionId = getSessionId(sessionHandle);
+        UwbSession uwbSession = getUwbSession(sessionId);
+
+        if (uwbSession.getApiState()
+                .getAndSet(UwbSession.State.STOPPING) == UwbSession.State.STOPPING) {
+            Log.i(TAG, "Ignored stopRanging() - sessionHandle: "
+                    + sessionHandle + ", already stopping");
+            return;
+        }
         Log.i(TAG, "stopRanging() - sessionId: " + sessionId
                 + ", sessionHandle: " + sessionHandle);
 
-        UwbSession uwbSession = getUwbSession(sessionId);
         int currentSessionState = getCurrentSessionState(sessionId);
 
         //RF Test session
@@ -1150,6 +1183,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (sessionId != RfTestParams.SESSION_ID_RFTEST) {
                 mSessionNotificationManager.onRangingStopped(uwbSession,
                         UwbUciConstants.STATUS_CODE_REJECTED);
+                uwbSession.getApiState().set(UwbSession.State.STOPPED);
             }
 
             if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
@@ -1158,6 +1192,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 mSessionNotificationManager.onRangingStopped(uwbSession,
                         UwbUciConstants.STATUS_CODE_REJECTED);
                 Log.i(TAG, "RF session is not in ACTIVE state");
+                uwbSession.getApiState().set(UwbSession.State.STOPPED);
             }
             return;
         }
@@ -1168,10 +1203,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.i(TAG, "session is already idle state");
             mSessionNotificationManager.onRangingStopped(uwbSession,
                     UwbUciConstants.STATUS_CODE_OK);
+            uwbSession.getApiState().set(UwbSession.State.STOPPED);
             mUwbMetrics.longRangingStopEvent(uwbSession);
         } else {
             mSessionNotificationManager.onRangingStopFailed(uwbSession,
                     UwbUciConstants.STATUS_CODE_REJECTED);
+            uwbSession.getApiState().set(UwbSession.State.ACTIVE);
             Log.i(TAG, "Not active session ID");
         }
     }
@@ -2555,9 +2592,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 if (uwbSession.getSessionState()
                                         == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                                     handleStopRangingParams(uwbSession, true /*systemPolicy*/);
+                                    uwbSession.getApiState().set(UwbSession.State.STOPPED);
                                     return UwbUciConstants.STATUS_CODE_OK;
                                 }
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
+                                uwbSession.getApiState().set(UwbSession.State.ACTIVE);
                                 return status;
                             }
                             uwbSession.getWaitObj().blockingWait();
@@ -2568,6 +2607,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession,
                                         status);
+                                uwbSession.getApiState().set(UwbSession.State.ACTIVE);
                             }
                         }
                         return status;
@@ -2587,6 +2627,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
                 mSessionNotificationManager.onRangingStopFailed(
                         uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
+                uwbSession.getApiState().set(UwbSession.State.ACTIVE);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -3457,6 +3498,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         @GuardedBy("mControlees")
         private final Set<UwbAddress> mControleesPendingDisconnection;
 
+        public enum State {
+            ACTIVE,
+            STOPPING,
+            STOPPED,
+            CLOSING,
+        }
+
+        public final AtomicReference<State> mApiState;
+
         // Keep track of RF Test start session params
         private RfTestStartSessionParams mRfTestStartSessionParams = null;
 
@@ -3483,6 +3533,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mStackSessionPriority = calculateSessionPriority();
             this.mControlees = new ConcurrentHashMap<>();
             this.mControleesPendingDisconnection = Sets.newConcurrentHashSet();
+            this.mApiState = new AtomicReference(State.ACTIVE);
 
             if (params instanceof FiraOpenSessionParams) {
                 FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
@@ -3898,6 +3949,61 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
+         * Get the effective minimum between the "minUwbInitiationTimeMs"
+         * (which can be specified by hardware in their "capabilities" using
+         * a custom Android cap) and the "initiationTimeMs" which can be
+         * specified by an application using UWB.
+         *
+         * If there was a superclass for some of these classes this would
+         * be trivial, but instead we've got cascading if-then-else statements.
+         */
+        private long getEffectiveInitiationTimeMs(@Nullable Params params) {
+            long minUwbInitiationTimeMs = 0;
+            long initiationTimeMs = 0;
+
+            if (params instanceof FiraOpenSessionParams) {
+                initiationTimeMs = ((FiraOpenSessionParams) params).getInitiationTime();
+            } else if (params instanceof CccOpenRangingParams) {
+                initiationTimeMs = ((CccOpenRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof CccStartRangingParams) {
+                initiationTimeMs = ((CccStartRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof AliroOpenRangingParams) {
+                initiationTimeMs = ((AliroOpenRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof AliroStartRangingParams) {
+                initiationTimeMs = ((AliroStartRangingParams) params).getInitiationTimeMs();
+            }
+
+            GenericSpecificationParams specParams =
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mChipId);
+            if (specParams != null) {
+                if ((params instanceof CccOpenRangingParams)
+                        || (params instanceof CccStartRangingParams)) {
+                    CccSpecificationParams cccSpecParams = specParams.getCccSpecificationParams();
+                    if (cccSpecParams != null) {
+                        minUwbInitiationTimeMs = cccSpecParams.getMinUwbInitiationTimeMs();
+                    }
+                } else if ((params instanceof AliroOpenRangingParams)
+                        || (params instanceof AliroStartRangingParams)) {
+                    AliroSpecificationParams aliroSpecParams =
+                            specParams.getAliroSpecificationParams();
+                    // For Aliro, TimeSync is optional so we only apply the
+                    // minimum if `initiationTimeMs` was non-zero.
+                    if (aliroSpecParams != null && initiationTimeMs != 0) {
+                        minUwbInitiationTimeMs = aliroSpecParams.getMinUwbInitiationTimeMs();
+                    }
+                }
+            }
+
+            if (initiationTimeMs < minUwbInitiationTimeMs) {
+                Log.d(TAG, String.format("Initiation time increased from %d to %d",
+                                         initiationTimeMs, minUwbInitiationTimeMs));
+                return minUwbInitiationTimeMs;
+            }
+
+            return initiationTimeMs;
+        }
+
+        /**
          * Sets {@code mNeedsQueryUwbsTimestamp} to {@code true}, if the UWBS Timestamp needs to be
          * fetched from the UWBS controller (for computing an absolute UWB initiation time).
          */
@@ -3908,7 +4014,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (getUwbsFiraProtocolVersion(mChipId).getMajor() >= 2) {
                 if (mParams instanceof FiraOpenSessionParams) {
                     FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
-                    if (firaOpenSessionParams.getInitiationTime() != 0
+                    if (getEffectiveInitiationTimeMs(firaOpenSessionParams) != 0
                             && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
                         this.mNeedsQueryUwbsTimestamp = true;
                     }
@@ -3921,13 +4027,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 && startRangingParams instanceof CccStartRangingParams) {
                         CccStartRangingParams cccStartRangingParams =
                                 (CccStartRangingParams) startRangingParams;
-                        if (cccStartRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(cccStartRangingParams) != 0
                                 && cccStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
                     } else {
                         CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
-                        if (cccOpenRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(cccOpenRangingParams) != 0
                                 && cccOpenRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
@@ -3941,14 +4047,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 && startRangingParams instanceof AliroStartRangingParams) {
                         AliroStartRangingParams aliroStartRangingParams =
                                 (AliroStartRangingParams) startRangingParams;
-                        if (aliroStartRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(aliroStartRangingParams) != 0
                                 && aliroStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
                     } else {
                         AliroOpenRangingParams aliroOpenRangingParams =
                                 (AliroOpenRangingParams) mParams;
-                        if (aliroOpenRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(aliroOpenRangingParams) != 0
                                 && aliroOpenRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
@@ -4001,20 +4107,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
                     this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
                             .setAbsoluteInitiationTime(uwbsTimestamp
-                                    + (firaOpenSessionParams.getInitiationTime() * 1000))
+                                    + (getEffectiveInitiationTimeMs(firaOpenSessionParams) * 1000))
                             .build();
                 } else if (mParams instanceof CccOpenRangingParams) {
                     CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
                     this.mParams = ((CccOpenRangingParams) mParams).toBuilder()
                             .setAbsoluteInitiationTimeUs(uwbsTimestamp
-                                    + (cccOpenRangingParams.getInitiationTimeMs() * 1000))
+                                    + (getEffectiveInitiationTimeMs(cccOpenRangingParams) * 1000))
                             .build();
                 } else if (mParams instanceof AliroOpenRangingParams) {
                     AliroOpenRangingParams aliroOpenRangingParams =
                             (AliroOpenRangingParams) mParams;
                     this.mParams = ((AliroOpenRangingParams) mParams).toBuilder()
                             .setAbsoluteInitiationTimeUs(uwbsTimestamp
-                                    + (aliroOpenRangingParams.getInitiationTimeMs() * 1000))
+                                    + (getEffectiveInitiationTimeMs(aliroOpenRangingParams) * 1000))
                             .build();
                 }
                 this.mNeedsAppConfigUpdate = true;
@@ -4447,6 +4553,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         public void setLastSessionStatusNtfReasonCode(int lastSessionStatusNtfReasonCode) {
             mLastSessionStatusNtfReasonCode = lastSessionStatusNtfReasonCode;
+        }
+
+        /**
+         * Get the state of the session as publicly visible from the API.
+         * For example, if stop() has been called but onStopped() callback has not yet been sent,
+         * this state will be `STOPPING`.
+         */
+        public AtomicReference<State> getApiState() {
+            return mApiState;
         }
 
         /** Creates a filter engine based on the device configuration. */

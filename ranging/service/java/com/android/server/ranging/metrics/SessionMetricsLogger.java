@@ -25,8 +25,8 @@ import android.ranging.SessionHandle;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.common.StateMachine;
 
 public class SessionMetricsLogger {
     private final SessionHandle mSessionHandle;

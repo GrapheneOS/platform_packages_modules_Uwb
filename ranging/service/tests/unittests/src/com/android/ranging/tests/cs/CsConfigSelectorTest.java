@@ -22,31 +22,29 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
-import android.util.Pair;
 import android.util.Range;
 
-import com.android.server.ranging.RangingEngine.ConfigSelectionException;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.cs.CsOobCapabilities;
-import com.android.server.ranging.cs.CsOobConfig;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleCsConfiguration;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.UnknownCapabilities;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 
@@ -57,18 +55,21 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Duration;
+import java.util.Set;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CsConfigSelectorTest {
 
     private CsConfigSelector mSelector;
 
+    private final String mPeerAddress = "AC:37:43:BC:A9:28";
+
     private @Mock SessionConfig mMockSessionConfig;
     private @Mock OobInitiatorRangingConfig mMockOobConfig;
     private @Mock BleCsRangingCapabilities mMockCapabilities;
-    private @Mock CsOobCapabilities mMockOobCapabilities;
-    private @Mock CapabilityResponseMessage mMockCapabilityResponse;
     private @Mock RangingDevice mMockPeerDevice;
+
+    private BleCsCapabilities mPeerCapabilities;
 
     @Before
     public void setup() {
@@ -79,8 +80,9 @@ public class CsConfigSelectorTest {
                         CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL),
                         CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL)));
 
-        when(mMockCapabilityResponse.getCsCapabilities()).thenReturn(mMockOobCapabilities);
-        when(mMockOobCapabilities.getBluetoothAddress()).thenReturn("AC:37:43:BC:A9:28");
+        mPeerCapabilities = new BleCsCapabilities.Builder()
+                .setAddress(macAddressToBytes(mPeerAddress))
+                .build();
     }
 
     @Test
@@ -88,41 +90,30 @@ public class CsConfigSelectorTest {
         new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
     }
 
-    @Test(expected = ConfigSelectionException.class)
-    public void constructorFails_whenIncapableOfConfiguredSecurityLevel()
-            throws ConfigSelectionException {
-
+    @Test
+    public void isCapableOfConfig_returnsFalseWhenIncapableOfConfiguredSecurityLevel() {
         when(mMockCapabilities.getSupportedSecurityLevels()).thenReturn(ImmutableSet.of());
-        new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-    }
-
-    @Test(expected = ConfigSelectionException.class)
-    public void constructorFails_whenIncapableOfConfiguredRangingInterval()
-            throws ConfigSelectionException {
-
-        when(mMockOobConfig.getRangingIntervalRange())
-                .thenReturn(Range.create(Duration.ofMillis(333), Duration.ofMillis(334)));
-        new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+        assertFalse(CsConfigSelector.isCapableOfConfig(mMockOobConfig, mMockCapabilities));
     }
 
     @Test
-    public void addPeerCapabilities_addsPeerToConfigure() throws ConfigSelectionException {
-        mSelector = new CsConfigSelector(
-                mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-
-
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
-
-        assertTrue(mSelector.hasPeersToConfigure());
+    public void isCapableOfConfig_returnsFalseWhenIncapableOfConfiguredRangingInterval() {
+        when(mMockOobConfig.getRangingIntervalRange())
+                .thenReturn(Range.create(Duration.ofMillis(333), Duration.ofMillis(334)));
+        assertFalse(CsConfigSelector.isCapableOfConfig(mMockOobConfig, mMockCapabilities));
     }
 
     @Test(expected = ConfigSelectionException.class)
-    public void addPeerCapabilities_failsWhenCsCapabilitiesNull() throws ConfigSelectionException {
+    public void addPeerCapabilities_failsWhenCapabilitiesInvalid() throws ConfigSelectionException {
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        when(mMockCapabilityResponse.getCsCapabilities()).thenReturn(null);
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(
+                mMockPeerDevice,
+                new UnknownCapabilities.Builder()
+                        .setTechnology(Technology.BleCs)
+                        .setPayload(new byte[] {})
+                        .build());
     }
 
     @Test
@@ -130,24 +121,17 @@ public class CsConfigSelectorTest {
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
-                configs = mSelector.selectConfigs();
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        BleCsConfiguration remoteConfig = (BleCsConfiguration) mSelector
+                .selectRemoteConfig(mMockPeerDevice);
 
-        assertNotNull(configs);
-        assertNotNull(configs.first);
-        assertNotNull(configs.second);
-        assertFalse(configs.first.isEmpty());
-        assertFalse(configs.second.isEmpty());
-
-        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
-        assertEquals("AC:37:43:BC:A9:28", csConfig.getRangingParams().getPeerBluetoothAddress());
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
         assertEquals(UPDATE_RATE_NORMAL, csConfig.getRangingParams().getRangingUpdateRate());
         assertEquals(CS_SECURITY_LEVEL_ONE, csConfig.getRangingParams().getSecurityLevel());
 
-        CsOobConfig peerConfig = (CsOobConfig) configs.second.get(mMockPeerDevice);
-        assertNotNull(peerConfig);
+        assertNotNull(remoteConfig);
     }
 
     @Test
@@ -158,12 +142,11 @@ public class CsConfigSelectorTest {
                 .thenReturn(OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE);
 
         mSelector = new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
-                configs = mSelector.selectConfigs();
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
 
-        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
         assertEquals(CS_SECURITY_LEVEL_FOUR, csConfig.getRangingParams().getSecurityLevel());
     }
 
@@ -178,11 +161,10 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
-                configs = mSelector.selectConfigs();
-        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
 
         assertEquals(UPDATE_RATE_FREQUENT, csConfig.getRangingParams().getRangingUpdateRate());
     }
@@ -198,11 +180,10 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
-                configs = mSelector.selectConfigs();
-        CsConfig csConfig = (CsConfig) configs.first.iterator().next();
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
 
         assertEquals(UPDATE_RATE_INFREQUENT, csConfig.getRangingParams().getRangingUpdateRate());
     }

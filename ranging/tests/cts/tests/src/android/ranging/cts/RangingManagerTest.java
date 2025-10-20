@@ -56,7 +56,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
-import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.rtt.WifiRttManager;
@@ -225,10 +224,6 @@ public class RangingManagerTest {
             if (!wifiManager.isWifiEnabled()) {
                 wifiManager.setWifiEnabled(true);
             }
-
-            ConnectivityManager connectivityManager =
-                    mContext.getSystemService(ConnectivityManager.class);
-            assertNotNull("Connectivity Manager", connectivityManager);
 
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
@@ -1243,29 +1238,9 @@ public class RangingManagerTest {
 
         WifiRttManager mWifiRttManager = mContext.getSystemService(WifiRttManager.class);
         assertThat(mWifiRttManager).isNotNull();
-        RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
-                .setRangingDevice(new RangingDevice.Builder().build())
-                .setRttStationRangingParams(
-                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
-                                .setRangingUpdateRate(UPDATE_RATE_NORMAL)
-                                .build())
-                .build();
 
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
-                new RawInitiatorRangingConfig.Builder()
-                        .addRawRangingDevice(rawRangingDevice)
-                        .build())
-                .build();
-
-        RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
-                preference.getRangingParams();
-        assertThat(rawRangingDevice).isNotNull();
-        assertThat(rawRangingDevice.getRangingDevice()).isNotNull();
-
-        RttStationRangingParams params = rawRangingDevice.getRttStationRangingParams();
-        assertThat(params).isNotNull();
-        assertThat(params.getBssid()).isNotNull();
-        assertEquals(params.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
+        final RangingPreference preference =
+                createPreferenceAndTestRttRangingParams(null /* channelWidth */);
 
         RangingSessionCallback callback = new RangingSessionCallback();
         RangingSession rangingSession = mRangingManager.createRangingSession(
@@ -1289,32 +1264,51 @@ public class RangingManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
     public void testRttStationRangingParams() throws InterruptedException {
-        RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
+        createPreferenceAndTestRttRangingParams(0 /* channelWidth */);
+    }
+
+    private RangingPreference createPreferenceAndTestRttRangingParams(Integer channelWidth) {
+        final RttStationRangingParams.Builder paramsBuilder =
+                new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
+                    .setRangingUpdateRate(UPDATE_RATE_NORMAL);
+
+        if (channelWidth != null) {
+            paramsBuilder.setChannelWidth(channelWidth.intValue());
+        }
+
+        final RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
                 .setRangingDevice(new RangingDevice.Builder().build())
-                .setRttStationRangingParams(
-                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
-                                .setRangingUpdateRate(UPDATE_RATE_NORMAL)
-                                .setChannelWidth(0)
-                                .build())
+                .setRttStationRangingParams(paramsBuilder.build())
                 .build();
 
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+        final RangingPreference preference = new RangingPreference.Builder(
+                DEVICE_ROLE_INITIATOR,
                 new RawInitiatorRangingConfig.Builder()
-                        .addRawRangingDevice(rawRangingDevice)
-                        .build())
+                    .addRawRangingDevice(rawRangingDevice)
+                    .build())
                 .build();
 
-        RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
+        final RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
                 preference.getRangingParams();
-        assertThat(rawRangingDevice).isNotNull();
-        assertThat(rawRangingDevice.getRangingDevice()).isNotNull();
-        assertThat(rawRangingDevice.getRttStationRangingParams()).isNotNull();
+        final RawRangingDevice device = config.getRawRangingDevices().get(0);
+        assertNotNull(device);
+        assertNotNull(rawRangingDevice);
+        assertNotNull(rawRangingDevice.getRangingDevice());
 
-        RttStationRangingParams params = rawRangingDevice.getRttStationRangingParams();
-        assertThat(params).isNotNull();
-        assertThat(params.getBssid()).isNotNull();
+        final RttStationRangingParams params = rawRangingDevice.getRttStationRangingParams();
+        assertNotNull(params);
+        assertNotNull(params.getBssid());
         assertEquals(params.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
-        assertEquals(params.getChannelWidth(), 0);
+
+        // If channelWidth was provided, assert it.
+        if (channelWidth != null) {
+            assertEquals(params.getChannelWidth(), channelWidth.intValue());
+        }
+
+        // Compare the parameter set the same with the original one.
+        assertEquals(device.getRttStationRangingParams(), params);
+
+        return preference;
     }
 
     @Test

@@ -16,20 +16,15 @@
 
 package com.android.server.ranging.session;
 
-import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import android.content.AttributionSource;
-import android.ranging.RangingCapabilities;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
+import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
-import android.ranging.ble.cs.BleCsRangingCapabilities;
-import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
-import android.ranging.uwb.UwbAddress;
-import android.ranging.uwb.UwbRangingCapabilities;
-import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -37,24 +32,16 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
-import com.android.server.ranging.cs.CsOobCapabilities;
-import com.android.server.ranging.oob.CapabilityRequestMessage;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.MessageType;
+import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
-import com.android.server.ranging.oob.OobHeader;
-import com.android.server.ranging.oob.SetConfigurationMessage;
-import com.android.server.ranging.oob.StopRangingMessage;
-import com.android.server.ranging.rtt.RttOobCapabilities;
-import com.android.server.ranging.rtt.RttOobConfig;
-import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
-import com.android.server.ranging.uwb.UwbOobCapabilities;
-import com.android.server.ranging.uwb.UwbOobConfig;
+import com.android.server.ranging.oob.OobResponderProtocol;
+import com.android.server.ranging.oob.packets.CapabilitiesRequest;
+import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.OobMessage;
+import com.android.server.ranging.oob.packets.StopRequest;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
@@ -84,15 +71,15 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
     private OobHandle mPeer;
     private OobController.OobConnection mOobConnection;
+    private OobResponderProtocol mProtocol;
     private AtomicReference<ImmutableSet<TechnologyConfig>> mRestartingWithConfigs;
     private AtomicBoolean mKeepAliveFlag;
-    private UwbAddress mMyUwbAddress;
 
     public OobResponderRangingSession(
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull RangingSessionConfig config,
+            @NonNull SessionConfig config,
             @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
@@ -113,9 +100,9 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
         mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
         mOobConnection = mInjector.getOobController().createConnection(mPeer);
+        mProtocol = new OobResponderProtocol(mInjector);
         mRestartingWithConfigs = new AtomicReference<>(null);
         mKeepAliveFlag = new AtomicBoolean(true);
-        mMyUwbAddress = UwbAddress.createRandomShortAddress();
 
         mOobConnection.receiveData().addCallback(mOobConnectionListener, mOobExecutor);
         mSessionListener.onSessionOpened();
@@ -151,23 +138,22 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
     private class OobConnectionListener implements FutureCallback<byte[]> {
         @Override
         public void onSuccess(byte[] data) {
-            OobHeader header = OobHeader.parseBytes(data);
-            (switch (header.getMessageType()) {
-                case CAPABILITY_REQUEST ->
-                        sendCapabilityResponse(data)
-                                .transformAsync(unused ->
-                                        mOobConnection.receiveData(), mOobExecutor);
-                case SET_CONFIGURATION -> {
-                    handleSetConfig(data);
+            OobMessage message = OobMessage.fromBytes(data);
+            Log.v(TAG, "Received " + message);
+            (switch (message) {
+                case CapabilitiesRequest request ->
+                        sendCapabilityResponse(request).transformAsync(unused ->
+                                mOobConnection.receiveData(), mOobExecutor);
+                case ConfigurationRequest request -> {
+                    handleSetConfig(request);
                     yield mOobConnection.receiveData();
                 }
-                case STOP_RANGING -> {
-                    handleStopRanging(data);
+                case StopRequest request -> {
+                    handleStopRanging(request);
                     yield mOobConnection.receiveData();
                 }
                 default -> {
-                    Log.e(TAG, "Received unexpected OOB message with type "
-                            + header.getMessageType());
+                    Log.e(TAG, "Received unexpected OOB message with id " + message.getId());
                     yield mOobConnection.receiveData();
                 }
             }).addCallback(mOobConnectionListener, mOobExecutor);
@@ -193,113 +179,24 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
         }
     }
 
-    private FluentFuture<Void> sendCapabilityResponse(byte[] data) {
-        Log.i(TAG, "Received capabilities request message");
-
-        CapabilityResponseMessage response =
-                getCapabilityResponseForRequest(CapabilityRequestMessage.parseBytes(data));
-
-        return mOobConnection.sendData(response.toBytes());
+    private FluentFuture<Void> sendCapabilityResponse(CapabilitiesRequest request) {
+        return mOobConnection.sendData(mProtocol.getCapabilitiesResponse(request).toBytes());
     }
 
-    private void handleSetConfig(byte[] data) {
-        Log.i(TAG, "Received set configuration message");
-
-        ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
-        SetConfigurationMessage setConfigMessage = SetConfigurationMessage.parseBytes(data);
-
-        Log.v(TAG, "Configured ranging for technologies "
-                + setConfigMessage.getRangingTechnologiesSet());
-        UwbOobConfig uwbConfig = setConfigMessage.getUwbConfig();
-        if (uwbConfig != null) {
-            try {
-                configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
-            } catch (IllegalArgumentException e) {
-                Log.e(TAG, "Failed to convert uwb set config message to local uwb config");
-            }
-        }
-        // Skip CS because the CS responder side does not need to be configured.
-        RttOobConfig rttOobConfig = setConfigMessage.getRttConfig();
-        if (rttOobConfig != null) {
-            configs.add(rttOobConfig.toTechnologyConfig(
-                    mPeer.getRangingDevice(), DEVICE_ROLE_RESPONDER));
-        }
-
-        // TODO: Only start for technologies who have the start ranging immediately
-        //  bit set. Otherwise we need to wait for the start ranging message
-
-        ImmutableSet<TechnologyConfig> technologyConfigs = configs.build();
-        boolean sessionAlreadyActive = !super.startOrReAttach(technologyConfigs);
+    private void handleSetConfig(ConfigurationRequest request) {
+        ImmutableSet<TechnologyConfig> configs = mProtocol.getConfigurations(mPeer, request);
+        boolean sessionAlreadyActive = !super.startOrReAttach(configs);
         if (sessionAlreadyActive) {
             Log.w(TAG, "Session already exists with active ranging. Restarting it with newly "
                     + "provided config...");
-            mRestartingWithConfigs.set(technologyConfigs);
+            mRestartingWithConfigs.set(configs);
             super.stop(InternalReason.SYSTEM_POLICY);
         }
     }
 
-    private void handleStopRanging(byte[] data) {
-        StopRangingMessage message = StopRangingMessage.parseBytes(data);
-        OobResponderRangingSession.super
-                .stopTechnologies(
-                        Set.copyOf(message.getRangingTechnologiesToStop()),
-                        InternalReason.REMOTE_REQUEST);
-    }
-
-    private CapabilityResponseMessage getCapabilityResponseForRequest(
-            CapabilityRequestMessage request) {
-
-        RangingCapabilities myCapabilities = mInjector
-                .getCapabilitiesProvider()
-                .getCapabilities();
-
-        CapabilityResponseMessage.Builder response = CapabilityResponseMessage.builder()
-                .setHeader(OobHeader.builder()
-                        .setMessageType(MessageType.CAPABILITY_RESPONSE)
-                        .setVersion(OobHeader.OobVersion.CURRENT)
-                        .build());
-
-        ImmutableList.Builder<RangingTechnology> supportedTechnologies = ImmutableList.builder();
-
-        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.UWB)) {
-            UwbRangingCapabilities uwbCapabilities = myCapabilities.getUwbCapabilities();
-            if (uwbCapabilities != null) {
-                supportedTechnologies.add(RangingTechnology.UWB);
-                response.setUwbCapabilities(
-                        UwbOobCapabilities.fromRangingCapabilities(uwbCapabilities, mMyUwbAddress));
-            }
-        }
-        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.CS)) {
-            BleCsRangingCapabilities csCapabilities = myCapabilities.getCsCapabilities();
-            if (csCapabilities != null) {
-                supportedTechnologies.add(RangingTechnology.CS);
-                response.setCsCapabilities(
-                        CsOobCapabilities.fromRangingCapabilities(csCapabilities));
-            }
-        }
-        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.RTT)) {
-            RttRangingCapabilities rttRangingCapabilities =
-                    myCapabilities.getRttRangingCapabilities();
-            if (rttRangingCapabilities != null) {
-                supportedTechnologies.add(RangingTechnology.RTT);
-                response.setRttCapabilities(
-                        RttOobCapabilities.fromRangingCapabilities(rttRangingCapabilities));
-            }
-        }
-        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.RSSI)) {
-            BleRssiRangingCapabilities bleRssiCapabilities =
-                    myCapabilities.getBleRssiCapabilities();
-            if (bleRssiCapabilities != null) {
-                supportedTechnologies.add(RangingTechnology.RSSI);
-                response.setBleRssiCapabilities(
-                        BleRssiOobCapabilities.fromRangingCapabilities(bleRssiCapabilities));
-            }
-        }
-
-        return response
-                .setRangingTechnologiesPriority(supportedTechnologies.build())
-                .setSupportedRangingTechnologies(supportedTechnologies.build())
-                .build();
+    private void handleStopRanging(StopRequest request) {
+        OobResponderRangingSession.super.stopTechnologies(
+                technologyBitset(request.getTechnologiesToStop()), InternalReason.REMOTE_REQUEST);
     }
 
     @Override

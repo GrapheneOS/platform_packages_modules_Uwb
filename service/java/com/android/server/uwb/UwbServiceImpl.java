@@ -122,16 +122,16 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             mUwbServiceCore.removeInitializationFailureListener(mInitializationFailureListener);
         };
         mUwbServiceCore.addInitializationFailureListener(mInitializationFailureListener);
-        registerAirplaneModeReceiver();
-        registerSatelliteModeReceiver();
         mUwbUserRestricted = isUwbUserRestricted();
-        registerUserRestrictionsReceiver();
     }
 
     /**
      * Initialize the stack after boot completed.
      */
     public void initialize() {
+        registerAirplaneModeReceiver();
+        registerSatelliteModeReceiver();
+        registerUserRestrictionsReceiver();
         mUwbSettingsStore.initialize();
         mUwbInjector.getMultichipData().initialize();
         mUwbInjector.getUwbCountryCode().initialize();

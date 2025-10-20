@@ -29,14 +29,14 @@ import android.ranging.raw.RawRangingDevice;
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableMap;
 
 import java.time.Duration;
 import java.util.Objects;
 
-public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConfig {
+public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();
 
     public static final ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
