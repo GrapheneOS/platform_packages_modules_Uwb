@@ -19,85 +19,84 @@ import androidx.annotation.NonNull;
 
 import com.android.uwb.fusion.math.Pose;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * Optional base implementation for a PoseSource. Provides help to register listeners and
- * publishing.
+ * Provides pose update information.
  */
-public abstract class PoseSourceBase implements IPoseSource {
-    private final Set<PoseEventListener> mListeners;
-    private static final String TAG = "PoseSourceBase";
-    private Pose mPose;
+public abstract class PoseSourceBase implements AutoCloseable {
+    /** The shortest practical update interval for a pose source. */
+    public static int MIN_INTERVAL_MS = 1000 / 60; // 60Hz
 
-    public PoseSourceBase() {
-        mListeners = Collections.synchronizedSet(new HashSet<>());
+    /** The longest practical update interval for a pose source. */
+    public static int MAX_INTERVAL_MS = 10000; // 0.1Hz.
+
+    /**
+     * A set of all possible pose source capabilities.
+     */
+    public enum Capabilities {
+        YAW, PITCH, ROLL, X, Y, Z,
+        /**
+         * Indicates that a pitch and roll of 0 means that the phone is upright. If this flag
+         * is not present, pitch and roll changes are only relative.
+         */
+        UPRIGHT;
+
+        public static final EnumSet<Capabilities> ALL = EnumSet.allOf(Capabilities.class);
+        public static final EnumSet<Capabilities> NONE = EnumSet.noneOf(Capabilities.class);
+        public static final EnumSet<Capabilities> ROTATION = EnumSet.of(
+                Capabilities.YAW,
+                Capabilities.PITCH,
+                Capabilities.ROLL
+        );
+        public static final EnumSet<Capabilities> UPRIGHT_ROTATION = EnumSet.of(
+                Capabilities.YAW,
+                Capabilities.PITCH,
+                Capabilities.ROLL,
+                Capabilities.UPRIGHT);
+        public static final EnumSet<Capabilities> TRANSLATION = EnumSet.of(
+                Capabilities.X,
+                Capabilities.Y,
+                Capabilities.Z);
     }
 
-    /**
-     * Starts the pose source. Called by the {@link PoseSourceBase} when the first
-     * listener subscribes.
-     */
-    protected abstract void start();
+    private volatile Pose mPose;
+
 
     /**
-     * Stops the pose source. Called by the {@link PoseSourceBase} when the last
-     * listener unsubscribes.
+     * Starts the pose source.
      */
-    protected abstract void stop();
+    public abstract void start();
 
-     /**
-     * {@inheritDoc}
+    /**
+     * Stops the pose source.
      */
     @Override
-    public synchronized void close() {
-        if (mListeners.size() > 0) {
-            mListeners.clear();
-            stop(); // Run inside the lock to make sure stops and starts are sequential.
-        }
-    }
+    public abstract void close();
 
     /**
-     * {@inheritDoc}
+     * Gets the capabilities of this pose source.
+     * @return An EnumSet of Capabilities.
      */
-    @Override
-    public synchronized void registerListener(@NonNull PoseEventListener listener) {
-        Objects.requireNonNull(listener);
-        mListeners.add(listener);
-        if (mListeners.size() == 1) {
-            start();
-        }
-    }
+    @NonNull
+    public abstract EnumSet<Capabilities> getCapabilities();
 
     /**
-     * {@inheritDoc}
+     * Gets the current pose.
+     * @return The current pose. May be null.
      */
-    @Override
-    public synchronized boolean unregisterListener(@NonNull PoseEventListener listener) {
-        Objects.requireNonNull(listener);
-        boolean removed = mListeners.remove(listener);
-        if (removed && mListeners.size() == 0) {
-            stop();
-        }
-        return removed;
+    public Pose getPose() {
+        return mPose;
     }
 
     /**
-     * Publishes the pose to all listeners.
+     * Publishes the pose.
      *
      * @param pose The updated device pose.
      */
-    protected synchronized void publish(@NonNull Pose pose) {
+    protected void publish(@NonNull Pose pose) {
         Objects.requireNonNull(pose);
         mPose = pose;
-        mListeners.forEach(listener -> listener.onPoseChanged(pose));
-    }
-
-    @Override
-    public synchronized Pose getPose() {
-        return mPose;
     }
 }

@@ -24,8 +24,7 @@ import androidx.annotation.Nullable;
 import com.android.uwb.fusion.filtering.IPositionFilter;
 import com.android.uwb.fusion.math.Pose;
 import com.android.uwb.fusion.math.SphericalVector;
-import com.android.uwb.fusion.pose.IPoseSource;
-import com.android.uwb.fusion.pose.PoseEventListener;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 import com.android.uwb.fusion.primers.IPrimer;
 
 import java.util.ArrayList;
@@ -36,11 +35,11 @@ import java.util.Objects;
  * Consumes raw UWB values and outputs filtered UWB values. See the {@link UwbFilterEngine.Builder}
  * for how it is configured.
  */
-public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
+public class UwbFilterEngine implements AutoCloseable {
     public static final String BIG_LOG_TAG = "UwbFilterEngine";
     @NonNull private final List<IPrimer> mPrimers;
     @Nullable private final IPositionFilter mFilter;
-    @Nullable private final IPoseSource mPoseSource;
+    @Nullable private final PoseSourceBase mPoseSource;
     private static final boolean sDebug;
 
     static {
@@ -59,14 +58,13 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
 
     private UwbFilterEngine(
             @NonNull List<IPrimer> primers,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             @Nullable IPositionFilter filter) {
         this.mPrimers = primers;
         this.mPoseSource = poseSource;
         this.mFilter = filter;
         if (poseSource != null) {
-            // A listener must be registered in order for the poseSource to start.
-            poseSource.registerListener(this);
+            poseSource.start();
         }
     }
 
@@ -157,30 +155,18 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
         if (!mClosed) {
             mClosed = true;
             if (mPoseSource != null) {
-                mPoseSource.unregisterListener(this);
+                mPoseSource.close();
             }
         }
     }
 
-    /**
-     * Called when there is an update to the device's pose. The origin is arbitrary, but
-     * position could be relative to the starting position, and rotation could be relative
-     * to magnetic north and the direction of gravity.
-     *
-     * @param pose The new location and orientation of the device.
-     */
-    @Override
-    public void onPoseChanged(@SuppressWarnings("unused") @NonNull Pose pose) {
-        // We don't use pose change as they happen at this point. If you're implementing UWB
-        // oversampling, this might be a good place to call compute() and produce a result.
-    }
 
     /**
      * Builder for a {@link UwbFilterEngine}.
      */
     public static class Builder {
         @Nullable private IPositionFilter mFilter;
-        @Nullable private IPoseSource mPoseSource;
+        @Nullable private PoseSourceBase mPoseSource;
         @NonNull private final ArrayList<IPrimer> mPrimers = new ArrayList<>();
 
         /**
@@ -200,7 +186,7 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
          * @param poseSource Any pose source.
          * @return This builder.
          */
-        public Builder setPoseSource(IPoseSource poseSource) {
+        public Builder setPoseSource(PoseSourceBase poseSource) {
             this.mPoseSource = poseSource;
             return this;
         }

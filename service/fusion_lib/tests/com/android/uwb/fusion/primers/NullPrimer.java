@@ -20,7 +20,7 @@ import androidx.annotation.Nullable;
 
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 public class NullPrimer implements IPrimer {
 
@@ -36,7 +36,7 @@ public class NullPrimer implements IPrimer {
      */
     @Override
     public Annotated prime(@NonNull Annotated input, @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource, long timeMs) {
+            @Nullable PoseSourceBase poseSource, long timeMs) {
         // This test primer will just turn any negative azimuth values to positive ones,
         // and use the prediction for any missing values.
         float azimuth = input.azimuth;
