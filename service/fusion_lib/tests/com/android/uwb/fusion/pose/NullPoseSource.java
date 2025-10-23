@@ -44,7 +44,7 @@ public class NullPoseSource extends PoseSourceBase {
      * subscribes.
      */
     @Override
-    protected void start() {
+    public void start() {
 
     }
 
@@ -53,7 +53,7 @@ public class NullPoseSource extends PoseSourceBase {
      * unsubscribes.
      */
     @Override
-    protected void stop() {
+    public void close() {
 
     }
 

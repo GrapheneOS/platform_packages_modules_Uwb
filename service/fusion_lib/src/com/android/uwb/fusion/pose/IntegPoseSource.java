@@ -103,7 +103,7 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
      * {@inheritDoc}
      */
     @Override
-    protected void start() {
+    public void start() {
         mSensorManager.registerListener(this, mRotationSensor, mIntervalUs);
         mSensorManager.registerListener(this, mAccelSensor, mIntervalUs);
     }
@@ -112,7 +112,7 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
      * {@inheritDoc}
      */
     @Override
-    protected void stop() {
+    public void close() {
         mSensorManager.unregisterListener(this);
     }
 

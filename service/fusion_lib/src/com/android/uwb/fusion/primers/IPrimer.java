@@ -19,7 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.uwb.fusion.math.SphericalVector;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 /**
  * Given known data about a UWB reading, applies corrections that correct for nonlinearities,
@@ -43,7 +43,7 @@ public interface IPrimer {
     SphericalVector.Annotated prime(
             @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             long timeMs
     );
 }

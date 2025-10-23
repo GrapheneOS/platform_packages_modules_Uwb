@@ -82,7 +82,7 @@ public class GyroPoseSource extends PoseSourceBase implements SensorEventListene
      * {@inheritDoc}
      */
     @Override
-    protected void start() {
+    public void start() {
         mSensorManager.registerListener(this, mSensor, mIntervalUs);
     }
 
@@ -90,7 +90,7 @@ public class GyroPoseSource extends PoseSourceBase implements SensorEventListene
      * {@inheritDoc}
      */
     @Override
-    protected void stop() {
+    public void close() {
         mSensorManager.unregisterListener(this);
     }
 

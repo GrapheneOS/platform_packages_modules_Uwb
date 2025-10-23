@@ -24,8 +24,8 @@ import com.android.uwb.fusion.math.Quaternion;
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
 import com.android.uwb.fusion.math.Vector3;
-import com.android.uwb.fusion.pose.IPoseSource.Capabilities;
 import com.android.uwb.fusion.pose.NullPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase.Capabilities;
 
 import org.junit.Test;
 

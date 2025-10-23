@@ -48,13 +48,13 @@ public class ApplicationPoseSource extends PoseSourceBase {
      * {@inheritDoc}
      */
     @Override
-    protected void start() { }
+    public void start() { }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void stop() { }
+    public void close() { }
 
     /**
      * Applies an updated pose.

@@ -20,8 +20,8 @@ import androidx.annotation.Nullable;
 
 import com.android.uwb.fusion.math.Pose;
 import com.android.uwb.fusion.math.SphericalVector;
-import com.android.uwb.fusion.pose.IPoseSource;
-import com.android.uwb.fusion.pose.IPoseSource.Capabilities;
+import com.android.uwb.fusion.pose.PoseSourceBase;
+import com.android.uwb.fusion.pose.PoseSourceBase.Capabilities;
 
 /**
  * Applies a default pose-based elevation to a UWB reading. A basic "assumption" about what the
@@ -51,7 +51,7 @@ public class ElevationPrimer implements IPrimer {
     public SphericalVector.Annotated prime(
             @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             long timeMs) {
         SphericalVector.Annotated position = input;
         if (poseSource != null

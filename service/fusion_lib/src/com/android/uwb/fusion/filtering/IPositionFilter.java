@@ -20,7 +20,7 @@ import static com.android.uwb.fusion.math.SphericalVector.Annotated;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 /**
  * Interface for a filter that operates on a UwbPosition.
@@ -45,5 +45,5 @@ public interface IPositionFilter {
      * Updates the filter history to account for changes to the pose.
       * @param poseSource The pose source from which to get the latest pose.
      */
-    void updatePose(@Nullable IPoseSource poseSource, long timeMs);
+    void updatePose(@Nullable PoseSourceBase poseSource, long timeMs);
 }

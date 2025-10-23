@@ -100,7 +100,7 @@ import com.android.server.uwb.util.LruList;
 import com.android.server.uwb.util.UwbUtil;
 import com.android.uwb.fusion.UwbFilterEngine;
 import com.android.uwb.fusion.pose.ApplicationPoseSource;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 import com.google.common.collect.Sets;
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
@@ -3468,7 +3468,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // TODO(b/270068278): Change the type of SequenceNumber from Long to Integer everywhere.
         private final ConcurrentHashMap<Long, SortedMap<Long, ReceivedDataInfo>>
                 mReceivedDataInfoMap;
-        private IPoseSource mPoseSource;
+        private PoseSourceBase mPoseSource;
         // Application data repetition count
         private int mDataRepetitionCount;
         // Hybrid session
@@ -4641,7 +4641,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * by UwbInjector.java when the session was created, or a specialized pose source later
          * requested by the application.
          */
-        public IPoseSource getPoseSource() {
+        public PoseSourceBase getPoseSource() {
             return mPoseSource;
         }
 
