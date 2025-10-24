@@ -63,7 +63,6 @@ import android.util.Pair;
 import androidx.test.filters.SmallTest;
 
 import com.android.server.uwb.jni.NativeUwbManager;
-import com.android.uwb.flags.FeatureFlags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -100,7 +99,6 @@ public class UwbCountryCodeTest {
     @Mock Location mLocation;
     @Mock UwbCountryCode.CountryCodeChangedListener mListener;
     @Mock DeviceConfigFacade mDeviceConfigFacade;
-    @Mock FeatureFlags mFeatureFlags;
     @Mock UwbSettingsStore mUwbSettingsStore;
     @Mock AlarmManager mGeocodeRetryTimer;
     @Mock IntentFilter mGeocoderRetryIntentFilter;
@@ -135,7 +133,6 @@ public class UwbCountryCodeTest {
         // Setup the unit tests to have default behavior of using the getNetworkCountryIso(). This
         // should not have any effect as below the TelephonyManager is setup to return some active
         // subscription(s) (which should also be the typical behavior when phone has a SIM).
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
 
         when(mContext.createContext(any())).thenReturn(mContext);
         when(mContext.getSystemService(TelephonyManager.class))
