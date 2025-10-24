@@ -38,7 +38,6 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.server.uwb.DeviceConfigFacade;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
-import com.android.uwb.flags.FeatureFlags;
 
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -80,7 +79,6 @@ public class GenericDecoderTest {
 
     @Mock private UwbInjector mUwbInjector;
     @Mock private DeviceConfigFacade mDeviceConfigFacade;
-    @Mock private FeatureFlags mFeatureFlags;
 
     private GenericDecoder mGenericDecoder;
 
@@ -90,8 +88,6 @@ public class GenericDecoderTest {
 
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
-
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
 
         mGenericDecoder = new GenericDecoder(mUwbInjector);
     }

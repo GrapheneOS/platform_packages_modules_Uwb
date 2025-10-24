@@ -57,7 +57,6 @@ import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.DeviceConfigFacade;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
-import com.android.uwb.flags.FeatureFlags;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -227,7 +226,6 @@ public class FiraEncoderTest {
     private static final String SECURE_RANGING_CSW_LENGTH = "4B0104";
 
     @Mock private UwbInjector mUwbInjector;
-    @Mock private FeatureFlags mFeatureFlags;
 
     private FiraEncoder mFiraEncoder;
     private byte[] mFiraOpenSessionTlvUtTag;
@@ -239,9 +237,6 @@ public class FiraEncoderTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-
-        // Setup the unit tests to have the default behavior of using the UWBS UCI version.
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
 
         // Test antenna mode param.
         DeviceConfigFacade mockDeviceConfig = mock(DeviceConfigFacade.class);

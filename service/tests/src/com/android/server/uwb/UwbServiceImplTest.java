@@ -82,7 +82,6 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
-import com.android.uwb.flags.FeatureFlags;
 import com.android.uwb.flags.Flags;
 
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -139,7 +138,6 @@ public class UwbServiceImplTest {
     private UwbServiceImpl mUwbServiceImpl;
     private TestLooper mTestLooper;
 
-    @Mock private FeatureFlags mFeatureFlags;
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -169,7 +167,6 @@ public class UwbServiceImplTest {
                 .thenReturn("cell,bluetooth,nfc,uwb,wifi");
         when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
         when(mUwbInjector.getUserManager()).thenReturn(mUserManager);
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
         when(mUwbInjector.getUwbCountryCode()).thenReturn(mUwbCountryCode);
         when(mUwbInjector.getUciLogModeStore()).thenReturn(mUciLogModeStore);
         when(mUserManager.getUserRestrictions().getBoolean(anyString())).thenReturn(false);
@@ -862,7 +859,7 @@ public class UwbServiceImplTest {
     @Test
     public void testSetDataTransferPhaseConfig() throws Exception {
         assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
-        when(mFeatureFlags.dataTransferPhaseConfig()).thenReturn(true);
+        when(mUwbInjector.dataTransferPhaseConfig()).thenReturn(true);
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         PersistableBundle bundle = new PersistableBundle();
         mUwbServiceImpl.setDataTransferPhaseConfig(sessionHandle, bundle);

@@ -397,7 +397,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     @Override
     public void setDataTransferPhaseConfig(SessionHandle sessionHandle, PersistableBundle params)
             throws RemoteException {
-        if (!SdkLevel.isAtLeastV() || !mUwbInjector.getFeatureFlags().dataTransferPhaseConfig()) {
+        if (!SdkLevel.isAtLeastV() || !mUwbInjector.dataTransferPhaseConfig()) {
             throw new UnsupportedOperationException();
         }
         enforceUwbPrivilegedPermission();

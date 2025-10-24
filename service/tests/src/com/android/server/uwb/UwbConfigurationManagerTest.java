@@ -58,7 +58,6 @@ import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.proto.UwbStatsLog;
-import com.android.uwb.flags.FeatureFlags;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -89,7 +88,6 @@ public class UwbConfigurationManagerTest {
     private NativeUwbManager mNativeUwbManager;
     @Mock
     private UwbInjector mUwbInjector;
-    @Mock private FeatureFlags mFeatureFlags;
     private UwbConfigurationManager mUwbConfigurationManager;
     @Mock
     private UwbSessionManager.UwbSession mUwbSession;
@@ -159,9 +157,6 @@ public class UwbConfigurationManagerTest {
         when(mRadarSession.getSessionId()).thenReturn(1);
         when(mRadarSession.getProtocolName()).thenReturn(RadarParams.PROTOCOL_NAME);
         when(mRadarSession.getParams()).thenReturn(TEST_RADAR_OPEN_SESSION_PARAMS);
-
-        // Setup the unit tests to have the default behavior of using the UWBS UCI version.
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
     }
 
     @Test
