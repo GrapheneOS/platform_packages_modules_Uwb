@@ -218,7 +218,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     peer.mConnection.sendData(request.toBytes())
                             .transformAsync(unused -> {
                                 peer.mOobCompleted.set(null);
-                                return null;
+                                return Futures.immediateFuture(null);
                             }, mOobExecutor));
 
             starting.forEach(technology -> peersByTechnology

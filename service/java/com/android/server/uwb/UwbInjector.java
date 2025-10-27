@@ -52,15 +52,15 @@ import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
-import com.android.uwb.flags.FeatureFlags;
+import com.android.uwb.flags.Flags;
 import com.android.uwb.fusion.UwbFilterEngine;
 import com.android.uwb.fusion.filtering.IFilter;
 import com.android.uwb.fusion.filtering.MedAvgFilter;
 import com.android.uwb.fusion.filtering.MedAvgRotationFilter;
 import com.android.uwb.fusion.filtering.PositionFilterImpl;
 import com.android.uwb.fusion.pose.GyroPoseSource;
-import com.android.uwb.fusion.pose.IPoseSource;
 import com.android.uwb.fusion.pose.IntegPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 import com.android.uwb.fusion.pose.RotationPoseSource;
 import com.android.uwb.fusion.pose.SixDofPoseSource;
 import com.android.uwb.fusion.primers.AoaPrimer;
@@ -107,12 +107,11 @@ public class UwbInjector {
     private final UwbMultichipData mUwbMultichipData;
     private final SystemBuildProperties mSystemBuildProperties;
     private final UwbDiagnostics mUwbDiagnostics;
-    private IPoseSource mDefaultPoseSource;
+    private PoseSourceBase mDefaultPoseSource;
     private final ReentrantLock mPoseLock = new ReentrantLock();
     private int mPoseSourceRefCount = 0;
 
     private final UwbSessionManager mUwbSessionManager;
-    private final FeatureFlags mFeatureFlags;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -154,11 +153,10 @@ public class UwbInjector {
                 mUwbCountryCode, mUwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
-        mFeatureFlags = new com.android.uwb.flags.FeatureFlagsImpl();
     }
 
-    public FeatureFlags getFeatureFlags() {
-        return mFeatureFlags;
+    public boolean dataTransferPhaseConfig() {
+        return Flags.dataTransferPhaseConfig();
     }
 
     public Looper getUwbServiceLooper() {
@@ -530,7 +528,7 @@ public class UwbInjector {
      * to the pose source, one will be created based on the device configuration. This may
      * @return A shared or new pose source, or null if one is not configured or available.
      */
-    public IPoseSource acquirePoseSource() {
+    public PoseSourceBase acquirePoseSource() {
         mPoseLock.lock();
         try {
             // Keep our ref counts accurate because isEnableFilters can change at runtime.
@@ -598,7 +596,7 @@ public class UwbInjector {
      *
      * @return A fully configured filter engine, or null if filtering is disabled.
      */
-    public UwbFilterEngine createFilterEngine(IPoseSource poseSource) {
+    public UwbFilterEngine createFilterEngine(PoseSourceBase poseSource) {
         DeviceConfigFacade cfg = getDeviceConfigFacade();
         if (!cfg.isEnableFilters()) {
             return null;

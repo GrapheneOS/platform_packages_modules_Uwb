@@ -22,7 +22,7 @@ import com.android.uwb.fusion.math.Pose;
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
 import com.android.uwb.fusion.math.Vector3;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 import java.util.Objects;
 
@@ -105,7 +105,7 @@ public class PositionFilterImpl implements IPositionFilter {
      * @param poseSource The pose source that has the new pose.
      */
     @Override
-    public void updatePose(@Nullable IPoseSource poseSource, long timeMs) {
+    public void updatePose(@Nullable PoseSourceBase poseSource, long timeMs) {
         if (poseSource == null) {
             return;
         }

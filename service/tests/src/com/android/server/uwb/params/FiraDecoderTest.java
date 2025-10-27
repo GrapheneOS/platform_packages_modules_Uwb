@@ -55,7 +55,6 @@ import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_STATI
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.when;
 
 import android.platform.test.annotations.Presubmit;
 
@@ -64,7 +63,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
-import com.android.uwb.flags.FeatureFlags;
 
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
@@ -163,13 +161,10 @@ public class FiraDecoderTest {
 
     @Mock
     private UwbInjector mUwbInjector;
-    @Mock private FeatureFlags mFeatureFlags;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
 
         mFiraDecoder = new FiraDecoder(mUwbInjector);
     }

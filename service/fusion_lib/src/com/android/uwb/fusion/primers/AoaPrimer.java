@@ -21,7 +21,7 @@ import androidx.annotation.Nullable;
 import com.android.uwb.fusion.math.AoaVector;
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 /**
  * Converts a PDoA azimuth value to a spherical coordinate azimuth by accounting for elevation.
@@ -45,7 +45,7 @@ public class AoaPrimer implements IPrimer {
     public SphericalVector.Annotated prime(
             @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             long timeMs) {
         if (input.hasElevation && input.hasAzimuth) {
             // Reinterpret the SphericalVector as an AoAVector, then convert it to a

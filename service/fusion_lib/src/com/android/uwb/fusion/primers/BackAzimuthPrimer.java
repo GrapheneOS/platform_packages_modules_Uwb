@@ -37,7 +37,7 @@ import com.android.uwb.fusion.math.MathHelper;
 import com.android.uwb.fusion.math.Pose;
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -136,7 +136,7 @@ public class BackAzimuthPrimer implements IPrimer {
     public SphericalVector.Annotated prime(
             @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             long timeMs) {
         if (!input.hasAzimuth || poseSource == null || prediction == null) {
             // Can't perform correction if there is no azimuth data, no pose information,

@@ -88,7 +88,7 @@ public class CccDecoderTest {
                     + "a7040a000000"
                     + "a80401000000"
                     + "a90401000000"
-                    + "aa020509";
+                    + "aa020905";
 
     private static final String TEST_CCC_SPECIFICATION_TLV_DATA_STRING_UWBS_MAX_PPM =
             "a00111"
@@ -151,7 +151,7 @@ public class CccDecoderTest {
                 List.of(CHAPS_PER_SLOT_3, CHAPS_PER_SLOT_9));
         assertThat(cccSpecificationParams.getSyncCodes()).isEqualTo(
                 List.of(26, 32));
-        assertThat(cccSpecificationParams.getChannels()).isEqualTo(List.of(5, 9));
+        assertThat(cccSpecificationParams.getChannels()).isEqualTo(List.of(9, 5));
         assertThat(cccSpecificationParams.getHoppingConfigModes()).isEqualTo(
                 List.of(HOPPING_CONFIG_MODE_CONTINUOUS, HOPPING_CONFIG_MODE_ADAPTIVE));
         assertThat(cccSpecificationParams.getHoppingSequences()).isEqualTo(

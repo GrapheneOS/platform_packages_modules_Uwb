@@ -76,7 +76,7 @@ public class SixDofPoseSource extends PoseSourceBase implements SensorEventListe
      * {@inheritDoc}
      */
     @Override
-    protected void start() {
+    public void start() {
         mSensorManager.registerListener(this, mSensor, mIntervalUs);
     }
 
@@ -84,7 +84,7 @@ public class SixDofPoseSource extends PoseSourceBase implements SensorEventListe
      * {@inheritDoc}
      */
     @Override
-    protected void stop() {
+    public void close() {
         mSensorManager.unregisterListener(this);
     }
 

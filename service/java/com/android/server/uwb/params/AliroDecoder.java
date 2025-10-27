@@ -17,6 +17,7 @@
 package com.android.server.uwb.params;
 
 import static com.android.server.uwb.config.CapabilityParam.ALIRO_SUPPORTED_MAC_MODES;
+import static com.android.server.uwb.config.CapabilityParam.ALIRO_SUPPORTED_PROTOCOL_VERSION;
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHANNEL_5;
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHANNEL_9;
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_12;
@@ -61,6 +62,8 @@ import static com.google.uwb.support.aliro.AliroParams.HOPPING_CONFIG_MODE_CONTI
 import static com.google.uwb.support.aliro.AliroParams.HOPPING_CONFIG_MODE_NONE;
 import static com.google.uwb.support.aliro.AliroParams.HOPPING_SEQUENCE_AES;
 import static com.google.uwb.support.aliro.AliroParams.HOPPING_SEQUENCE_DEFAULT;
+import static com.google.uwb.support.aliro.AliroParams.MAC_MODE_ROUND_1;
+import static com.google.uwb.support.aliro.AliroParams.MAC_MODE_ROUND_2;
 import static com.google.uwb.support.aliro.AliroParams.UWB_CHANNEL_5;
 import static com.google.uwb.support.aliro.AliroParams.UWB_CHANNEL_9;
 
@@ -139,7 +142,15 @@ public class AliroDecoder extends TlvDecoder {
     private AliroSpecificationParams getAliroSpecificationParamsFromTlvBuffer(
             TlvDecoderBuffer tlvs) {
         AliroSpecificationParams.Builder builder = new AliroSpecificationParams.Builder();
-        byte[] versions = tlvs.getByteArray(CCC_SUPPORTED_VERSIONS);
+
+        byte[] versions = null;
+        try {
+            versions = tlvs.getByteArray(ALIRO_SUPPORTED_PROTOCOL_VERSION);
+        } catch (IllegalArgumentException e) {
+            Log.i(TAG, "ALIRO_SUPPORTED_PROTOCOL_VERSION not found");
+            versions = tlvs.getByteArray(CCC_SUPPORTED_VERSIONS);
+        }
+
         if (versions.length % 2 != 0) {
             throw new IllegalArgumentException("Invalid supported protocol versions len "
                     + versions.length);
@@ -288,13 +299,29 @@ public class AliroDecoder extends TlvDecoder {
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "CCC_SUPPORTED_UWBS_MAX_PPM not found");
         }
+
         try {
-            byte[] modes = tlvs.getByteArray(ALIRO_SUPPORTED_MAC_MODES);
-            for (int i = 0; i < modes.length; i++) {
-                builder.addMacMode(modes[i]);
+            byte mode = tlvs.getByte(ALIRO_SUPPORTED_MAC_MODES);
+            if (isBitSet(mode, MAC_MODE_ROUND_1)) {
+                builder.addMacMode(MAC_MODE_ROUND_1);
+            }
+            if (isBitSet(mode, MAC_MODE_ROUND_2)) {
+                builder.addMacMode(MAC_MODE_ROUND_2);
             }
         } catch (IllegalArgumentException e) {
-            Log.w(TAG, "ALIRO_SUPPORTED_MAC_MODES not found");
+            Log.i(TAG, "ALIRO_SUPPORTED_MAC_MODES 1 byte TLV not found, trying byte array");
+            try {
+                byte[] modes = tlvs.getByteArray(ALIRO_SUPPORTED_MAC_MODES);
+                if (modes != null && modes.length > 0) {
+                    for (byte mode : modes) {
+                        builder.addMacMode(mode);
+                    }
+                } else {
+                    Log.w(TAG, "ALIRO_SUPPORTED_MAC_MODES TLV present but empty");
+                }
+            } catch (IllegalArgumentException e2) {
+                Log.w(TAG, "ALIRO_SUPPORTED_MAC_MODES not found in TLV set");
+            }
         }
 
         return builder.build();

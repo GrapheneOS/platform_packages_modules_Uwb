@@ -25,7 +25,7 @@ import androidx.annotation.Nullable;
 
 import com.android.uwb.fusion.math.SphericalVector;
 import com.android.uwb.fusion.math.SphericalVector.Annotated;
-import com.android.uwb.fusion.pose.IPoseSource;
+import com.android.uwb.fusion.pose.PoseSourceBase;
 
 /**
  * Limits the field view of incoming UWB readings by replacing angles outside the defined limits
@@ -65,7 +65,7 @@ public class FovPrimer implements IPrimer {
     public SphericalVector.Annotated prime(
             @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource,
+            @Nullable PoseSourceBase poseSource,
             long timeMs) {
         if (prediction == null) {
             return input;

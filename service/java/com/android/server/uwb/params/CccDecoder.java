@@ -230,11 +230,11 @@ public class CccDecoder extends TlvDecoder {
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "CCC_PRIORITIZED_CHANNEL_LIST not found");
             byte channels = tlvs.getByte(CCC_SUPPORTED_CHANNELS);
-            if (isBitSet(channels, CCC_CHANNEL_5)) {
-                builder.addChannel(UWB_CHANNEL_5);
-            }
             if (isBitSet(channels, CCC_CHANNEL_9)) {
                 builder.addChannel(UWB_CHANNEL_9);
+            }
+            if (isBitSet(channels, CCC_CHANNEL_5)) {
+                builder.addChannel(UWB_CHANNEL_5);
             }
         }
         boolean isFiraExtensionSupported =
