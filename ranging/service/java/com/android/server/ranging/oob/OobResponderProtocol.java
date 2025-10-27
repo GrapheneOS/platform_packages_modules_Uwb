@@ -45,7 +45,7 @@ import com.android.server.ranging.oob.packets.BleRssiCapabilities;
 import com.android.server.ranging.oob.packets.BleRssiConfiguration;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
-import com.android.server.ranging.oob.packets.CapabilitiesResponse;
+import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.TechnologySet;
@@ -58,9 +58,9 @@ import com.android.server.ranging.oob.packets.WiFiSecurityMethod;
 import com.android.server.ranging.oob.packets.WifiApRttConfiguration;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV2;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV3;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV2;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV3;
 import com.android.server.ranging.oob.packets.WifiStaRttCapabilities;
 import com.android.server.ranging.oob.packets.WifiStaRttConfiguration;
 import com.android.server.ranging.rtt.RttConfig;
@@ -86,8 +86,16 @@ public class OobResponderProtocol {
         mLocalUwbAddress = UwbAddress.createRandomShortAddress();
     }
 
-
-    public CapabilitiesResponse getCapabilitiesResponse(CapabilitiesRequest request) {
+    /**
+     * Retrieves the system's supported ranging capabilities based on the provided request.
+     *
+     * @param request The {@link CapabilitiesRequest} specifying the desired technologies
+     * and the requested protocol version.
+     * @return A {@link CapabilitiesResponseV1} object containing the agreed-upon version,
+     * a set of all supported technologies, and a list of detailed capability
+     * objects for each supported and requested technology.
+     */
+    public CapabilitiesResponseV1 getCapabilitiesResponse(CapabilitiesRequest request) {
         if (request.getVersion() instanceof Version.Future) {
             mVersion = Version.Current;
         } else {
@@ -137,7 +145,7 @@ public class OobResponderProtocol {
                         .build());
             } else {
                 // TODO: Correctly handle version 2
-                capabilities.add(new WifiNanRttCapabilitiesV2.Builder().build());
+                capabilities.add(new WifiNanRttCapabilitiesV3.Builder().build());
             }
         }
 
@@ -163,7 +171,7 @@ public class OobResponderProtocol {
                     .build());
         }
 
-        return new CapabilitiesResponse.Builder()
+        return new CapabilitiesResponseV1.Builder()
                 .setVersion(mVersion)
                 .setSupportedTechnologies(supported.build())
                 .setCapabilities(capabilities.toArray(new Capabilities[0]))
@@ -214,7 +222,7 @@ public class OobResponderProtocol {
                                 .build(),
                         new SessionConfig.Builder().build(),
                         handle.getRangingDevice()));
-                case WifiNanRttConfigurationV2 wifiNan -> configs.add(new RttConfig(
+                case WifiNanRttConfigurationV3 wifiNan -> configs.add(new RttConfig(
                         // TODO: Correctly handle V2
                         Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
                         new RttRangingParams.Builder(

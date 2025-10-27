@@ -53,8 +53,8 @@ public final class CapabilitiesResponseTest {
                     .setRoles((byte) (Byte.toUnsignedInt(UwbDeviceRole.Initiator.toByte())
                                     | Byte.toUnsignedInt(UwbDeviceRole.Responder.toByte())))
                     .build();
-    private static final CapabilitiesResponse CAPABILITY_RESPONSE_MESSAGE =
-            new CapabilitiesResponse.Builder()
+    private static final CapabilitiesResponseV1 CAPABILITY_RESPONSE_MESSAGE =
+            new CapabilitiesResponseV1.Builder()
                     .setVersion(Version.Current)
                     .setSupportedTechnologies(technologyBitset(SUPPORTED_RANGING_TECHNOLOGIES))
                     .setCapabilities(new Capabilities[]{ UWB_CAPABILITIES })
@@ -144,14 +144,14 @@ public final class CapabilitiesResponseTest {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(CapabilitiesResponse.fromBytes(capabilityResponseMessageUwbBytes))
+        assertThat(CapabilitiesResponseV1.fromBytes(capabilityResponseMessageUwbBytes))
                 .isEqualTo(CAPABILITY_RESPONSE_MESSAGE);
     }
 
     @Test
     public void toBytes_noTechnologiesSet_convertsCorrectly() throws Exception {
-        CapabilitiesResponse capabilityResponseNoTechnologiesSet =
-                new CapabilitiesResponse.Builder()
+        CapabilitiesResponseV1 capabilityResponseNoTechnologiesSet =
+                new CapabilitiesResponseV1.Builder()
                         .setVersion(Version.Current)
                         .setSupportedTechnologies(new TechnologySet.Builder().build())
                         .setCapabilities(new Capabilities[] {})
@@ -165,7 +165,7 @@ public final class CapabilitiesResponseTest {
         byte[] data = new byte[]{};
 
         assertThrows(Exception.class,
-                () -> CapabilitiesResponse.fromBytes(data));
+                () -> CapabilitiesResponseV1.fromBytes(data));
     }
 
     @Test
@@ -175,7 +175,7 @@ public final class CapabilitiesResponseTest {
                 rangingTechsBitmapUwbAndCs,
                 uwbCapabilityBytes,
                 csCapabilityBytes);
-        CapabilitiesResponse response = CapabilitiesResponse.fromBytes(responseBytes);
+        CapabilitiesResponseV1 response = CapabilitiesResponseV1.fromBytes(responseBytes);
         assertThat(response.getSupportedTechnologies())
                 .isEqualTo(new TechnologySet.Builder().setUwb(true).setBleCs(true).build());
 
