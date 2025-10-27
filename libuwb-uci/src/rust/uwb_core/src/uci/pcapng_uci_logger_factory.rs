@@ -491,7 +491,7 @@ mod tests {
     ///
     /// Returns a vector of (block type, block length) if the bytestream is valid PCAPNG.
     fn get_block_info(datastream: Vec<u8>) -> Option<Vec<(u32, u32)>> {
-        if datastream.len() % 4 != 0 || datastream.is_empty() {
+        if !datastream.len().is_multiple_of(4) || datastream.is_empty() {
             return None;
         }
         let mut block_info = Vec::new();
