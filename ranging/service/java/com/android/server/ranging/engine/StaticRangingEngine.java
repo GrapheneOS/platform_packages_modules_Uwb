@@ -28,6 +28,7 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -74,4 +75,7 @@ public class StaticRangingEngine implements RangingEngine {
         }
         return toStart;
     }
+
+    @Override
+    public void start(Set<TechnologyConfig> configs) { }
 }
