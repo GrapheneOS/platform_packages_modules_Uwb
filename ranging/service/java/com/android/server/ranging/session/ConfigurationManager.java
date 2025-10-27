@@ -34,6 +34,7 @@ import com.android.server.ranging.oob.packets.Technology;
 
 import com.google.common.collect.ImmutableSet;
 
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,8 @@ public class ConfigurationManager {
         RangingTechnology getTechnology();
 
         @RangingPreference.DeviceRole int getDeviceRole();
+
+        Duration getRangingInterval();
     }
 
     /** A config for a technology that only supports 1 peer per session. */
