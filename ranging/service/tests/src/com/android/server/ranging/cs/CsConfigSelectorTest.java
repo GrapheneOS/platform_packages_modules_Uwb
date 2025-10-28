@@ -1,0 +1,188 @@
+/*
+ * Copyright 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.ranging.cs;
+
+import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
+import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
+import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.when;
+
+import android.ranging.RangingDevice;
+import android.ranging.SessionConfig;
+import android.ranging.ble.cs.BleCsRangingCapabilities;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.util.Range;
+
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleCsConfiguration;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.UnknownCapabilities;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.time.Duration;
+import java.util.Set;
+
+@RunWith(MockitoJUnitRunner.class)
+public class CsConfigSelectorTest {
+
+    private CsConfigSelector mSelector;
+
+    private final String mPeerAddress = "AC:37:43:BC:A9:28";
+
+    private @Mock SessionConfig mMockSessionConfig;
+    private @Mock OobInitiatorRangingConfig mMockOobConfig;
+    private @Mock BleCsRangingCapabilities mMockCapabilities;
+    private @Mock RangingDevice mMockPeerDevice;
+
+    private BleCsCapabilities mPeerCapabilities;
+
+    @Before
+    public void setup() {
+        when(mMockCapabilities.getSupportedSecurityLevels())
+                .thenReturn(ImmutableSet.of(CS_SECURITY_LEVEL_ONE, CS_SECURITY_LEVEL_FOUR));
+        when(mMockOobConfig.getRangingIntervalRange())
+                .thenReturn(Range.create(
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL),
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL)));
+
+        mPeerCapabilities = new BleCsCapabilities.Builder()
+                .setAddress(macAddressToBytes(mPeerAddress))
+                .build();
+    }
+
+    @Test
+    public void constructor_withCapableConfig() throws ConfigSelectionException {
+        new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+    }
+
+    @Test
+    public void isCapableOfConfig_returnsFalseWhenIncapableOfConfiguredSecurityLevel() {
+        when(mMockCapabilities.getSupportedSecurityLevels()).thenReturn(ImmutableSet.of());
+        assertFalse(CsConfigSelector.isCapableOfConfig(mMockOobConfig, mMockCapabilities));
+    }
+
+    @Test
+    public void isCapableOfConfig_returnsFalseWhenIncapableOfConfiguredRangingInterval() {
+        when(mMockOobConfig.getRangingIntervalRange())
+                .thenReturn(Range.create(Duration.ofMillis(333), Duration.ofMillis(334)));
+        assertFalse(CsConfigSelector.isCapableOfConfig(mMockOobConfig, mMockCapabilities));
+    }
+
+    @Test(expected = ConfigSelectionException.class)
+    public void addPeerCapabilities_failsWhenCapabilitiesInvalid() throws ConfigSelectionException {
+        mSelector = new CsConfigSelector(
+                mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+
+        mSelector.addPeerCapabilities(
+                mMockPeerDevice,
+                new UnknownCapabilities.Builder()
+                        .setTechnology(Technology.BleCs)
+                        .setPayload(new byte[] {})
+                        .build());
+    }
+
+    @Test
+    public void selectConfigs_selectsCompatibleConfig() throws ConfigSelectionException {
+        mSelector = new CsConfigSelector(
+                mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        BleCsConfiguration remoteConfig = (BleCsConfiguration) mSelector
+                .selectRemoteConfig(mMockPeerDevice);
+
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
+        assertEquals(UPDATE_RATE_NORMAL, csConfig.getRangingParams().getRangingUpdateRate());
+        assertEquals(CS_SECURITY_LEVEL_ONE, csConfig.getRangingParams().getSecurityLevel());
+
+        assertNotNull(remoteConfig);
+    }
+
+    @Test
+    public void selectConfigs_selectsSecureSecurityLevel_whenConfigured()
+            throws ConfigSelectionException {
+
+        when(mMockOobConfig.getSecurityLevel())
+                .thenReturn(OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE);
+
+        mSelector = new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
+        assertEquals(CS_SECURITY_LEVEL_FOUR, csConfig.getRangingParams().getSecurityLevel());
+    }
+
+    @Test
+    public void selectConfigs_selectsFrequentUpdateRate_whenConfigured()
+            throws ConfigSelectionException {
+
+        when(mMockOobConfig.getRangingIntervalRange())
+                .thenReturn(Range.create(
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_FREQUENT),
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_FREQUENT)));
+
+        mSelector = new CsConfigSelector(
+                mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
+
+        assertEquals(UPDATE_RATE_FREQUENT, csConfig.getRangingParams().getRangingUpdateRate());
+    }
+
+    @Test
+    public void selectConfigs_selectsInfrequentUpdateRate_whenConfigured()
+            throws ConfigSelectionException {
+
+        when(mMockOobConfig.getRangingIntervalRange()).thenReturn(
+                Range.create(
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_INFREQUENT),
+                        CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_INFREQUENT)));
+
+        mSelector = new CsConfigSelector(
+                mMockSessionConfig, mMockOobConfig, mMockCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+
+        Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
+        CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
+
+        assertEquals(UPDATE_RATE_INFREQUENT, csConfig.getRangingParams().getRangingUpdateRate());
+    }
+}
