@@ -27,10 +27,9 @@ from lib.params import *
 from lib.ranging_decorator import *
 from mobly import asserts
 from mobly import config_parser
-from mobly import signals
 from mobly import suite_runner
+from mobly import utils as mobly_utils
 from mobly.controllers import android_device
-from mobly.base_test import retry
 from android.platform.test.annotations import ApiTest
 
 
@@ -52,9 +51,9 @@ _TEST_CASES = [
     "test_one_to_one_ble_rssi_ranging_with_oob",
     "test_oob_responder_persists_until_explicitly_stopped",
     "test_dynamic_peer_uwb_ranging",
-    "test_uwb_ranging_move_to_bg_and_fg",
-    "test_ble_rssi_ranging_move_to_bg_and_fg",
-    "test_ble_cs_ranging_move_to_bg_and_fg",
+    "test_uwb_ranging_app_switch_to_bg_and_fg",
+    "test_ble_rssi_ranging_app_switch_to_bg_and_fg",
+    "test_ble_cs_ranging_app_switch_to_bg_and_fg",
 ]
 
 
@@ -121,8 +120,16 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def teardown_test(self):
     super().teardown_test()
-    for device in self.devices:
-      device.clear_ranging_sessions()
+    mobly_utils.concurrent_exec(
+        lambda d: d.clear_ranging_sessions(),
+        param_list=[[device] for device in self.devices],
+        raise_on_exception=True,
+    )
+    mobly_utils.concurrent_exec(
+        lambda d: d.services.create_output_excerpts_all(self.current_test_info),
+        param_list=[[device] for device in self.devices],
+        raise_on_exception=True,
+    )
 
   ### Helpers ###
 
@@ -395,7 +402,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
-  def test_uwb_ranging_move_to_bg_and_fg(self):
+  def test_uwb_ranging_app_switch_to_bg_and_fg(self):
       """ verifies Uwb ranging with foreground and background"""
       SESSION_HANDLE = str(uuid4())
       UWB_SESSION_ID = 5
@@ -473,7 +480,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
       self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
-  def test_ble_rssi_ranging_move_to_bg_and_fg(self):
+  def test_ble_rssi_ranging_app_switch_to_bg_and_fg(self):
       """ verifies ble rssi ranging with foreground and background"""
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
@@ -536,8 +543,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
           self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
           self._ble_disconnect()
 
-  @retry(max_count=2)
-  def test_ble_cs_ranging_move_to_bg_and_fg(self):
+  def test_ble_cs_ranging_app_switch_to_bg_and_fg(self):
       """ verifies ble cs ranging with foreground and background"""
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
@@ -1060,7 +1066,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       'android.bluetooth.le.DistanceMeasurementSession#stopSession',
       'android.bluetooth.le.DistanceMeasurementParams#getMaxDurationSeconds',
   ])
-  @retry(max_count=2)
   def test_one_to_one_ble_cs_ranging(self):
     """
     Verifies cs ranging with peer device, devices range for 10 seconds.
@@ -1156,7 +1161,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.assert_received_data()
     session.stop_and_assert_closed()
 
-  @retry(max_count=2)
   def test_one_to_one_ble_cs_ranging_with_oob(self):
     asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
                     "Skipping OOB CS test on user build because BLE address is masked")
@@ -1208,7 +1212,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       session.stop_and_assert_closed(check_responders=False)
       self._ble_unbond()
 
-  @retry(max_count=2)
   def test_ble_cs_ranging_measurement_limit(self):
       """Verifies ble cs ranging with measurement limit."""
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
