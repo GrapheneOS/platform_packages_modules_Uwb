@@ -347,6 +347,10 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         public synchronized void onSessionClosed(@InternalReason int reason) {
             Log.v(TAG, "onSessionClosed reason " + reason);
             RangingSession rangingSession = mSessions.remove(mSessionHandle);
+            if (rangingSession == null) {
+                Log.w(TAG, "onSessionClosed for already closed session: " + mSessionHandle);
+                return;
+            }
             rangingSession.close();
             mDbgRecentlyClosedSessions.add(rangingSession);
             mMetricsLogger.logSessionClosed(reason);
