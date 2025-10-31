@@ -17,6 +17,13 @@
 package com.android.server.ranging.uwb;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
@@ -38,6 +45,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.uwb.support.base.RequiredParam;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -83,6 +91,31 @@ public class UwbConfig implements MulticastTechnologyConfig {
 
     public @NonNull UwbRangingParams getParameters() {
         return mParameters;
+    }
+
+    @Override
+    public Duration getRangingInterval() {
+        return switch (getParameters().getRangingUpdateRate()) {
+            case UPDATE_RATE_NORMAL -> {
+                @UwbRangingParams.ConfigId int configId = getParameters().getConfigId();
+                if (configId == CONFIG_MULTICAST_DS_TWR
+                        || configId == CONFIG_PROVISIONED_MULTICAST_DS_TWR
+                        || configId == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR) {
+                    yield Duration.ofMillis(200);
+                } else {
+                    yield Duration.ofMillis(240);
+                }
+            }
+            case UPDATE_RATE_INFREQUENT -> Duration.ofMillis(600);
+            case UPDATE_RATE_FREQUENT -> {
+                if (getParameters().getConfigId() == CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST) {
+                    yield Duration.ofMillis(96);
+                } else {
+                    yield Duration.ofMillis(120);
+                }
+            }
+            default -> throw new IllegalStateException("Unknown update rate");
+        };
     }
 
     @Override
