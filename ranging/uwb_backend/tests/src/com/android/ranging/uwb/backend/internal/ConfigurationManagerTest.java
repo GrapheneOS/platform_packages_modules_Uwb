@@ -23,12 +23,18 @@ import static com.android.ranging.uwb.backend.internal.Utils.INFREQUENT;
 import static com.android.ranging.uwb.backend.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.android.ranging.uwb.backend.internal.Utils.convertMsToRstu;
 
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
 import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_NONE;
+import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_2_BYTES;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DL_TDOA;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -187,5 +193,39 @@ public class ConfigurationManagerTest {
         assertNull(params.getBlockStrideLength());
         assertNull(params.getAddressList());
         assertNull(params.getSubSessionIdList());
+    }
+
+    @Test
+    public void testCreateOpenSessionParams_DtTag() {
+        int rangingIntervalMs = 180;
+        int slotsPerRangingRound = 20;
+        RangingParameters rangingParameters =
+                new DtTagParameters(
+                        123, /* sessionId */
+                        new byte[]{1, 2}, /* sessionKeyInfo */
+                        mComplexChannel,
+                        Utils.DURATION_2_MS,
+                        false, /* isAoaDisabled */
+                        new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
+                        rangingIntervalMs,
+                        slotsPerRangingRound,
+                        new byte[]{0} /* rangingRoundIndexes */);
+
+        FiraOpenSessionParams params =
+                ConfigurationManager.createOpenSessionParams(
+                        RANGING_DEVICE_TYPE_DT_TAG,
+                        TEST_LOCAL_ADDRESS,
+                        rangingParameters,
+                        new UwbFeatureFlags.Builder().build());
+
+        assertEquals(RANGING_DEVICE_TYPE_DT_TAG, params.getDeviceType());
+        assertEquals(RANGING_DEVICE_DT_TAG, params.getDeviceRole());
+        assertEquals(RANGING_ROUND_USAGE_DL_TDOA, params.getRangingRoundUsage());
+        assertEquals(RFRAME_CONFIG_SP1, params.getRframeConfig());
+        assertNull(params.getDestAddressList());
+        assertEquals(rangingIntervalMs, params.getRangingIntervalMs());
+        assertEquals(slotsPerRangingRound, params.getSlotsPerRangingRound());
+        assertEquals(MAC_ADDRESS_MODE_2_BYTES, params.getMacAddressMode());
+        assertEquals(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT, params.getAoaResultRequest());
     }
 }

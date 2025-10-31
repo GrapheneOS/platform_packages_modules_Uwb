@@ -27,7 +27,6 @@ import static com.android.ranging.uwb.backend.internal.Utils.STATIC_STS_SESSION_
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.Utils.VENDOR_ID_SIZE;
 import static com.android.ranging.uwb.backend.internal.Utils.getRangingTimingParams;
-
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
 import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_NONE;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_FIRA_HOPPING_ENABLE;
@@ -43,21 +42,17 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIAT
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
-import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
 
 import android.util.ArrayMap;
-
 import androidx.annotation.Nullable;
-
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
-
 import java.util.Arrays;
 import java.util.Map;
 
@@ -66,7 +61,7 @@ import java.util.Map;
  * profile-dependent.
  */
 public final class ConfigurationManager {
-
+    private static final String TAG = "ConfigurationManager";
     private static final Map<Integer, UwbConfiguration> sConfigs = new ArrayMap<>();
 
     static {
@@ -296,6 +291,12 @@ public final class ConfigurationManager {
             UwbAddress localAddress,
             RangingParameters rangingParameters,
             UwbFeatureFlags featureFlags) {
+
+        if (rangingParameters instanceof DtTagParameters) {
+            return createDtTagOpenSessionParams(
+                    deviceType, localAddress, (DtTagParameters) rangingParameters);
+        }
+
         RangingTimingParams timingParams =
                 getRangingTimingParams(rangingParameters.getUwbConfigId());
         UwbConfiguration configuration = sConfigs.get(rangingParameters.getUwbConfigId());
@@ -312,9 +313,6 @@ public final class ConfigurationManager {
                         configuration.isControllerTheInitiator()
                                 ? RANGING_DEVICE_ROLE_RESPONDER
                                 : RANGING_DEVICE_ROLE_INITIATOR;
-                break;
-            case RANGING_DEVICE_TYPE_DT_TAG:
-                deviceRole = RANGING_DEVICE_DT_TAG;
                 break;
             default:
                 deviceRole = RANGING_DEVICE_ROLE_RESPONDER;
@@ -383,10 +381,12 @@ public final class ConfigurationManager {
                                     Arrays.copyOf(rangingParameters.getSessionKeyInfo(),
                                             VENDOR_ID_SIZE))
                     .setStaticStsIV(staticStsIv);
+
         } else if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
                     .setIsKeyRotationEnabled(true)
                     .setKeyRotationRate(0);
+
         } else if (configuration.getStsConfig()
                 == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
@@ -398,13 +398,10 @@ public final class ConfigurationManager {
             builder.setHoppingMode(HOPPING_MODE_FIRA_HOPPING_ENABLE);
         }
 
-        if (deviceRole != RANGING_DEVICE_DT_TAG) {
-            builder.setDestAddressList(Conversions.convertUwbAddressList(
-                    rangingParameters.getPeerAddresses().toArray(new UwbAddress[0]),
-                    featureFlags.isReversedByteOrderFiraParams()));
-        } else {
-            builder.setRframeConfig(RFRAME_CONFIG_SP1);
-        }
+        builder.setDestAddressList(Conversions.convertUwbAddressList(
+                rangingParameters.getPeerAddresses().toArray(new UwbAddress[0]),
+                featureFlags.isReversedByteOrderFiraParams()));
+
         if (SUPPORTED_HPRF_PREAMBLE_INDEX.contains(rangingParameters.getComplexChannel()
                 .getPreambleIndex())) {
             builder.setPrfMode(PRF_MODE_HPRF);
@@ -486,5 +483,59 @@ public final class ConfigurationManager {
     /** Indicates if the ID presents an unicast configuration. */
     public static boolean isUnicast(@Utils.UwbConfigId int configId) {
         return sConfigs.get(configId).getMultiNodeMode() == MULTI_NODE_MODE_UNICAST;
+    }
+
+    private static FiraOpenSessionParams createDtTagOpenSessionParams(
+            @FiraParams.RangingDeviceType int deviceType,
+            UwbAddress localAddress,
+            DtTagParameters rangingParameters) {
+
+        FiraOpenSessionParams.Builder builder =
+                new FiraOpenSessionParams.Builder()
+                        .setProtocolVersion(PROTOCOL_VERSION_1_1)
+                        .setRangingRoundUsage(FiraParams.RANGING_ROUND_USAGE_DL_TDOA)
+                        .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                        .setMacAddressMode(MAC_ADDRESS_MODE_2_BYTES)
+                        .setDeviceType(deviceType)
+                        .setDeviceRole(RANGING_DEVICE_DT_TAG)
+                        .setSessionId(rangingParameters.getSessionId())
+                        .setDeviceAddress(android.uwb.UwbAddress.fromBytes(localAddress.toBytes()))
+                        .setAoaResultRequest(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT)
+                        .setChannelNumber(rangingParameters.getComplexChannel().getChannel())
+                        .setPreambleCodeIndex(
+                                rangingParameters.getComplexChannel().getPreambleIndex())
+                        .setSlotDurationRstu(
+                                Utils.convertMsToRstu(rangingParameters.getSlotDuration()))
+                        .setSlotsPerRangingRound(rangingParameters.getSlotsPerRangingRound())
+                        .setRangingIntervalMs(rangingParameters.getRangingIntervalMs())
+                        .setInBandTerminationAttemptCount(3)
+                        .setStsConfig(FiraParams.STS_CONFIG_STATIC)
+                        .setRangingErrorStreakTimeoutMs(10_000L)
+                        .setFilterType(FILTER_TYPE_NONE)
+                        .setMaxNumberOfMeasurements(
+                                rangingParameters.getUwbRangeLimitsConfig()
+                                        .getRangeMaxNumberOfMeasurements())
+                        .setMaxRangingRoundRetries(
+                                rangingParameters.getUwbRangeLimitsConfig()
+                                        .getRangeMaxRangingRoundRetries());
+
+        byte[] staticStsIv =
+                Arrays.copyOfRange(
+                        rangingParameters.getSessionKeyInfo(),
+                        VENDOR_ID_SIZE,
+                        STATIC_STS_SESSION_KEY_INFO_SIZE);
+        builder.setVendorId(
+                Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
+            .setStaticStsIV(staticStsIv);
+
+        builder.setRframeConfig(RFRAME_CONFIG_SP1);
+
+
+        if (SUPPORTED_HPRF_PREAMBLE_INDEX.contains(
+                rangingParameters.getComplexChannel().getPreambleIndex())) {
+            builder.setPrfMode(PRF_MODE_HPRF);
+        }
+
+        return builder.build();
     }
 }
