@@ -503,6 +503,23 @@ public class NativeUwbManager {
     }
 
     /**
+     * Get radar APP Configuration Parameters for the requested UWB radar session
+     *
+     * @param noOfParams        : The number (n) of APP Configuration Parameters
+     * @param appConfigParamLen : The length of APP Configuration Parameters
+     * @param appConfigIds      : APP Configuration Parameter
+     * @param chipId            : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbConfigStatusData} : Contains statuses for all cfg_id
+     */
+    public UwbTlvData getRadarAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigIds, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeGetRadarAppConfigurations(sessionId, noOfParams, appConfigParamLen,
+                    appConfigIds, chipId);
+        }
+    }
+
+    /**
      * Get APP Configuration Parameters for the requested UWB session
      *
      * @param noOfParams        : The number (n) of APP Configuration Parameters
@@ -832,6 +849,9 @@ public class NativeUwbManager {
     private native byte nativeGetSessionState(int sessionId, String chipId);
 
     private native UwbConfigStatusData nativeSetAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigParams, String chipId);
+
+    private native UwbTlvData nativeGetRadarAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams, String chipId);
 
     private native UwbTlvData nativeGetAppConfigurations(int sessionId, int noOfParams,

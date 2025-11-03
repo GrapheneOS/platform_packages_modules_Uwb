@@ -58,12 +58,20 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANS
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PARTICIPATION_AS_DEFINED_DEVICE_ROLE;
+import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T64_SYMBOLS;
+import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_OK;
+import static com.google.uwb.support.radar.RadarParams.BITS_PER_SAMPLES_32;
+import static com.google.uwb.support.radar.RadarParams.NUMBER_OF_BURSTS_DEFAULT;
 import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
+import static com.google.uwb.support.radar.RadarParams.SAMPLES_PER_SWEEP_DEFAULT;
+import static com.google.uwb.support.radar.RadarParams.SESSION_PRIORITY_DEFAULT;
+import static com.google.uwb.support.radar.RadarParams.SWEEP_OFFSET_DEFAULT;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -156,6 +164,7 @@ import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarRangingStartedParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestStartSessionParams;
 
@@ -286,6 +295,29 @@ public class UwbSessionManagerTest {
                 .setHoppingConfigMode(CccParams.HOPPING_CONFIG_MODE_NONE)
                 .setHoppingSequence(CccParams.HOPPING_SEQUENCE_DEFAULT)
                 .build();
+
+    private static final RadarRangingStartedParams RADAR_RANGING_STARTED_PARAMS =
+            new RadarRangingStartedParams.Builder()
+                    .setBurstPeriod(64)
+                    .setSweepPeriod(4800)
+                    .setSweepsPerBurst(16)
+                    .setSamplesPerSweep(SAMPLES_PER_SWEEP_DEFAULT)
+                    .setChannelNumber(FiraParams.UWB_CHANNEL_9)
+                    .setSweepOffset(SWEEP_OFFSET_DEFAULT)
+                    .setRframeConfig(RFRAME_CONFIG_SP3)
+                    .setPreambleDuration(PREAMBLE_DURATION_T64_SYMBOLS)
+                    .setPreambleCodeIndex(11)
+                    .setSessionPriority(SESSION_PRIORITY_DEFAULT)
+                    .setBitsPerSample(BITS_PER_SAMPLES_32)
+                    .setPrfMode(PRF_MODE_BPRF)
+                    .setNumberOfBursts(NUMBER_OF_BURSTS_DEFAULT)
+                    .setRadarDataType(RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES)
+                    .setAntennaBitmap(0x108)
+                    .setGpioBitmap(0xC)
+                    .setTxPower(24)
+                    .setRxGain(30)
+                    .build();
+
 
     private FiraHybridSessionControllerConfig mHybridControllerParams =
             new FiraHybridSessionControllerConfig.Builder()
@@ -6039,6 +6071,12 @@ public class UwbSessionManagerTest {
                 .when(uwbSession).getSessionState();
         when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mUwbConfigurationManager.getAppConfigurations(
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                any()))
+                .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK,
+                        new RadarRangingStartedParams.Builder(RADAR_RANGING_STARTED_PARAMS)
+                                .build()));
 
         mUwbSessionManager.startRanging(
                 uwbSession.getSessionHandle(), uwbSession.getParams());

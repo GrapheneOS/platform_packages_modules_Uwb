@@ -110,6 +110,7 @@ import com.google.uwb.support.aliro.AliroRangingStoppedParams;
 import com.google.uwb.support.aliro.AliroSpecificationParams;
 import com.google.uwb.support.aliro.AliroStartRangingParams;
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
@@ -136,6 +137,7 @@ import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarRangingStartedParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestSessionStatus;
 import com.google.uwb.support.rftest.RfTestStartSessionParams;
@@ -2538,6 +2540,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                                     CccParams.PROTOCOL_VERSION_1_0);
                                     if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
                                         Log.e(TAG, "Failed to get CCC ranging started params");
+                                    }
+                                    rangingStartedParams = statusAndParams.second;
+                                }
+
+                                // For Radar sessions, retrieve the app configs
+                                if (uwbSession.getProtocolName().equals(
+                                        RadarParams.PROTOCOL_NAME)) {
+                                    Pair<Integer, RadarRangingStartedParams> statusAndParams  =
+                                            mConfigurationManager.getAppConfigurations(
+                                                    uwbSession.getSessionId(),
+                                                    RadarParams.PROTOCOL_NAME,
+                                                    new byte[0],
+                                                    RadarRangingStartedParams.class,
+                                                    uwbSession.getChipId(),
+                                                    new ProtocolVersion(1, 0));
+                                    if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
+                                        Log.e(TAG, "Failed to get Radar ranging started params");
                                     }
                                     rangingStartedParams = statusAndParams.second;
                                 }
