@@ -127,7 +127,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     )
     mobly_utils.concurrent_exec(
         lambda d: d.services.create_output_excerpts_all(self.current_test_info),
-        param_list=[[device] for device in self.devices],
+        param_list=[[decorator.ad] for decorator in self.devices],
         raise_on_exception=True,
     )
 
