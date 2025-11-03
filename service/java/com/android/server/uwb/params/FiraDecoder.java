@@ -93,7 +93,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BLOCK_STRI
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BLOCK_STRIDING_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BPRF_PARAMETER_SETS_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BPRF_PARAMETER_SETS_VER_2_0;
-import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BYPASS_MODE_2_0;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BYPASS_MODE_VER_3_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CC_CONSTRAINT_LENGTH_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CC_CONSTRAINT_LENGTH_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CHANNELS_VER_1_0;
@@ -114,7 +114,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HOPPING_MO
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HOPPING_MODE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS_VER_2_0;
-import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_LL_CAPABILITY_2_0;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_LL_CAPABILITY_VER_3_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_MESSAGE_SIZE_VER_1_0;
@@ -142,6 +142,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_SUSPEND_RA
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UWB_INITIATION_TIME_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UWB_INITIATION_TIME_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.TIME_SCHEDULED_RANGING;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UCI_MIN_SLOT_DURATION_RSTU_VER_3_0;
 import static com.android.server.uwb.config.CapabilityParam.UNICAST;
 import static com.android.server.uwb.config.CapabilityParam.UT_ANCHOR;
 import static com.android.server.uwb.config.CapabilityParam.UT_SYNCHRONIZATION_ANCHOR;
@@ -793,7 +794,7 @@ public class FiraDecoder extends TlvDecoder {
             }
 
             try {
-                short logicalLinkCapParam = tlvs.getShort(SUPPORTED_LL_CAPABILITY_2_0);
+                short logicalLinkCapParam = tlvs.getShort(SUPPORTED_LL_CAPABILITY_VER_3_0);
                 if (isBitSet(logicalLinkCapParam, LOGICAL_LINK_SUPPORT)) {
                     builder.setLogicalLinkSupport(true);
 
@@ -817,14 +818,14 @@ public class FiraDecoder extends TlvDecoder {
                     builder.setMaxLogicalLinkSupportPerSession(maxLogicalLinksPerSession);
                 }
             } catch (IllegalArgumentException e) {
-                Log.w(TAG, "SUPPORTED_LL_CAPABILITY_2_0 not found.");
+                Log.w(TAG, "SUPPORTED_LL_CAPABILITY_VER_3_0 not found.");
             }
 
             try {
-                byte bypassModeSupport = tlvs.getByte(SUPPORTED_BYPASS_MODE_2_0);
+                byte bypassModeSupport = tlvs.getByte(SUPPORTED_BYPASS_MODE_VER_3_0);
                 builder.setLogicalLinkBypassModeSupport(bypassModeSupport == 1);
             } catch (IllegalArgumentException e) {
-                Log.w(TAG, "SUPPORTED_BYPASS_MODE_2_0 not found.");
+                Log.w(TAG, "SUPPORTED_BYPASS_MODE_VER_3_0 not found.");
             }
         } else {
             // This FiRa version is not supported yet.
@@ -838,10 +839,18 @@ public class FiraDecoder extends TlvDecoder {
         }
 
         try {
-            int minSlotDurationUs = TlvUtil.rstuToUs(tlvs.getInt(SUPPORTED_MIN_SLOT_DURATION_RSTU));
+            int minSlotDurationUs = TlvUtil.rstuToUs(
+                    tlvs.getShort(SUPPORTED_UCI_MIN_SLOT_DURATION_RSTU_VER_3_0));
             builder.setMinSlotDurationSupportedUs(minSlotDurationUs);
         } catch (IllegalArgumentException e) {
-            Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION not found.");
+            Log.w(TAG, "SUPPORTED_UCI_MIN_SLOT_DURATION_RSTU_VER_3_0 not found.");
+            try {
+                int minSlotDurationUs = TlvUtil.rstuToUs(
+                        tlvs.getInt(SUPPORTED_MIN_SLOT_DURATION_RSTU));
+                builder.setMinSlotDurationSupportedUs(minSlotDurationUs);
+            } catch (IllegalArgumentException e2) {
+                Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION_RSTU vendor tag not found.");
+            }
         }
 
         try {
