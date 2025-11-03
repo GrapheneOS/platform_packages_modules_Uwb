@@ -22,12 +22,9 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
 import android.util.ArrayMap;
-
 import androidx.annotation.IntDef;
-
 import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraParams;
-
 import java.util.Map;
 
 /** Definitions that are common for all classes. */
@@ -42,7 +39,7 @@ public final class Utils {
         CONFIG_PROVISIONED_UNICAST_DS_TWR,
         CONFIG_PROVISIONED_MULTICAST_DS_TWR,
         CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
-            CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
+        CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST
     })
     public @interface UwbConfigId {}
 
@@ -67,7 +64,6 @@ public final class Utils {
 
     /** Same as {@code CONFIG_ID_3}, except fast ranging interval is 96 milliseconds. */
     public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST = 6;
-
 
     @IntDef({
         INFREQUENT,
@@ -282,6 +278,7 @@ public final class Utils {
                         /* slotDurationRstu= */ 2400,
                         /* initiationTimeMs= */ 0,
                         /* hoppingEnabled= */ true));
+
     }
 
     public static int channelForTesting = 9;

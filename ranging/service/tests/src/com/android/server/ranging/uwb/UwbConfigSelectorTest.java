@@ -1,0 +1,559 @@
+/*
+ * Copyright 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.ranging.uwb;
+
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
+import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_5;
+import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_10;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_12;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_27;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_29;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_32;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_9;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
+import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
+import static android.ranging.uwb.UwbRangingParams.DURATION_1_MS;
+import static android.ranging.uwb.UwbRangingParams.DURATION_2_MS;
+
+import static com.android.server.ranging.common.RangingUtils.bitset;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import android.ranging.RangingDevice;
+import android.ranging.SessionConfig;
+import android.ranging.SessionHandle;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.uwb.UwbComplexChannel;
+import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.uwb.UwbRangingParams;
+import android.util.Range;
+
+import androidx.test.filters.SmallTest;
+
+import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.server.ranging.oob.packets.UwbCapabilities;
+import com.android.server.ranging.oob.packets.UwbConfiguration;
+import com.android.server.ranging.oob.packets.UwbDeviceRole;
+import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.IntStream;
+
+@RunWith(JUnit4.class)
+@SmallTest
+public class UwbConfigSelectorTest {
+    @Rule
+    public final MockitoRule mMockito = MockitoJUnit.rule();
+
+    private static final ImmutableList<@UwbRangingParams.ConfigId Integer>
+            DEFAULT_SUPPORTED_CONFIG_IDS = ImmutableList.copyOf(IntStream.rangeClosed(
+                    CONFIG_UNICAST_DS_TWR, CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
+            .boxed().toList());
+    private static final ImmutableList<@UwbComplexChannel.UwbChannel Integer>
+            DEFAULT_SUPPORTED_CHANNELS = ImmutableList.of(UWB_CHANNEL_9, UWB_CHANNEL_5);
+    private static final ImmutableList<@UwbComplexChannel.UwbPreambleCodeIndex Integer>
+            DEFAULT_SUPPORTED_PREAMBLE_INDEXES = ImmutableList.copyOf(IntStream.rangeClosed(
+                    UWB_PREAMBLE_CODE_INDEX_9, UWB_PREAMBLE_CODE_INDEX_32)
+            .boxed().toList());
+    private static final ImmutableList<@RawRangingDevice.RangingUpdateRate Integer>
+            DEFAULT_SUPPORTED_UPDATE_RATES = ImmutableList.of(
+            UPDATE_RATE_FREQUENT, UPDATE_RATE_NORMAL, UPDATE_RATE_INFREQUENT);
+    private static final ImmutableList<@RawRangingDevice.RangingUpdateRate Integer>
+            DEFAULT_SUPPORTED_SLOT_DURATIONS = ImmutableList.of(DURATION_1_MS, DURATION_2_MS);
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private SessionConfig mMockSessionConfig;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private OobInitiatorRangingConfig mMockOobConfig;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private UwbRangingCapabilities mMockLocalCapabilities;
+
+
+    private void mockConfiguredRangingIntervalRange(Range<Duration> range) {
+        when(mMockOobConfig.getRangingIntervalRange()).thenReturn(range);
+        when(mMockOobConfig.getFastestRangingInterval()).thenReturn(range.getLower());
+        when(mMockOobConfig.getSlowestRangingInterval()).thenReturn(range.getUpper());
+    }
+
+    /** Create class under test */
+    private UwbConfigSelector createConfigSelector() throws ConfigSelectionException {
+        return new UwbConfigSelector(
+                mMockSessionConfig, mMockOobConfig,
+                mock(SessionHandle.class, Answers.RETURNS_DEEP_STUBS), mMockLocalCapabilities);
+    }
+
+    private UwbCapabilities.Builder createCapabilities(byte peerId) {
+        return new UwbCapabilities.Builder()
+                .setAddress(new byte[] {peerId, peerId})
+                .setConfigIds(bitset(DEFAULT_SUPPORTED_CONFIG_IDS))
+                .setChannels(bitset(DEFAULT_SUPPORTED_CHANNELS))
+                .setPreambleIndexes(bitset(DEFAULT_SUPPORTED_PREAMBLE_INDEXES))
+                .setMinInterval((short) 0)
+                .setMinSlotDuration(DEFAULT_SUPPORTED_SLOT_DURATIONS
+                        .stream().min(Integer::compareTo).get().byteValue())
+                .setRoles((byte) 1);
+    }
+
+    @Before
+    public void setup() {
+        when(mMockSessionConfig.isAngleOfArrivalNeeded()).thenReturn(false);
+
+        when(mMockOobConfig.getSecurityLevel()).thenReturn(SECURITY_LEVEL_BASIC);
+        mockConfiguredRangingIntervalRange(Range.create(Duration.ZERO, Duration.ofDays(1)));
+
+        when(mMockLocalCapabilities.getSupportedConfigIds())
+                .thenReturn(DEFAULT_SUPPORTED_CONFIG_IDS);
+        when(mMockLocalCapabilities.getSupportedChannels()).thenReturn(DEFAULT_SUPPORTED_CHANNELS);
+        when(mMockLocalCapabilities.getSupportedPreambleIndexes())
+                .thenReturn(DEFAULT_SUPPORTED_PREAMBLE_INDEXES);
+        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(Duration.ZERO);
+        when(mMockLocalCapabilities.getSupportedRangingUpdateRates())
+                .thenReturn(DEFAULT_SUPPORTED_UPDATE_RATES);
+        when(mMockLocalCapabilities.getSupportedSlotDurations())
+                .thenReturn(DEFAULT_SUPPORTED_SLOT_DURATIONS);
+        when(mMockLocalCapabilities.isAzimuthalAngleSupported()).thenReturn(true);
+        when(mMockLocalCapabilities.getCountryCode()).thenReturn("US");
+    }
+
+    @Test
+    public void isCapableOfConfig_returnsFalseWhenSecurityLevelIncompatible() {
+        when(mMockOobConfig.getSecurityLevel()).thenReturn(SECURITY_LEVEL_SECURE);
+        when(mMockLocalCapabilities.getSupportedConfigIds())
+                .thenReturn(List.of(CONFIG_UNICAST_DS_TWR, CONFIG_MULTICAST_DS_TWR));
+
+        assertFalse(UwbConfigSelector
+                .isCapableOfConfig(mMockSessionConfig, mMockOobConfig, mMockLocalCapabilities));
+    }
+
+    @Test(expected = ConfigSelectionException.class)
+    public void addPeerCapabilities_failsWhenPeerIncapableOfInitiatorRole()
+            throws ConfigSelectionException {
+
+        UwbConfigSelector configSelector = createConfigSelector();
+
+        configSelector.addPeerCapabilities(
+                new RangingDevice.Builder().build(),
+                createCapabilities((byte) 0).setRoles((byte) 2).build());
+    }
+
+    @Test
+    public void shouldUseProvisionedSts_whenSecurityLevelSecure()
+            throws ConfigSelectionException {
+        RangingDevice peer = new RangingDevice.Builder().build();
+
+        when(mMockOobConfig.getSecurityLevel()).thenReturn(SECURITY_LEVEL_SECURE);
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peer,
+                createCapabilities((byte) 0)
+                        .setConfigIds(bitset(ImmutableList.copyOf(IntStream.rangeClosed(
+                                        CONFIG_UNICAST_DS_TWR, CONFIG_PROVISIONED_MULTICAST_DS_TWR)
+                                .boxed()
+                                .toList())))
+                        .build());
+
+        UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
+                configSelector.selectLocalConfigs(Set.of(peer)));
+        assertThat(localConfig.getParameters().getConfigId())
+                .isEqualTo(CONFIG_PROVISIONED_UNICAST_DS_TWR);
+        assertThat(localConfig.getParameters().getSessionKeyInfo()).hasLength(16);
+
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getConfigId()).isEqualTo(CONFIG_PROVISIONED_UNICAST_DS_TWR);
+        assertThat(peerConfig.getSessionKey()).hasLength(16);
+    }
+
+    @Test
+    public void shouldUseVeryFastConfigId_whenSupported() throws ConfigSelectionException {
+        RangingDevice peer = new RangingDevice.Builder().build();
+
+        when(mMockOobConfig.getSecurityLevel()).thenReturn(SECURITY_LEVEL_SECURE);
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peer,
+                createCapabilities((byte) 0)
+                        .setConfigIds(bitset(ImmutableList.of(
+                                CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
+                                CONFIG_PROVISIONED_UNICAST_DS_TWR)))
+                        .build());
+
+        UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
+                configSelector.selectLocalConfigs(Set.of(peer)));
+        assertThat(localConfig.getParameters().getConfigId())
+                .isEqualTo(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST);
+        assertThat(localConfig.getParameters().getRangingUpdateRate())
+                .isEqualTo(UPDATE_RATE_FREQUENT);
+
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getConfigId())
+                .isEqualTo(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST);
+        assertThat(peerConfig.getInterval())
+                .isEqualTo(Utils.getRangingTimingParams(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
+                        .getRangingInterval(UPDATE_RATE_FREQUENT));
+    }
+
+    @Test
+    public void shouldConfigureOneSession_whenOnePeerAdded() throws ConfigSelectionException {
+        RangingDevice peer = new RangingDevice.Builder().build();
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(peer, createCapabilities((byte) 0).build());
+
+        UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
+                configSelector.selectLocalConfigs(Set.of(peer)));
+        assertThat(localConfig.getPeerDevices()).containsExactly(peer);
+        assertThat(localConfig.getParameters().getConfigId()).isEqualTo(CONFIG_UNICAST_DS_TWR);
+        assertThat(localConfig.getDeviceRole()).isEqualTo(DEVICE_ROLE_RESPONDER);
+
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getDeviceRole()).isEqualTo(UwbDeviceRole.Initiator);
+        assertThat(peerConfig.getConfigId()).isEqualTo(CONFIG_UNICAST_DS_TWR);
+    }
+
+    @Test
+    public void shouldConfigureMultipleSessions_whenMultiplePeersAdded()
+            throws ConfigSelectionException {
+
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(peers.get(0), createCapabilities((byte) 0).build());
+        configSelector.addPeerCapabilities(peers.get(1), createCapabilities((byte) 1).build());
+
+        Set<TechnologyConfig> localConfigs = configSelector.selectLocalConfigs(Set.copyOf(peers));
+        assertThat(localConfigs).hasSize(2);
+        for (TechnologyConfig c : localConfigs) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getPeerDevices()).hasSize(1);
+            assertThat(localConfig.getPeerDevices()).containsAnyIn(peers);
+            assertThat(localConfig.getParameters().getConfigId()).isEqualTo(CONFIG_UNICAST_DS_TWR);
+            assertThat(localConfig.getDeviceRole()).isEqualTo(DEVICE_ROLE_RESPONDER);
+        }
+
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+
+            assertThat(peerConfig.getDeviceRole()).isEqualTo(UwbDeviceRole.Initiator);
+            assertThat(peerConfig.getConfigId()).isEqualTo(CONFIG_UNICAST_DS_TWR);
+        }
+    }
+
+    @Test
+    public void shouldSelectFastestUpdateRate_whenConfiguredIntervalOverlapsCapabilities()
+            throws ConfigSelectionException {
+
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peers.get(0),
+                createCapabilities((byte) 0)
+                        .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                                .getRangingIntervalFast())
+                        .build());
+        configSelector.addPeerCapabilities(
+                peers.get(1),
+                createCapabilities((byte) 1)
+                        .setMinInterval((short) Utils.getRangingTimingParams(
+                                CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
+                                        .getRangingIntervalFast())
+                        .build());
+        configSelector.addPeerCapabilities(
+                peers.get(2),
+                createCapabilities((byte) 2)
+                        .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                                .getRangingIntervalNormal())
+                        .build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_NORMAL);
+        }
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+            assertThat(peerConfig.getInterval())
+                    .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                            .getRangingIntervalNormal());
+        }
+    }
+
+    @Test
+    public void shouldSelectInfrequentUpdateRate_whenConfiguredIntervalSlowerThanCapabilities()
+            throws ConfigSelectionException {
+
+        RangingDevice peer = new RangingDevice.Builder().build();
+
+        mockConfiguredRangingIntervalRange(Range.create(Duration.ofDays(1), Duration.ofDays(2)));
+        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(Duration.ofMillis(3));
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peer,
+                createCapabilities((byte) 0)
+                        .setMinInterval((short) 4)
+                        .build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.of(peer))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_INFREQUENT);
+        }
+
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getInterval())
+                .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                        .getRangingIntervalInfrequent());
+    }
+
+    @Test
+    public void shouldSelectFastestUpdateRate_whenConfiguredIntervalFasterThanCapabilities()
+            throws ConfigSelectionException {
+
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        mockConfiguredRangingIntervalRange(Range.create(Duration.ofNanos(1), Duration.ofNanos(2)));
+        when(mMockLocalCapabilities.getMinimumRangingInterval())
+                .thenReturn(Duration.ofMillis(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                        .getRangingIntervalInfrequent()));
+
+        UwbConfigSelector configSelector = createConfigSelector();
+
+        configSelector.addPeerCapabilities(
+                peers.get(0),
+                createCapabilities((byte) 0)
+                        .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                                .getRangingIntervalFast())
+                        .build());
+        configSelector.addPeerCapabilities(
+                peers.get(1),
+                createCapabilities((byte) 1)
+                        .setMinInterval(
+                                (short) Utils.getRangingTimingParams(
+                                        CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
+                                        .getRangingIntervalFast())
+                        .build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_INFREQUENT);
+        }
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+            assertThat(peerConfig.getInterval())
+                    .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                            .getRangingIntervalInfrequent());
+        }
+    }
+
+    @Test
+    public void shouldPrioritizeChannel9() throws ConfigSelectionException {
+        RangingDevice peer = new RangingDevice.Builder().build();
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peer,
+                createCapabilities((byte) 0)
+                        .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5, UWB_CHANNEL_9)))
+                        .build());
+
+        UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
+                configSelector.selectLocalConfigs(Set.of(peer)));
+        assertThat(localConfig.getParameters().getComplexChannel().getChannel())
+                .isEqualTo(UWB_CHANNEL_9);
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getChannel()).isEqualTo(UWB_CHANNEL_9);
+    }
+
+    @Test
+    public void shouldFallbackToChannel5_whenNotAllPeersSupport9()
+            throws ConfigSelectionException {
+
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peers.get(0),
+                createCapabilities((byte) 0)
+                        .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5, UWB_CHANNEL_9)))
+                        .build());
+        configSelector.addPeerCapabilities(
+                peers.get(1),
+                createCapabilities((byte) 1)
+                        .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5)))
+                        .build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getComplexChannel().getChannel())
+                    .isEqualTo(UWB_CHANNEL_5);
+        }
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+            assertThat(peerConfig.getChannel()).isEqualTo(UWB_CHANNEL_5);
+        }
+    }
+
+    @Test
+    public void shouldPrioritizeHprfPreambleIndex() throws ConfigSelectionException {
+        RangingDevice peer = new RangingDevice.Builder().build();
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peer,
+                createCapabilities((byte) 0)
+                        .setPreambleIndexes(bitset(ImmutableList.of(
+                                UWB_PREAMBLE_CODE_INDEX_29,
+                                UWB_PREAMBLE_CODE_INDEX_10), i -> i - 1))
+                        .build());
+
+        UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
+                configSelector.selectLocalConfigs(Set.of(peer)));
+        assertThat(localConfig.getParameters().getComplexChannel().getPreambleIndex())
+                .isEqualTo(UWB_PREAMBLE_CODE_INDEX_29);
+
+        UwbConfiguration peerConfig = (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+        assertThat(peerConfig.getPreambleIndex()).isEqualTo(UWB_PREAMBLE_CODE_INDEX_29);
+    }
+
+    @Test
+    public void shouldFallbackToBprfPreambleIndex_whenNotAllPeersShareAnHprfIndex()
+            throws ConfigSelectionException {
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(
+                peers.get(0),
+                createCapabilities((byte) 0)
+                        .setPreambleIndexes(bitset(ImmutableList.of(
+                                UWB_PREAMBLE_CODE_INDEX_9,
+                                UWB_PREAMBLE_CODE_INDEX_12,
+                                UWB_PREAMBLE_CODE_INDEX_27), i -> i - 1))
+                        .build());
+        configSelector.addPeerCapabilities(
+                peers.get(1),
+                createCapabilities((byte) 1)
+                        .setPreambleIndexes(bitset(ImmutableList.of(
+                                UWB_PREAMBLE_CODE_INDEX_12,
+                                UWB_PREAMBLE_CODE_INDEX_32), i -> i - 1))
+                        .build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getComplexChannel().getPreambleIndex())
+                    .isEqualTo(UWB_PREAMBLE_CODE_INDEX_12);
+        }
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+            assertThat(peerConfig.getPreambleIndex()).isEqualTo(UWB_PREAMBLE_CODE_INDEX_12);
+        }
+    }
+
+    @Test
+    public void shouldRespectLocalCapabilities_whenMoreRestrictiveThanPeers()
+            throws ConfigSelectionException {
+        List<RangingDevice> peers = List.of(
+                new RangingDevice.Builder().build(),
+                new RangingDevice.Builder().build());
+
+        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(
+                Duration.ofMillis(Utils.getRangingTimingParams(CONFIG_MULTICAST_DS_TWR)
+                        .getRangingIntervalInfrequent()));
+        when(mMockLocalCapabilities.getSupportedRangingUpdateRates())
+                .thenReturn(List.of(UPDATE_RATE_INFREQUENT));
+        when(mMockLocalCapabilities.getSupportedChannels()).thenReturn(List.of(UWB_CHANNEL_5));
+        when(mMockLocalCapabilities.getSupportedPreambleIndexes())
+                .thenReturn(List.of(UWB_PREAMBLE_CODE_INDEX_10));
+        when(mMockLocalCapabilities.getSupportedSlotDurations()).thenReturn(List.of(DURATION_2_MS));
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.addPeerCapabilities(peers.get(0), createCapabilities((byte) 0).build());
+        configSelector.addPeerCapabilities(peers.get(1), createCapabilities((byte) 1).build());
+
+        for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
+            UwbConfig localConfig = (UwbConfig) c;
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_INFREQUENT);
+            assertThat(localConfig.getParameters().getComplexChannel().getChannel())
+                    .isEqualTo(UWB_CHANNEL_5);
+            assertThat(localConfig.getParameters().getComplexChannel().getPreambleIndex())
+                    .isEqualTo(UWB_PREAMBLE_CODE_INDEX_10);
+            assertThat(localConfig.getParameters().getSlotDuration())
+                    .isEqualTo(DURATION_2_MS);
+        }
+
+        for (RangingDevice peer : peers) {
+            UwbConfiguration peerConfig =
+                    (UwbConfiguration) configSelector.selectRemoteConfig(peer);
+            assertThat(peerConfig.getInterval())
+                    .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                            .getRangingIntervalInfrequent());
+            assertThat(peerConfig.getChannel()).isEqualTo(UWB_CHANNEL_5);
+            assertThat(peerConfig.getPreambleIndex()).isEqualTo(UWB_PREAMBLE_CODE_INDEX_10);
+            assertThat(peerConfig.getSlotDuration()).isEqualTo(DURATION_2_MS);
+        }
+    }
+}

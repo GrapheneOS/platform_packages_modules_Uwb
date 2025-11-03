@@ -83,6 +83,9 @@ java_library {
     apex_available: [
         "com.android.uwb",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // post-jarjar version of framework-ranging

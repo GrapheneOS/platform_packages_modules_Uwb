@@ -1044,7 +1044,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * Query max application data size which can be sent by UWBS in one ranging round.
      *
-     * @throws IllegalStateException, when the ranging session is not in the appropriate state for
+     * @throws IllegalStateException when the ranging session is not in the appropriate state for
      * this API to be called.
      * @return max application data size
      */

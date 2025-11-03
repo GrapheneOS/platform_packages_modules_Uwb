@@ -16,6 +16,10 @@
 
 package com.android.server.ranging.rtt;
 
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+
 import android.annotation.FlaggedApi;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
@@ -31,6 +35,7 @@ import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.ConfigurationManager;
 
+import java.time.Duration;
 import java.util.Objects;
 
 public class RttConfig implements ConfigurationManager.UnicastTechnologyConfig {
@@ -90,6 +95,28 @@ public class RttConfig implements ConfigurationManager.UnicastTechnologyConfig {
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
     public RttStationRangingParams getStationRangingParams() {
         return mStationRangingParams;
+    }
+
+    @Override
+    public Duration getRangingInterval() {
+        return switch (getRangingParams().getRangingUpdateRate()) {
+            case UPDATE_RATE_NORMAL -> {
+                if (getRangingParams().isPeriodicRangingHwFeatureEnabled()) {
+                    yield Duration.ofMillis(256);
+                } else {
+                    yield Duration.ofMillis(512);
+                }
+            }
+            case UPDATE_RATE_INFREQUENT -> Duration.ofMillis(8192);
+            case UPDATE_RATE_FREQUENT -> {
+                if (getRangingParams().isPeriodicRangingHwFeatureEnabled()) {
+                    yield Duration.ofMillis(128);
+                } else {
+                    yield Duration.ofMillis(256);
+                }
+            }
+            default -> throw new IllegalStateException("Unknown update rate");
+        };
     }
 
     @Override

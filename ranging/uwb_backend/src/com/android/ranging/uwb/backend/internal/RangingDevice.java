@@ -25,9 +25,6 @@ import static com.android.ranging.uwb.backend.internal.Utils.STATUS_OK;
 import static com.android.ranging.uwb.backend.internal.Utils.TAG;
 import static com.android.ranging.uwb.backend.internal.Utils.UWB_RECONFIGURATION_FAILURE;
 import static com.android.ranging.uwb.backend.internal.Utils.UWB_SYSTEM_CALLBACK_FAILURE;
-
-import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
-
 import static java.util.Objects.requireNonNull;
 
 import android.os.Build.VERSION;
@@ -38,17 +35,13 @@ import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.UwbManager;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
-
 import com.google.common.hash.Hashing;
-import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +60,7 @@ public abstract class RangingDevice {
 
     protected final UwbManager mUwbManager;
 
-    private final OpAsyncCallbackRunner<Boolean> mOpAsyncCallbackRunner;
+    protected final OpAsyncCallbackRunner<Boolean> mOpAsyncCallbackRunner;
 
     @Nullable
     private UwbAddress mLocalAddress;
@@ -79,14 +72,14 @@ public abstract class RangingDevice {
     protected RangingParameters mRangingParameters;
 
     /** A serial thread used by System API to handle session callbacks. */
-    private final Executor mSystemCallbackExecutor;
+    protected final Executor mSystemCallbackExecutor;
 
     /** A serial thread used in system API callbacks to handle Backend callbacks */
     private final ExecutorService mBackendCallbackExecutor;
 
     /** NotNull when session opening is successful. Set to Null when session is closed. */
     @Nullable
-    private RangingSession mRangingSession;
+    protected RangingSession mRangingSession;
 
     private AtomicBoolean mIsRanging = new AtomicBoolean(false);
 
@@ -96,17 +89,17 @@ public abstract class RangingDevice {
     @Nullable
     private RangingRoundFailureCallback mRangingRoundFailureCallback = null;
 
-    private boolean mRangingReportedAllowed = false;
+    protected boolean mRangingReportedAllowed = false;
 
     @Nullable
-    private String mChipId = null;
+    protected String mChipId = null;
 
     @NonNull
     protected final UwbFeatureFlags mUwbFeatureFlags;
 
     private final HashMap<String, UwbAddress> mMultiChipMap;
 
-    private UwbRangeDataNtfConfig mLastNtfConfig;
+    protected UwbRangeDataNtfConfig mLastNtfConfig;
     private final boolean mIsHwTurnOffEnabled;
 
     RangingDevice(UwbManager manager, ExecutorService executor,
@@ -479,7 +472,7 @@ public abstract class RangingDevice {
         return o.toString();
     }
 
-    private void printStartRangingParameters(PersistableBundle parameters) {
+    protected void printStartRangingParameters(PersistableBundle parameters) {
         Log.i(TAG, "Opens UWB session with bundle parameters: " + parameters.toString());
     }
 
@@ -500,6 +493,7 @@ public abstract class RangingDevice {
         mLastNtfConfig = mRangingParameters.getUwbRangeDataNtfConfig();
         FiraOpenSessionParams openSessionParams = getOpenSessionParams();
         printStartRangingParameters(openSessionParams.toBundle());
+
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
                         () -> {
@@ -522,22 +516,6 @@ public abstract class RangingDevice {
         if (!success || result == null || !result) {
             // onRangingSuspended should have been called in the callback.
             return STATUS_OK;
-        }
-
-        if (VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE
-                && openSessionParams.getDeviceRole() == RANGING_DEVICE_DT_TAG) {
-            // Setting default ranging rounds value.
-            DlTDoARangingRoundsUpdate rangingRounds =
-                    new DlTDoARangingRoundsUpdate.Builder()
-                            .setSessionId(openSessionParams.getSessionId())
-                            .setNoOfRangingRounds(1)
-                            .setRangingRoundIndexes(new byte[]{0})
-                            .build();
-            success =
-                    mOpAsyncCallbackRunner.execOperation(
-                            () -> mRangingSession.updateRangingRoundsDtTag(
-                                    rangingRounds.toBundle()),
-                            "Update ranging rounds for Dt Tag");
         }
 
         success =

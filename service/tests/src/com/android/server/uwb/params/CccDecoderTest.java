@@ -49,6 +49,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -236,5 +237,56 @@ public class CccDecoderTest {
         CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
                 tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
         verifyCccSpecification(cccSpecificationParams);
+    }
+
+    @Test
+    public void testGetCccSpecification_channel9OnlyWithoutPrioritizedList() throws Exception {
+        // Verifies correct channel parsing when only channel 9 is supported and no
+        // prioritized list is provided.
+        String tlvDataString = TEST_CCC_SPECIFICATION_TLV_DATA_STRING.replace("a30103", "a30102");
+        byte[] tlvData = UwbUtil.getByteArray(tlvDataString);
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(tlvData, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Verify that only channel 9 is present.
+        assertThat(cccSpecificationParams.getChannels()).isEqualTo(List.of(9));
+    }
+
+    @Test
+    public void testGetCccSpecification_channel5OnlyWithoutPrioritizedList() throws Exception {
+        // Verifies correct channel parsing when only channel 5 is supported and no
+        // prioritized list is provided.
+        String tlvDataString = TEST_CCC_SPECIFICATION_TLV_DATA_STRING.replace("a30103", "a30101");
+        byte[] tlvData = UwbUtil.getByteArray(tlvDataString);
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(tlvData, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Verify that only channel 5 is present.
+        assertThat(cccSpecificationParams.getChannels()).isEqualTo(List.of(5));
+    }
+
+    @Test
+    public void testGetCccSpecification_noChannelsWithoutPrioritizedList() throws Exception {
+        // Verifies correct channel parsing when no channels are supported and no
+        // prioritized list is provided.
+        String tlvDataString = TEST_CCC_SPECIFICATION_TLV_DATA_STRING.replace("a30103", "a30100");
+        byte[] tlvData = UwbUtil.getByteArray(tlvDataString);
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(tlvData, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Verify that the channel list is empty.
+        assertThat(cccSpecificationParams.getChannels()).isEqualTo(Collections.emptyList());
     }
 }

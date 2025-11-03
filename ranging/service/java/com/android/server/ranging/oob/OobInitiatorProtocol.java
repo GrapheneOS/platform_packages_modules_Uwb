@@ -29,7 +29,7 @@ import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleRssiCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
-import com.android.server.ranging.oob.packets.CapabilitiesResponse;
+import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.StopRequest;
@@ -67,7 +67,7 @@ public class OobInitiatorProtocol {
     public Map<Technology, Capabilities> getCapabilitiesFromResponse(
             OobHandle handle, byte[] responseBytes
     ) {
-        CapabilitiesResponse response = CapabilitiesResponse.fromBytes(responseBytes);
+        CapabilitiesResponseV1 response = CapabilitiesResponseV1.fromBytes(responseBytes);
         Map<Technology, Capabilities> capabilities =
                 new HashMap<>(response.getCapabilities().length);
 

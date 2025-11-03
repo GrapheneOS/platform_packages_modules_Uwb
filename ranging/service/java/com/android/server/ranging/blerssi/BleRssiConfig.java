@@ -77,6 +77,16 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
     }
 
     @Override
+    public Duration getRangingInterval() {
+        return switch (getRangingParams().getRangingUpdateRate()) {
+            case UPDATE_RATE_NORMAL -> Duration.ofSeconds(1);
+            case UPDATE_RATE_INFREQUENT -> Duration.ofSeconds(3);
+            case UPDATE_RATE_FREQUENT -> Duration.ofMillis(500);
+            default -> throw new IllegalStateException("Unknown update rate");
+        };
+    }
+
+    @Override
     public @RangingPreference.DeviceRole int getDeviceRole() {
         return mDeviceRole;
     }

@@ -72,6 +72,9 @@ java_library {
     apex_available: [
         "com.android.uwb",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // service-ranging static library

@@ -79,6 +79,16 @@ public class CsConfig implements UnicastTechnologyConfig {
     }
 
     @Override
+    public Duration getRangingInterval() {
+        return switch (getRangingParams().getRangingUpdateRate()) {
+            case UPDATE_RATE_NORMAL -> Duration.ofMillis(200);
+            case UPDATE_RATE_INFREQUENT -> Duration.ofSeconds(5);
+            case UPDATE_RATE_FREQUENT -> Duration.ofMillis(100);
+            default -> throw new IllegalStateException("Unknown update rate");
+        };
+    }
+
+    @Override
     public @RangingPreference.DeviceRole int getDeviceRole() {
         return DEVICE_ROLE_INITIATOR;
     }
