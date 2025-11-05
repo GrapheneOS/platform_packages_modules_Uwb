@@ -30,9 +30,16 @@ import java.util.Set;
 /**
  * Determines which technologies should be active during a ranging session. This may be done
  * statically before the session starts as is implemented in the {@link StaticRangingEngine}, or an
- * engine may choose to activate or deactivate technologies dynamically within the callbacks.
+ * engine may choose to activate or deactivate technologies dynamically by notifying an
+ * {@link EngineListener}.
  */
 public interface RangingEngine {
+
+    /** Called by a {@link RangingEngine} to start or stop technologies. */
+    interface EngineListener {
+        void startTechnologies(Set<RangingTechnology> technologies);
+        void stopTechnologies(Set<RangingTechnology> technologies);
+    }
 
     /** Get the set of technologies to start ranging with when the session begins. */
     @NonNull EnumSet<RangingTechnology> getTechnologiesToStart();

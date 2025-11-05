@@ -100,6 +100,10 @@ public class OobController {
             mReceivedData = Queues.newConcurrentLinkedQueue();
         }
 
+        public OobHandle getHandle() {
+            return mHandle;
+        }
+
         public FluentFuture<Void> sendData(byte[] data) {
             SettableFuture<Void> future = SettableFuture.create();
             setDataSendFuture(data, future);
