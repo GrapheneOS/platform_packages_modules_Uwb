@@ -18,9 +18,10 @@ package com.android.server.ranging.engine;
 
 import static com.android.server.ranging.common.RangingUtils.InternalReason;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 

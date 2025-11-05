@@ -16,10 +16,10 @@
 
 package com.android.server.ranging.engine.heuristic;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.android.server.ranging.RangingData;
 
 import java.util.concurrent.Executor;
 
@@ -36,8 +36,9 @@ public class DerivativeEstimator extends RangeHeuristic {
     @Override
     public void onData(@NonNull RangingData data) {
         if (mLastData != null) {
-            double slope = (data.getRangeMeters() - mLastData.getRangeMeters())
-                    / (data.getTimestamp().toMillis() - mLastData.getTimestamp().toMillis());
+            double slope =
+                    (data.getDistance().getMeasurement() - mLastData.getDistance().getMeasurement())
+                    / (data.getTimestampMillis() - mLastData.getTimestampMillis());
             onHeuristicUpdated(mAvg.next(slope));
         }
         mLastData = data;

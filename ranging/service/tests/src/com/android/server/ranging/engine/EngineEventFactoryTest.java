@@ -22,10 +22,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 import androidx.test.filters.SmallTest;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.engine.EngineEventFactory.EngineEvent;
 import com.android.server.ranging.engine.heuristic.RangeHeuristic;
 
