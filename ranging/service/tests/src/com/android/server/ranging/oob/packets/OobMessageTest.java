@@ -29,7 +29,7 @@ public final class OobMessageTest {
 
     @Test
     public void parseBytes_validHeader_parsesCorrectly() throws Exception {
-        byte[] requestMessageHeader1 = new byte[]{0x1, 0x0};
+        byte[] requestMessageHeader1 = new byte[]{0x2, 0x0};
         byte[] requestMessageHeader2 = new byte[]{(byte) 0xff, 0x3};
 
         assertThat(OobMessage.fromBytes(requestMessageHeader1)).isEqualTo(
@@ -79,7 +79,7 @@ public final class OobMessageTest {
                         .setStoppedTechnologies(new TechnologySet.Builder().build())
                         .build();
 
-        assertThat(header1.toBytes()).isEqualTo(new byte[]{0x1, 0x2, 0, 0, 0, 0});
+        assertThat(header1.toBytes()).isEqualTo(new byte[]{0x2, 0x2, 0, 0, 0, 0});
         assertThat(header2.toBytes()).isEqualTo(new byte[]{(byte) 0xff, 0x7, 0, 0});
     }
 }

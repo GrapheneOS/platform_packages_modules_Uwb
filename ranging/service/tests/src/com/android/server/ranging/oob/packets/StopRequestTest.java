@@ -28,12 +28,13 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class StopRequestTest {
-    private static final byte[] mUwbCsTechBitmap = new byte[]{0x3, 0x00};
-    private static final byte[] mUwbTechOnlyBitmap = new byte[]{0x01, 0x00};
-    private static final byte[] mHeaderBytes = new byte[]{0x1, 0x6};
-    private static final byte[] mUwbCsTechMessage = Bytes.concat(mHeaderBytes, mUwbCsTechBitmap);
-    private static final byte[] mUwbOnlyMessage = Bytes.concat(mHeaderBytes, mUwbTechOnlyBitmap);
-    private static final byte[] mNoTechsMessage = Bytes.concat(mHeaderBytes, new byte[]{0x0, 0x0});
+    private static final byte[] UWB_CS_TECH_BITMAP = new byte[]{0x3, 0x00};
+    private static final byte[] UWB_TECH_ONLY_BITMAP = new byte[]{0x01, 0x00};
+    private static final byte[] HEADER_BYTES = new byte[]{0x2, 0x6};
+    private static final byte[] UWB_CS_TECH_MESSAGE =
+            Bytes.concat(HEADER_BYTES, UWB_CS_TECH_BITMAP);
+    private static final byte[] UWB_ONLY_MESSAGE = Bytes.concat(HEADER_BYTES, UWB_TECH_ONLY_BITMAP);
+    private static final byte[] NO_TECHS_MESSAGE = Bytes.concat(HEADER_BYTES, new byte[]{0x0, 0x0});
 
     @Test
     public void toBytes_convertsCorrectly() throws Exception {
@@ -51,13 +52,13 @@ public final class StopRequestTest {
                         .setTechnologiesToStop(new TechnologySet.Builder().setUwb(true).build())
                         .build();
 
-        assertThat(stopRangingMessageUwbCs.toBytes()).isEqualTo(mUwbCsTechMessage);
-        assertThat(stopRangingMessageUwbOnly.toBytes()).isEqualTo(mUwbOnlyMessage);
+        assertThat(stopRangingMessageUwbCs.toBytes()).isEqualTo(UWB_CS_TECH_MESSAGE);
+        assertThat(stopRangingMessageUwbOnly.toBytes()).isEqualTo(UWB_ONLY_MESSAGE);
     }
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(StopRequest.fromBytes(mUwbCsTechMessage))
+        assertThat(StopRequest.fromBytes(UWB_CS_TECH_MESSAGE))
                 .isEqualTo(new StopRequest.Builder()
                         .setVersion(Version.Current)
                         .setTechnologiesToStop(new TechnologySet.Builder()
@@ -65,7 +66,7 @@ public final class StopRequestTest {
                                 .setBleCs(true)
                                 .build())
                         .build());
-        assertThat(StopRequest.fromBytes(mUwbOnlyMessage))
+        assertThat(StopRequest.fromBytes(UWB_ONLY_MESSAGE))
                 .isEqualTo(new StopRequest.Builder()
                         .setVersion(Version.Current)
                         .setTechnologiesToStop(new TechnologySet.Builder().setUwb(true).build())
@@ -82,7 +83,7 @@ public final class StopRequestTest {
 
     @Test
     public void parseBytes_noTechsSet_parsesToEmpty() throws Exception {
-        assertThat(StopRequest.fromBytes(mNoTechsMessage))
+        assertThat(StopRequest.fromBytes(NO_TECHS_MESSAGE))
                 .isEqualTo(new StopRequest.Builder()
                         .setVersion(Version.Current)
                         .setTechnologiesToStop(new TechnologySet.Builder().build())

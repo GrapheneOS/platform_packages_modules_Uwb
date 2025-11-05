@@ -5,7 +5,8 @@ little_endian_packets
 // Common definitions.
 
 enum Version: 8 {
-    CURRENT = 1,
+    V1 = 1,
+    CURRENT = 2,
     FUTURE = ..,
 }
 

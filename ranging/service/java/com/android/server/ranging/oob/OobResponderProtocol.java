@@ -46,9 +46,12 @@ import com.android.server.ranging.oob.packets.BleRssiConfiguration;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
+import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.TechnologySet;
+import com.android.server.ranging.oob.packets.TechnologyTransitioning;
 import com.android.server.ranging.oob.packets.UnknownConfiguration;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
@@ -90,12 +93,13 @@ public class OobResponderProtocol {
      * Retrieves the system's supported ranging capabilities based on the provided request.
      *
      * @param request The {@link CapabilitiesRequest} specifying the desired technologies
-     * and the requested protocol version.
-     * @return A {@link CapabilitiesResponseV1} object containing the agreed-upon version,
-     * a set of all supported technologies, and a list of detailed capability
-     * objects for each supported and requested technology.
+     *                and the requested protocol version.
+     * @return A {@link CapabilitiesResponseV1} or {@link CapabilitiesResponseV2} object
+     *         containing the agreed-upon version, a set of all supported technologies,
+     *         and a list of detailed capability objects for each supported and requested
+     *         technology. The specific response version depends on the negotiated protocol version.
      */
-    public CapabilitiesResponseV1 getCapabilitiesResponse(CapabilitiesRequest request) {
+    public OobMessage getCapabilitiesResponse(CapabilitiesRequest request) {
         if (request.getVersion() instanceof Version.Future) {
             mVersion = Version.Current;
         } else {
@@ -136,7 +140,7 @@ public class OobResponderProtocol {
         RttRangingCapabilities wifiNan = myCapabilities.getRttRangingCapabilities();
         if (request.getRequestedTechnologies().getWifiNanRtt() && wifiNan != null) {
             supported.setWifiNanRtt(true);
-            if (mVersion.toByte() == 1) {
+            if (mVersion.toByte() <= 2) {
                 capabilities.add(new WifiNanRttCapabilitiesV1.Builder()
                         .setPeriodic(wifiNan.hasPeriodicRangingHardwareFeature())
                         .setBandwidth(WifiBandwidth.fromByte(
@@ -144,7 +148,7 @@ public class OobResponderProtocol {
                         .setNumRxChains((byte) wifiNan.getMaxSupportedRxChain())
                         .build());
             } else {
-                // TODO: Correctly handle version 2
+                // TODO: Correctly handle version 3
                 capabilities.add(new WifiNanRttCapabilitiesV3.Builder().build());
             }
         }
@@ -159,7 +163,7 @@ public class OobResponderProtocol {
         }
 
         RttStationRangingCapabilities wifiSta = myCapabilities.getRttStationRangingCapabilities();
-        if (Byte.toUnsignedInt(mVersion.toByte()) >= 2
+        if (Byte.toUnsignedInt(mVersion.toByte()) >= 3
                 && request.getRequestedTechnologies().getWifiApRtt()
                 && wifiSta != null
         ) {
@@ -171,11 +175,21 @@ public class OobResponderProtocol {
                     .build());
         }
 
-        return new CapabilitiesResponseV1.Builder()
+        // Build either CapabilitiesResponseV1 or CapabilitiesResponseV2 based on mVersion
+        if (Byte.toUnsignedInt(mVersion.toByte()) >= 2) {
+            return new CapabilitiesResponseV2.Builder()
+                .setVersion(mVersion)
+                .setSupportedTechnologies(supported.build())
+                .setCapabilities(capabilities.toArray(new Capabilities[0]))
+                .setSupportedTransitioning(TechnologyTransitioning.MakeBeforeBreak)
+                .build();
+        } else {
+            return new CapabilitiesResponseV1.Builder()
                 .setVersion(mVersion)
                 .setSupportedTechnologies(supported.build())
                 .setCapabilities(capabilities.toArray(new Capabilities[0]))
                 .build();
+        }
     }
 
     public ImmutableSet<TechnologyConfig> getConfigurations(

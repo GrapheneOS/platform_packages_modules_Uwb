@@ -63,7 +63,7 @@ public final class CapabilitiesResponseTest {
     private static final byte[] oobHeaderBytes =
             new byte[]{
                     // Version
-                    0x01,
+                    0x02,
                     // Message type
                     0x01,
             };
@@ -156,7 +156,7 @@ public final class CapabilitiesResponseTest {
                         .setSupportedTechnologies(new TechnologySet.Builder().build())
                         .setCapabilities(new Capabilities[] {})
                         .build();
-        byte[] nothingSetBytes = new byte[]{0x1, 0x1, 0x0, 0x0};
+        byte[] nothingSetBytes = new byte[]{0x2, 0x1, 0x0, 0x0};
         assertThat(capabilityResponseNoTechnologiesSet.toBytes()).isEqualTo(nothingSetBytes);
     }
 
