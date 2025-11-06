@@ -130,7 +130,11 @@ public class EngineEventFactoryTest {
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
         heuristics.get(1).triggerUpdate(1);
+        // This value does not meet the threshold
         heuristics.get(2).triggerUpdate(100);
 
         verify(mMockListener, never()).eventOccurred(any());
