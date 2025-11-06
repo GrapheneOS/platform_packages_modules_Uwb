@@ -55,7 +55,6 @@ public final class CapabilitiesResponseTest {
                     .build();
     private static final CapabilitiesResponseV1 CAPABILITY_RESPONSE_MESSAGE =
             new CapabilitiesResponseV1.Builder()
-                    .setVersion(Version.Current)
                     .setSupportedTechnologies(technologyBitset(SUPPORTED_RANGING_TECHNOLOGIES))
                     .setCapabilities(new Capabilities[]{ UWB_CAPABILITIES })
                     .build();
@@ -63,7 +62,7 @@ public final class CapabilitiesResponseTest {
     private static final byte[] oobHeaderBytes =
             new byte[]{
                     // Version
-                    0x02,
+                    0x01,
                     // Message type
                     0x01,
             };
@@ -152,11 +151,10 @@ public final class CapabilitiesResponseTest {
     public void toBytes_noTechnologiesSet_convertsCorrectly() throws Exception {
         CapabilitiesResponseV1 capabilityResponseNoTechnologiesSet =
                 new CapabilitiesResponseV1.Builder()
-                        .setVersion(Version.Current)
                         .setSupportedTechnologies(new TechnologySet.Builder().build())
                         .setCapabilities(new Capabilities[] {})
                         .build();
-        byte[] nothingSetBytes = new byte[]{0x2, 0x1, 0x0, 0x0};
+        byte[] nothingSetBytes = new byte[]{0x1, 0x1, 0x0, 0x0};
         assertThat(capabilityResponseNoTechnologiesSet.toBytes()).isEqualTo(nothingSetBytes);
     }
 

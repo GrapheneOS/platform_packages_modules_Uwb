@@ -16,9 +16,9 @@
 
 package com.android.server.ranging.oob;
 
-import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
-import static com.android.server.ranging.common.RangingUtils.bitset;
 import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromIntervalMs;
+import static com.android.server.ranging.common.RangingUtils.bitset;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 
 import android.ranging.RangingCapabilities;
@@ -185,7 +185,6 @@ public class OobResponderProtocol {
                 .build();
         } else {
             return new CapabilitiesResponseV1.Builder()
-                .setVersion(mVersion)
                 .setSupportedTechnologies(supported.build())
                 .setCapabilities(capabilities.toArray(new Capabilities[0]))
                 .build();

@@ -238,7 +238,7 @@ packet CapabilitiesRequest: OobMessage(id = CAPABILITIES_REQUEST) {
     requested_technologies: TechnologySet,
 }
 
-packet CapabilitiesResponseV1: OobMessage(id = CAPABILITIES_RESPONSE) {
+packet CapabilitiesResponseV1: OobMessage(version = V1, id = CAPABILITIES_RESPONSE) {
     supported_technologies: TechnologySet,
     capabilities: Capabilities[],
 }
