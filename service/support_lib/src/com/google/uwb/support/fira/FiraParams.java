@@ -1142,12 +1142,16 @@ public abstract class FiraParams extends Params {
     @IntDef(
             value = {
                     KEY_LENGTH_256_BITS_NOT_SUPPORTED,
-                    KEY_LENGTH_256_BITS_SUPPORTED,
+                    KEY_LENGTH_256_BITS_DYNAMIC_STS,
+                    KEY_LENGTH_256_BITS_PROVISIONED_STS,
+                    KEY_LENGTH_256_BITS_DYNAMIC_PROVISIONED_STS,
             })
     public @interface SessionKeyLength {}
 
     public static final int KEY_LENGTH_256_BITS_NOT_SUPPORTED = 0;
-    public static final int KEY_LENGTH_256_BITS_SUPPORTED = 1;
+    public static final int KEY_LENGTH_256_BITS_DYNAMIC_STS = 1;
+    public static final int KEY_LENGTH_256_BITS_PROVISIONED_STS = 2;
+    public static final int KEY_LENGTH_256_BITS_DYNAMIC_PROVISIONED_STS = 3;
 
     /**
      * Session Type (for SESSION_INIT_CMD)
