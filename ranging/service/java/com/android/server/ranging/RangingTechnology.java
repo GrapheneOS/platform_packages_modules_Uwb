@@ -41,8 +41,7 @@ public enum RangingTechnology {
 
     RTT(2), // Wifi RTT.
     RSSI(3), // BLE RSSI.
-    RTT_STATION(4), //Wifi RTT 8011MC
-    WIFI_PD(5); // Wifi proximity detection
+    RTT_STATION(4); //Wifi RTT 8011MC
 
     public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
             ImmutableList.copyOf(RangingTechnology.values());

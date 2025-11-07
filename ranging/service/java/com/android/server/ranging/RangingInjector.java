@@ -60,8 +60,6 @@ import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbConfigSelector;
-import com.android.server.ranging.wifipd.WifiPdAdapter;
-import com.android.server.ranging.wifipd.WifiPdCapabilitiesAdapter;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -162,9 +160,6 @@ public class RangingInjector {
                         mContext, this, executor, config.getDeviceRole(), config.getTechnology());
             case RSSI:
                 return new BleRssiAdapter(mContext, this);
-            case WIFI_PD:
-                return new WifiPdAdapter(mContext, this, attributionSource, executor,
-                        config.getDeviceRole());
             default:
                 throw new IllegalArgumentException(
                         "Adapter does not exist for technology " + config.getTechnology());
@@ -186,8 +181,6 @@ public class RangingInjector {
                 return new BleRssiCapabilitiesAdapter(mContext, listener);
             case RTT_STATION:
                 return new RttStationCapabilitiesAdapter(mContext, listener);
-            case WIFI_PD:
-                return new WifiPdCapabilitiesAdapter(mContext, listener);
             default:
                 throw new IllegalArgumentException(
                         "CapabilitiesAdapter does not exist for technology " + technology);
@@ -210,7 +203,6 @@ public class RangingInjector {
                     sessionConfig, oobConfig, capabilities.getBleRssiCapabilities());
             case RangingTechnology.RTT_STATION -> new RttStationConfigSelector(
                     sessionConfig, oobConfig, capabilities.getRttStationRangingCapabilities());
-            case RangingTechnology.WIFI_PD -> /*TODO support for wifi PD*/ null;
         };
     }
 
@@ -219,29 +211,24 @@ public class RangingInjector {
     ) {
         RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
         if (capabilities.getUwbCapabilities() != null && !UwbConfigSelector
-                .isCapableOfConfig(sessionConfig, oobConfig, capabilities.getUwbCapabilities())) {
+                .isCapableOfConfig(sessionConfig, oobConfig, capabilities.getUwbCapabilities()))
             return false;
-        }
 
         if (capabilities.getCsCapabilities() != null && !CsConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getCsCapabilities())) {
+                .isCapableOfConfig(oobConfig, capabilities.getCsCapabilities()))
             return false;
-        }
 
         if (capabilities.getRttRangingCapabilities() != null && !RttConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getRttRangingCapabilities())) {
+                .isCapableOfConfig(oobConfig, capabilities.getRttRangingCapabilities()))
             return false;
-        }
 
         if (capabilities.getBleRssiCapabilities() != null && !BleRssiConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getBleRssiCapabilities())) {
+                .isCapableOfConfig(oobConfig, capabilities.getBleRssiCapabilities()))
             return false;
-        }
 
         if (capabilities.getRttStationRangingCapabilities() != null && !RttStationConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getRttStationRangingCapabilities())) {
+                .isCapableOfConfig(oobConfig, capabilities.getRttStationRangingCapabilities()))
             return false;
-        }
 
         return true;
     }
