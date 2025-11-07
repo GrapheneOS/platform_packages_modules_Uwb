@@ -32,8 +32,8 @@ use crate::params::uci_packets::{
     SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
     SetAppConfigResponse, UciDataPacket, UciDataPacketHal, UpdateMulticastListAction,
 };
-use crate::params::utils::{bytes_to_u16, bytes_to_u64};
-use crate::params::UCIMajorVersion;
+use crate::params::utils::{bytes_to_u16, bytes_to_u64, bytes_to_u8};
+use crate::params::{FiraLogicalLinkVersion, UCIMajorVersion};
 use crate::uci::command::UciCommand;
 use crate::uci::message::UciMessage;
 use crate::uci::notification::{
@@ -56,6 +56,8 @@ const UCI_TIMEOUT_MS: u64 = 2000;
 const MAX_RETRY_COUNT: usize = 3;
 // Initialize to a safe (minimum) value for a Data packet fragment's payload size.
 const MAX_DATA_PACKET_PAYLOAD_SIZE: usize = 255;
+
+const FIRA_LOGICAL_LINK_VERSION_DEFAULT: u8 = 0x10;
 
 /// The UciManager organizes the state machine of the UWB HAL, and provides the interface which
 /// abstracts the UCI commands, responses, and notifications.
@@ -221,7 +223,8 @@ pub trait UciManager: 'static + Send + Sync + Clone {
         session_id: SessionId,
         link_layer_mode: u8,
         address: Vec<u8>,
-        logical_link_class_len: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<CreateLogicalLinkResponse>;
 
     async fn close_logical_link(&self, connect_id: ConnectId) -> Result<()>;
@@ -762,7 +765,8 @@ impl UciManager for UciManagerImpl {
         session_id: SessionId,
         link_layer_mode: u8,
         dest_mac_address_bytes: Vec<u8>,
-        logical_link_class_len: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<CreateLogicalLinkResponse> {
         debug!(
             "create_logical_link_layer(): session_id {}, address {:?}",
@@ -773,7 +777,8 @@ impl UciManager for UciManagerImpl {
             session_token: self.get_session_token(&session_id).await?,
             link_layer_mode,
             dest_mac_address,
-            logical_link_class_len,
+            max_sdu_size_len,
+            max_sdu_size_value,
         };
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
             Ok(UciResponse::CreateLogicalLink(resp)) => resp,
@@ -991,6 +996,9 @@ struct UciManagerActor<T: UciHal, U: UciLogger> {
 
     // The flag that indicate whether multicast list rsp v2 is supported.
     is_multicast_list_rsp_v2_supported: bool,
+
+    // Fira Logical Link version
+    fira_ll_version: u8,
 }
 
 impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
@@ -1031,6 +1039,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
             max_data_packet_payload_size: MAX_DATA_PACKET_PAYLOAD_SIZE,
             is_multicast_list_ntf_v2_supported: false,
             is_multicast_list_rsp_v2_supported: false,
+            fira_ll_version: FIRA_LOGICAL_LINK_VERSION_DEFAULT,
         }
     }
 
@@ -1161,15 +1170,27 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     CapTlvType::SupportedV1MaxDataPacketPayloadSizeV2AoaSupport
                 };
                 for tlv in tlvs {
-                    if tlv.t == tlvtag {
-                        // Convert the 2-byte UWBS capability value (stored as Vec<u8>) into usize.
-                        self.max_data_packet_payload_size = match bytes_to_u16(tlv.v.clone()) {
-                            Some(u16size) => match u16size.try_into() {
-                                Ok(size) => size,
-                                Err(_) => MAX_DATA_PACKET_PAYLOAD_SIZE,
-                            },
-                            None => MAX_DATA_PACKET_PAYLOAD_SIZE,
-                        };
+                    match tlv.t {
+                        t if t == tlvtag => {
+                            // Convert the 2-byte UWBS capability value (stored as Vec<u8>) into usize.
+                            self.max_data_packet_payload_size = match bytes_to_u16(tlv.v.clone()) {
+                                Some(u16size) => match u16size.try_into() {
+                                    Ok(size) => size,
+                                    Err(_) => MAX_DATA_PACKET_PAYLOAD_SIZE,
+                                },
+                                None => MAX_DATA_PACKET_PAYLOAD_SIZE,
+                            };
+                        }
+
+                        CapTlvType::SupportedV4FiraLogicalLinkVersion => {
+                            self.fira_ll_version = match bytes_to_u8(tlv.v.clone()) {
+                                Some(u8size) => u8size,
+                                None => FIRA_LOGICAL_LINK_VERSION_DEFAULT,
+                            };
+                        }
+                        _ => {
+                            // Handle other TLV types or do nothing
+                        }
                     }
                 }
             }
@@ -1502,6 +1523,8 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         .map_or(UCIMajorVersion::V1, |v| v),
                     self.is_multicast_list_ntf_v2_supported,
                     self.is_multicast_list_rsp_v2_supported,
+                    FiraLogicalLinkVersion::from_u8(self.fira_ll_version)
+                        .map_or(FiraLogicalLinkVersion::V1_0, |v| v),
                 )
                     .try_into()
                 {
@@ -1637,7 +1660,12 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         // Reset the UciDataSnd Retryer since we received a DataTransferStatusNtf.
                         let _ = self.uci_data_snd_retryer.take();
                     }
-                    SessionNotification::CreateLogicalLink { connect_id, status } => {
+                    SessionNotification::CreateLogicalLink {
+                        connect_id,
+                        status,
+                        max_sdu_size_len: _,
+                        max_sdu_size_value: _,
+                    } => {
                         if status == CreateLogicalLinkNtfStatusCode::UciLogicalLinkStatusAccepted {
                             self.data_credit_map
                                 .insert(connect_id, CreditAvailability::CreditAvailable);
@@ -1655,6 +1683,8 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         connect_id,
                         link_layer_mode: _,
                         source_mac_address: _,
+                        max_sdu_size_len: _,
+                        max_sdu_size_value: _,
                     } => {
                         self.data_credit_map
                             .insert(connect_id, CreditAvailability::CreditAvailable);
@@ -1750,9 +1780,17 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     status,
                 })
             }
-            SessionNotification::CreateLogicalLink { connect_id, status } => {
-                Ok(SessionNotification::CreateLogicalLink { connect_id, status })
-            }
+            SessionNotification::CreateLogicalLink {
+                connect_id,
+                status,
+                max_sdu_size_len,
+                max_sdu_size_value,
+            } => Ok(SessionNotification::CreateLogicalLink {
+                connect_id,
+                status,
+                max_sdu_size_len,
+                max_sdu_size_value,
+            }),
             SessionNotification::LogicalLinkUwbsClose { connect_id, status } => {
                 Ok(SessionNotification::LogicalLinkUwbsClose { connect_id, status })
             }
@@ -1761,11 +1799,15 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 connect_id,
                 link_layer_mode,
                 source_mac_address,
+                max_sdu_size_len,
+                max_sdu_size_value,
             } => Ok(SessionNotification::LogicalLinkUwbsCreate {
                 session_token: self.get_session_id(&session_token).await?,
                 connect_id,
                 link_layer_mode,
                 source_mac_address,
+                max_sdu_size_len,
+                max_sdu_size_value,
             }),
         }
     }
@@ -2884,20 +2926,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_create_logical_link_layer_ok() {
+    async fn test_create_logical_link_layer_v1_0_ok() {
         let session_id = 0x123;
         let session_token = 0x123;
         let dest_mac_address_bytes = vec![0; 8];
         let dest_mac_address = 0x00000000;
         let link_layer_mode = 0;
-        let logical_link_class_len = 0;
+        let max_sdu_size_len = 0;
+        let max_sdu_size_value = 0;
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
             |mut hal| async move {
                 let cmd = UciCommand::CreateLogicalLink {
                     session_token,
                     link_layer_mode,
                     dest_mac_address,
-                    logical_link_class_len,
+                    max_sdu_size_len,
+                    max_sdu_size_value,
                 };
                 let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRspBuilder {
                     connect_id: 0x123,
@@ -2918,7 +2962,53 @@ mod tests {
                 session_token,
                 link_layer_mode,
                 dest_mac_address_bytes,
-                logical_link_class_len,
+                max_sdu_size_len,
+                max_sdu_size_value,
+            )
+            .await;
+        assert!(result.is_ok());
+        assert!(mock_hal.wait_expected_calls_done().await);
+    }
+
+    #[tokio::test]
+    async fn test_create_logical_link_layer_v1_1_ok() {
+        let session_id = 0x123;
+        let session_token = 0x123;
+        let dest_mac_address_bytes = vec![0; 8];
+        let dest_mac_address = 0x00000000;
+        let link_layer_mode = 0;
+        let max_sdu_size_len = 1;
+        let max_sdu_size_value = 0x01;
+        let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
+            |mut hal| async move {
+                let cmd = UciCommand::CreateLogicalLink {
+                    session_token,
+                    link_layer_mode,
+                    dest_mac_address,
+                    max_sdu_size_len,
+                    max_sdu_size_value,
+                };
+                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRspBuilder {
+                    connect_id: 0x123,
+                    status: uwb_uci_packets::StatusCode::UciStatusOk,
+                });
+
+                hal.expected_send_command(cmd, resp, Ok(()));
+            },
+            UciLoggerMode::Disabled,
+            mpsc::unbounded_channel::<UciLogEvent>().0,
+            session_id,
+            session_token,
+        )
+        .await;
+
+        let result = uci_manager
+            .create_logical_link_layer(
+                session_token,
+                link_layer_mode,
+                dest_mac_address_bytes,
+                max_sdu_size_len,
+                max_sdu_size_value,
             )
             .await;
         assert!(result.is_ok());

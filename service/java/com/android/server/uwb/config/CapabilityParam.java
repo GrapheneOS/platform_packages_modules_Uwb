@@ -82,6 +82,11 @@ public class CapabilityParam {
     public static final int SUPPORTED_UCI_MIN_SLOT_DURATION_RSTU_VER_3_0 = 0x1D;
 
     /**
+     * Fira Version 4.0
+     */
+    public static final int SUPPORTED_FIRA_LOGICAL_LINK_VER_4_0 = 0x1E;
+
+    /**
      * CR 287 params common across versions
      */
     public static final int SUPPORTED_AOA_RESULT_REQ_INTERLEAVING =

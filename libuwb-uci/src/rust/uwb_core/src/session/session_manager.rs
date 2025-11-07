@@ -433,7 +433,12 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                 }
             }
-            UciSessionNotification::CreateLogicalLink { connect_id, status: _ } => {
+            UciSessionNotification::CreateLogicalLink {
+                connect_id,
+                status: _,
+                max_sdu_size_len: _,
+                max_sdu_size_value: _,
+            } => {
                 match self.active_sessions.get(&connect_id) {
                     Some(_) => {
                         /*
@@ -468,6 +473,8 @@ impl<T: UciManager> SessionManagerActor<T> {
                 connect_id: _,
                 link_layer_mode: _,
                 source_mac_address: _,
+                max_sdu_size_len: _,
+                max_sdu_size_value: _,
             } => {
                 match self.active_sessions.get(&session_token) {
                     Some(_) => {

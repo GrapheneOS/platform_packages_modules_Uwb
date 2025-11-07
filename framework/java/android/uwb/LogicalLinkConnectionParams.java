@@ -18,11 +18,13 @@ package android.uwb;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
+import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.uwb.LogicalLinkCreationParams.LogicalLinkStatusCode;
+import android.uwb.LogicalLinkCreationParams.SduSizeIndex;
 
 import com.android.uwb.flags.Flags;
 
@@ -92,6 +94,12 @@ public final class LogicalLinkConnectionParams implements Parcelable {
      */
     public static final int CONTROL_FIELD_PORT = 0x40;
 
+    /**
+     * Indicates that the max Service Data Unit(SDU) size parameter is present.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE = 0x80;
+
     private final int mStatus;
     private final int mControlField;
     private final int mMaxLinkLayerSduSize;
@@ -102,6 +110,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
     private final int mLinkTimeout;
     private final int mDestinationPort;
     private final int mSourcePort;
+    private final int mMaxLinkLayerTransceiveSduSize;
 
     private LogicalLinkConnectionParams(Builder builder) {
         mStatus = builder.mStatus;
@@ -114,6 +123,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         mLinkTimeout = builder.mLinkTimeout;
         mDestinationPort = builder.mDestinationPort;
         mSourcePort = builder.mSourcePort;
+        mMaxLinkLayerTransceiveSduSize = builder.mMaxLinkLayerTransceiveSduSize;
     }
 
     /**
@@ -124,13 +134,13 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         return mStatus;
     }
 
-    /** Returns true if Max LL SDU Size is present. */
+    /** Returns true if Max Logical link Service Data Unit(SDU) Size is present. */
     public boolean hasMaxLinkLayerSduSize() {
         return (mControlField & CONTROL_FIELD_MAX_LL_SDU_SIZE) != 0;
     }
 
     /**
-     * Returns the maximum Logical Link SDU size.
+     * Returns the maximum Logical Link Service Data Unit size.
      * <p><strong>Note:</strong> Call {@link #hasMaxLinkLayerSduSize()} before invoking this method
      * to ensure the parameter is available.
      */
@@ -236,6 +246,54 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         return mSourcePort;
     }
 
+    /** Returns true if max transceive logical link Service Data Unit size is present. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    private boolean hasMaxTransceiveSduSize() {
+        return (mControlField & CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE) != 0;
+    }
+
+    /**
+     * Returns the maximum Logical Link transmit Service Data Unit(SDU) size index.
+     *
+     * <p>The value is extracted from bits <b>0–3</b> of the MaxTransceiveSduSize. The returned
+     * value is an {@link SduSizeIndex} constant, which corresponds to a predefined SDU size in
+     * <b>bytes</b> (for example, {@link #SDU_SIZE_512_BYTES} = 512 bytes).
+     *
+     * @return SDU size index for the maximum transmit SDU.
+     * @throws IllegalStateException if the MaxTransceiveSduSize parameter is not present.
+     */
+    @SduSizeIndex
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public int getMaxTransmitSduSize() {
+
+        if (!hasMaxTransceiveSduSize()) {
+            throw new IllegalStateException("MaxTransceiveSduSize is not present");
+        }
+
+        return mMaxLinkLayerTransceiveSduSize & 0x0F;
+    }
+
+    /**
+     * Returns the maximum Logical Link receive Service Data Unit(SDU) size index.
+     *
+     * <p>The value is extracted from bits <b>4–7</b> of the MaxTransceiveSduSize. The returned
+     * value is an {@link SduSizeIndex} constant, which corresponds to a predefined SDU size in
+     * <b>bytes</b> (for example, {@link #SDU_SIZE_512_BYTES} = 512 bytes).
+     *
+     * @return SDU size index for the maximum receive SDU.
+     * @throws IllegalStateException if the MaxTransceiveSduSize parameter is not present.
+     */
+    @SduSizeIndex
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public int getMaxReceiveSduSize() {
+
+        if (!hasMaxTransceiveSduSize()) {
+            throw new IllegalStateException("MaxTransceiveSduSize is not present");
+        }
+
+        return (mMaxLinkLayerTransceiveSduSize >> 4) & 0x0F;
+    }
+
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(mStatus);
@@ -248,6 +306,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         dest.writeInt(mLinkTimeout);
         dest.writeInt(mDestinationPort);
         dest.writeInt(mSourcePort);
+        dest.writeInt(mMaxLinkLayerTransceiveSduSize);
     }
 
     public static final @NonNull Creator<LogicalLinkConnectionParams> CREATOR =
@@ -263,6 +322,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
                     builder.setLinkTimeout(in.readInt());
                     builder.setDestinationPort(in.readInt());
                     builder.setSourcePort(in.readInt());
+                    builder.setMaxTransceiveSduSize(in.readInt());
                     return builder.build();
                 }
 
@@ -291,7 +351,8 @@ public final class LogicalLinkConnectionParams implements Parcelable {
                 && mRepeatCountMax == other.mRepeatCountMax
                 && mLinkTimeout == other.mLinkTimeout
                 && mDestinationPort == other.mDestinationPort
-                && mSourcePort == other.mSourcePort;
+                && mSourcePort == other.mSourcePort
+                && mMaxLinkLayerTransceiveSduSize == other.mMaxLinkLayerTransceiveSduSize;
     }
 
     @Override
@@ -306,7 +367,8 @@ public final class LogicalLinkConnectionParams implements Parcelable {
                 mRepeatCountMax,
                 mLinkTimeout,
                 mDestinationPort,
-                mSourcePort);
+                mSourcePort,
+                mMaxLinkLayerTransceiveSduSize);
     }
 
     @Override
@@ -322,6 +384,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
                 + ", linkTimeout=" + mLinkTimeout
                 + ", destinationPort=" + mDestinationPort
                 + ", sourcePort=" + mSourcePort
+                + ", maxTransceiveSduSize=" + mMaxLinkLayerTransceiveSduSize
                 + '}';
     }
 
@@ -337,6 +400,7 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         private int mLinkTimeout;
         private int mDestinationPort;
         private int mSourcePort;
+        private int mMaxLinkLayerTransceiveSduSize;
 
         public Builder(int status, int controlField) {
             mStatus = status;
@@ -388,6 +452,13 @@ public final class LogicalLinkConnectionParams implements Parcelable {
         @NonNull
         public Builder setSourcePort(int value) {
             mSourcePort = value;
+            return this;
+        }
+
+        @NonNull
+        @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        public Builder setMaxTransceiveSduSize(@IntRange(from = 0) int value) {
+            mMaxLinkLayerTransceiveSduSize = value;
             return this;
         }
 

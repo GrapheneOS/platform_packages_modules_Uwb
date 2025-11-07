@@ -17,9 +17,11 @@ use std::convert::{TryFrom, TryInto};
 use log::{debug, error};
 use pdl_runtime::Packet;
 use uwb_uci_packets::{
-    parse_diagnostics_ntf, radar_bytes_per_sample_value, RadarDataRcv, RadarSweepDataRaw, RxData,
-    SrRxData, SsTwrData, UCI_PACKET_HEADER_LEN, UCI_RADAR_SEQUENCE_NUMBER_LEN,
-    UCI_RADAR_TIMESTAMP_LEN, UCI_RADAR_VENDOR_DATA_LEN_LEN,
+    parse_diagnostics_ntf, radar_bytes_per_sample_value, CreateLogicalLinkNtf_V_1_0_Payload,
+    CreateLogicalLinkNtf_V_1_1_Payload, LogicalLinkUwbsCreateNtf_V_1_0_Payload,
+    LogicalLinkUwbsCreateNtf_V_1_1_Payload, RadarDataRcv, RadarSweepDataRaw, RxData, SrRxData,
+    SsTwrData, UCI_PACKET_HEADER_LEN, UCI_RADAR_SEQUENCE_NUMBER_LEN, UCI_RADAR_TIMESTAMP_LEN,
+    UCI_RADAR_VENDOR_DATA_LEN_LEN,
 };
 
 use crate::error::{Error, Result};
@@ -29,8 +31,8 @@ use crate::params::uci_packets::{
     CreateLogicalLinkNtfStatusCode, CreditAvailability, DataRcvStatusCode,
     DataTransferNtfStatusCode, DataTransferPhaseConfigUpdateStatusCode, DeviceState,
     ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
-    ExtendedAddressTwoWayRangingMeasurement, LogicalLinkCloseStatus, RadarDataType,
-    RangingMeasurementType, RawUciMessage, SessionId, SessionState, SessionToken,
+    ExtendedAddressTwoWayRangingMeasurement, FiraLogicalLinkVersion, LogicalLinkCloseStatus,
+    RadarDataType, RangingMeasurementType, RawUciMessage, SessionId, SessionState, SessionToken,
     SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload, ShortAddressDlTdoaRangingMeasurement,
     ShortAddressOwrAoaRangingMeasurement, ShortAddressTwoWayRangingMeasurement, StatusCode,
@@ -130,6 +132,10 @@ pub enum SessionNotification {
         connect_id: u32,
         /// Logical Link Status
         status: CreateLogicalLinkNtfStatusCode,
+        /// Max SDU size length
+        max_sdu_size_len: u8,
+        /// Max SDU size value
+        max_sdu_size_value: u8,
     },
     /// LogicalLinkUwbsCloseNtf equivalent
     LogicalLinkUwbsClose {
@@ -148,6 +154,10 @@ pub enum SessionNotification {
         link_layer_mode: u8,
         /// MacAddress of the sender of logical link connection
         source_mac_address: UwbAddress,
+        /// Max SDU size length
+        max_sdu_size_len: u8,
+        /// Max SDU size value
+        max_sdu_size_value: u8,
     },
 }
 
@@ -557,15 +567,18 @@ impl UciNotification {
     }
 }
 
-impl TryFrom<(uwb_uci_packets::UciNotification, UCIMajorVersion, bool)> for UciNotification {
+impl TryFrom<(uwb_uci_packets::UciNotification, UCIMajorVersion, bool, FiraLogicalLinkVersion)>
+    for UciNotification
+{
     type Error = Error;
     fn try_from(
-        pair: (uwb_uci_packets::UciNotification, UCIMajorVersion, bool),
+        pair: (uwb_uci_packets::UciNotification, UCIMajorVersion, bool, FiraLogicalLinkVersion),
     ) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::UciNotificationChild;
         let evt = pair.0;
         let uci_fira_major_ver = pair.1;
         let is_multicast_list_ntf_v2_supported = pair.2;
+        let fira_logical_link_version = pair.3;
 
         match evt.specialize() {
             UciNotificationChild::CoreNotification(evt) => Ok(Self::Core(evt.try_into()?)),
@@ -573,8 +586,9 @@ impl TryFrom<(uwb_uci_packets::UciNotification, UCIMajorVersion, bool)> for UciN
                 (evt, uci_fira_major_ver, is_multicast_list_ntf_v2_supported).try_into()?,
             )),
             UciNotificationChild::SessionControlNotification(evt) => {
-                Ok(Self::Session(evt.try_into()?))
+                Ok(Self::Session((evt, fira_logical_link_version).try_into()?))
             }
+
             UciNotificationChild::AndroidNotification(evt) => evt.try_into(),
             UciNotificationChild::UciVendor_9_Notification(evt) => vendor_notification(evt.into()),
             UciNotificationChild::UciVendor_A_Notification(evt) => vendor_notification(evt.into()),
@@ -682,12 +696,16 @@ impl TryFrom<(uwb_uci_packets::SessionConfigNotification, UCIMajorVersion, bool)
     }
 }
 
-impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotification {
+impl TryFrom<(uwb_uci_packets::SessionControlNotification, FiraLogicalLinkVersion)>
+    for SessionNotification
+{
     type Error = Error;
     fn try_from(
-        evt: uwb_uci_packets::SessionControlNotification,
+        pair: (uwb_uci_packets::SessionControlNotification, FiraLogicalLinkVersion),
     ) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::SessionControlNotificationChild;
+        let evt = pair.0;
+        let fira_logical_link_version = pair.1;
         match evt.specialize() {
             SessionControlNotificationChild::SessionInfoNtf(evt) => evt.try_into(),
             SessionControlNotificationChild::DataCreditNtf(evt) => Ok(Self::DataCredit {
@@ -703,10 +721,38 @@ impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotificatio
                 })
             }
             SessionControlNotificationChild::CreateLogicalLinkNtf(evt) => {
-                Ok(Self::CreateLogicalLink {
-                    connect_id: evt.get_connect_id(),
-                    status: evt.get_status(),
-                })
+                let payload = evt.get_payload();
+                if fira_logical_link_version == FiraLogicalLinkVersion::V1_0 {
+                    let create_logical_link_ntf_v1_0 =
+                        CreateLogicalLinkNtf_V_1_0_Payload::parse(payload).map_err(|e| {
+                            error!(
+                                "Failed to parse logical link create ntf V1 {:?}, payload: {:?}",
+                                e, &payload
+                            );
+                            Error::BadParameters
+                        })?;
+                    Ok(Self::CreateLogicalLink {
+                        connect_id: create_logical_link_ntf_v1_0.connect_id,
+                        status: create_logical_link_ntf_v1_0.status,
+                        max_sdu_size_len: 0,
+                        max_sdu_size_value: 0,
+                    })
+                } else {
+                    let create_logical_link_ntf_v1_1 =
+                        CreateLogicalLinkNtf_V_1_1_Payload::parse(payload).map_err(|e| {
+                            error!(
+                                "Failed to parse logical link create ntf V1.1 {:?}, payload: {:?}",
+                                e, &payload
+                            );
+                            Error::BadParameters
+                        })?;
+                    Ok(Self::CreateLogicalLink {
+                        connect_id: create_logical_link_ntf_v1_1.connect_id,
+                        status: create_logical_link_ntf_v1_1.status,
+                        max_sdu_size_len: create_logical_link_ntf_v1_1.max_sdu_size_len,
+                        max_sdu_size_value: create_logical_link_ntf_v1_1.max_sdu_size_value,
+                    })
+                }
             }
             SessionControlNotificationChild::LogicalLinkUwbsCloseNtf(evt) => {
                 Ok(Self::LogicalLinkUwbsClose {
@@ -715,15 +761,49 @@ impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotificatio
                 })
             }
             SessionControlNotificationChild::LogicalLinkUwbsCreateNtf(evt) => {
-                Ok(Self::LogicalLinkUwbsCreate {
-                    session_token: evt.get_session_token(),
-                    connect_id: evt.get_connect_id(),
-                    link_layer_mode: evt.get_link_layer_mode(),
-                    source_mac_address: UwbAddress::Extended(
-                        evt.get_source_mac_address().to_le_bytes(),
-                    ),
-                })
+                let payload = evt.get_payload();
+                if fira_logical_link_version == FiraLogicalLinkVersion::V1_0 {
+                    let logical_link_uwbs_create_ntf_v1_0 = LogicalLinkUwbsCreateNtf_V_1_0_Payload::parse(payload)
+                        .map_err(|e| {
+                            error!(
+                                "Failed to parse uwbs logical link create ntf V1.0 {:?}, payload: {:?}",
+                                e, &payload
+                            );
+                            Error::BadParameters
+                        })?;
+                    Ok(Self::LogicalLinkUwbsCreate {
+                        session_token: logical_link_uwbs_create_ntf_v1_0.session_token,
+                        connect_id: logical_link_uwbs_create_ntf_v1_0.connect_id,
+                        link_layer_mode: logical_link_uwbs_create_ntf_v1_0.link_layer_mode,
+                        source_mac_address: UwbAddress::Extended(
+                            logical_link_uwbs_create_ntf_v1_0.source_mac_address.to_le_bytes(),
+                        ),
+                        max_sdu_size_len: 0,
+                        max_sdu_size_value: 0,
+                    })
+                } else {
+                    let logical_link_uwbs_create_ntf_v1_1 = LogicalLinkUwbsCreateNtf_V_1_1_Payload::parse(payload)
+                        .map_err(|e| {
+                            error!(
+                                "Failed to parse uwbs logical link create ntf V1.1 {:?}, payload: {:?}",
+                                e, &payload
+                            );
+                            Error::BadParameters
+                        })?;
+
+                    Ok(Self::LogicalLinkUwbsCreate {
+                        session_token: logical_link_uwbs_create_ntf_v1_1.session_token,
+                        connect_id: logical_link_uwbs_create_ntf_v1_1.connect_id,
+                        link_layer_mode: logical_link_uwbs_create_ntf_v1_1.link_layer_mode,
+                        source_mac_address: UwbAddress::Extended(
+                            logical_link_uwbs_create_ntf_v1_1.source_mac_address.to_le_bytes(),
+                        ),
+                        max_sdu_size_len: logical_link_uwbs_create_ntf_v1_1.max_sdu_size_len,
+                        max_sdu_size_value: logical_link_uwbs_create_ntf_v1_1.max_sdu_size_value,
+                    })
+                }
             }
+
             SessionControlNotificationChild::SessionRoleChangeNtf(evt) => {
                 Ok(Self::SessionRoleChangeNtf {
                     session_token: evt.get_session_token(),
@@ -1655,34 +1735,40 @@ mod tests {
             .build()
             .into();
         let uci_fira_major_version = UCIMajorVersion::V1;
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_0;
         let uci_notification_from_vendor_9 = UciNotification::try_from((
             vendor_9_empty_notification,
             uci_fira_major_version.clone(),
             false,
+            fira_logical_link_version.clone(),
         ))
         .unwrap();
         let uci_notification_from_vendor_A = UciNotification::try_from((
             vendor_A_nonempty_notification,
             uci_fira_major_version.clone(),
             false,
+            fira_logical_link_version.clone(),
         ))
         .unwrap();
         let uci_notification_from_vendor_B = UciNotification::try_from((
             vendor_B_nonempty_notification,
             uci_fira_major_version.clone(),
             false,
+            fira_logical_link_version.clone(),
         ))
         .unwrap();
         let uci_notification_from_vendor_E = UciNotification::try_from((
             vendor_E_nonempty_notification,
             uci_fira_major_version.clone(),
             false,
+            fira_logical_link_version.clone(),
         ))
         .unwrap();
         let uci_notification_from_vendor_F = UciNotification::try_from((
             vendor_F_nonempty_notification,
             uci_fira_major_version,
             false,
+            fira_logical_link_version.clone(),
         ))
         .unwrap();
         assert_eq!(
@@ -1729,6 +1815,7 @@ mod tests {
 
     #[test]
     fn test_logical_link_uwbs_close_notification_casting_from_logical_link_uwbs_close_ntf() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_0;
         let status_code =
             uwb_uci_packets::LogicalLinkCloseStatus::UciLogicalLinkCloseRemoteTerminated;
         let logical_link_closed_ntf_packet =
@@ -1737,8 +1824,11 @@ mod tests {
         let session_control_notification =
             uwb_uci_packets::SessionControlNotification::from(logical_link_closed_ntf_packet);
 
-        let session_notification =
-            SessionNotification::try_from(session_control_notification).unwrap();
+        let session_notification = SessionNotification::try_from((
+            session_control_notification,
+            fira_logical_link_version,
+        ))
+        .unwrap();
 
         let uci_notification = UciNotification::Session(session_notification);
 
@@ -1752,19 +1842,30 @@ mod tests {
     }
 
     #[test]
-    fn test_logical_link_uwbs_create_notification_casting_from_logical_link_uwbs_create_ntf() {
-        let logical_link_created_ntf_packet = uwb_uci_packets::LogicalLinkUwbsCreateNtfBuilder {
+    fn test_logical_link_uwbs_create_notification_casting_from_logical_link_uwbs_create_ntf_v1_0() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_0;
+        let payload = uwb_uci_packets::LogicalLinkUwbsCreateNtf_V_1_0_Payload {
             session_token: 0x11,
             connect_id: 0,
             link_layer_mode: 0x00,
             source_mac_address: 0xa0b0,
-        }
-        .build();
-        let session_control_notification =
-            uwb_uci_packets::SessionControlNotification::from(logical_link_created_ntf_packet);
+        };
 
-        let session_notification =
-            SessionNotification::try_from(session_control_notification).unwrap();
+        let mut buf = BytesMut::new();
+        write_uwbs_create_logical_link_ntf_v1_0_payload(&payload, &mut buf);
+        let uwbs_create_ll_ntf_ntf_packet_v1_0 =
+            uwb_uci_packets::LogicalLinkUwbsCreateNtfBuilder { payload: Some(buf.freeze()) };
+
+        let session_control_notification = uwb_uci_packets::SessionControlNotification::try_from(
+            uwbs_create_ll_ntf_ntf_packet_v1_0,
+        )
+        .unwrap();
+
+        let session_notification = SessionNotification::try_from((
+            session_control_notification,
+            fira_logical_link_version,
+        ))
+        .unwrap();
 
         let uci_notification = UciNotification::Session(session_notification);
 
@@ -1777,23 +1878,123 @@ mod tests {
                 source_mac_address: UwbAddress::Extended([
                     0xb0, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
                 ]),
+                max_sdu_size_len: 0,
+                max_sdu_size_value: 0,
             })
         );
     }
 
     #[test]
-    fn test_create_logical_link_notification_casting_from_create_logical_link_ntf() {
+    fn test_logical_link_uwbs_create_notification_casting_from_logical_link_uwbs_create_ntf_v1_1() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_1;
+        let payload = uwb_uci_packets::LogicalLinkUwbsCreateNtf_V_1_1_Payload {
+            session_token: 0x11,
+            connect_id: 0,
+            link_layer_mode: 0x00,
+            source_mac_address: 0xa0b0,
+            max_sdu_size_len: 1,
+            max_sdu_size_value: 0x01,
+        };
+
+        let mut buf = BytesMut::new();
+        write_uwbs_create_ll_ntf_v1_1_payload(&payload, &mut buf);
+        let uwbs_create_ll_ntf_ntf_packet_v1_1 =
+            uwb_uci_packets::LogicalLinkUwbsCreateNtfBuilder { payload: Some(buf.freeze()) };
+
+        let session_control_notification = uwb_uci_packets::SessionControlNotification::try_from(
+            uwbs_create_ll_ntf_ntf_packet_v1_1,
+        )
+        .unwrap();
+
+        let session_notification = SessionNotification::try_from((
+            session_control_notification,
+            fira_logical_link_version,
+        ))
+        .unwrap();
+
+        let uci_notification = UciNotification::Session(session_notification);
+
+        assert_eq!(
+            uci_notification,
+            UciNotification::Session(SessionNotification::LogicalLinkUwbsCreate {
+                session_token: 0x11,
+                connect_id: 0,
+                link_layer_mode: 0x00,
+                source_mac_address: UwbAddress::Extended([
+                    0xb0, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                ]),
+                max_sdu_size_len: 1,
+                max_sdu_size_value: 0x01,
+            })
+        );
+    }
+
+    fn write_create_logical_link_ntf_v1_0_payload(
+        payload: &CreateLogicalLinkNtf_V_1_0_Payload,
+        buffer: &mut BytesMut,
+    ) {
+        buffer.put_u32_le(payload.connect_id);
+        buffer.put_u8(payload.status as u8);
+    }
+
+    fn write_create_logical_link_ntf_v1_1_payload(
+        payload: &CreateLogicalLinkNtf_V_1_1_Payload,
+        buffer: &mut BytesMut,
+    ) {
+        buffer.put_u32_le(payload.connect_id);
+        buffer.put_u8(payload.status as u8);
+        buffer.put_u8(payload.max_sdu_size_len);
+        buffer.put_u8(payload.max_sdu_size_value);
+    }
+
+    fn write_uwbs_create_logical_link_ntf_v1_0_payload(
+        payload: &LogicalLinkUwbsCreateNtf_V_1_0_Payload,
+        buffer: &mut BytesMut,
+    ) {
+        buffer.put_u32_le(payload.session_token);
+        buffer.put_u32_le(payload.connect_id);
+        buffer.put_u8(payload.link_layer_mode);
+        buffer.put_u64_le(payload.source_mac_address);
+    }
+
+    fn write_uwbs_create_ll_ntf_v1_1_payload(
+        payload: &LogicalLinkUwbsCreateNtf_V_1_1_Payload,
+        buffer: &mut BytesMut,
+    ) {
+        buffer.put_u32_le(payload.session_token);
+        buffer.put_u32_le(payload.connect_id);
+        buffer.put_u8(payload.link_layer_mode);
+        buffer.put_u64_le(payload.source_mac_address);
+        buffer.put_u8(payload.max_sdu_size_len);
+        buffer.put_u8(payload.max_sdu_size_value);
+    }
+
+    #[test]
+    fn test_create_logical_link_notification_casting_from_create_logical_link_ntf_v1_0() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_0;
         let status_code =
             uwb_uci_packets::CreateLogicalLinkNtfStatusCode::UciLogicalLinkStatusAccepted;
-        let create_logical_link_ntf_packet =
-            uwb_uci_packets::CreateLogicalLinkNtfBuilder { connect_id: 0, status: status_code }
-                .build();
 
-        let session_control_notification =
-            uwb_uci_packets::SessionControlNotification::from(create_logical_link_ntf_packet);
+        let payload = uwb_uci_packets::CreateLogicalLinkNtf_V_1_0_Payload {
+            connect_id: 0x00,
+            status: status_code,
+        };
 
-        let session_notification =
-            SessionNotification::try_from(session_control_notification).unwrap();
+        let mut buf = BytesMut::new();
+        write_create_logical_link_ntf_v1_0_payload(&payload, &mut buf);
+        let create_logical_link_ntf_packet_v1_0 =
+            uwb_uci_packets::CreateLogicalLinkNtfBuilder { payload: Some(buf.freeze()) };
+
+        let session_control_notification = uwb_uci_packets::SessionControlNotification::try_from(
+            create_logical_link_ntf_packet_v1_0,
+        )
+        .unwrap();
+
+        let session_notification = SessionNotification::try_from((
+            session_control_notification,
+            fira_logical_link_version,
+        ))
+        .unwrap();
 
         let uci_notification = UciNotification::Session(session_notification);
 
@@ -1802,12 +2003,56 @@ mod tests {
             UciNotification::Session(SessionNotification::CreateLogicalLink {
                 connect_id: 0,
                 status: status_code,
+                max_sdu_size_len: 0,
+                max_sdu_size_value: 0,
+            })
+        );
+    }
+
+    #[test]
+    fn test_create_logical_link_notification_casting_from_create_logical_link_ntf_v1_1() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_1;
+        let status_code =
+            uwb_uci_packets::CreateLogicalLinkNtfStatusCode::UciLogicalLinkStatusAccepted;
+        let payload = uwb_uci_packets::CreateLogicalLinkNtf_V_1_1_Payload {
+            connect_id: 0,
+            status: status_code,
+            max_sdu_size_len: 1,
+            max_sdu_size_value: 0x01,
+        };
+
+        let mut buf = BytesMut::new();
+        write_create_logical_link_ntf_v1_1_payload(&payload, &mut buf);
+        let create_logical_link_ntf_packet_v1_1 =
+            uwb_uci_packets::CreateLogicalLinkNtfBuilder { payload: Some(buf.freeze()) };
+
+        let session_control_notification = uwb_uci_packets::SessionControlNotification::try_from(
+            create_logical_link_ntf_packet_v1_1,
+        )
+        .unwrap();
+
+        let session_notification = SessionNotification::try_from((
+            session_control_notification,
+            fira_logical_link_version,
+        ))
+        .unwrap();
+
+        let uci_notification = UciNotification::Session(session_notification);
+
+        assert_eq!(
+            uci_notification,
+            UciNotification::Session(SessionNotification::CreateLogicalLink {
+                connect_id: 0,
+                status: status_code,
+                max_sdu_size_len: 1,
+                max_sdu_size_value: 0x01,
             })
         );
     }
 
     #[test]
     fn test_session_notification_casting_from_session_role_change_ntf_packet() {
+        let fira_logical_link_version = FiraLogicalLinkVersion::V1_0;
         let session_role_change_ntf = uwb_uci_packets::SessionRoleChangeNtfBuilder {
             session_token: 0x00,
             device_role: ControleeDeviceRole::Initiator,
@@ -1816,7 +2061,8 @@ mod tests {
         let session_notification_packet =
             uwb_uci_packets::SessionControlNotification::try_from(session_role_change_ntf).unwrap();
         let session_notification =
-            SessionNotification::try_from(session_notification_packet).unwrap();
+            SessionNotification::try_from((session_notification_packet, fira_logical_link_version))
+                .unwrap();
         let uci_notification_from_session_role_change_ntf =
             UciNotification::Session(session_notification);
         assert_eq!(

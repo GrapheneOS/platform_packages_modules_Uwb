@@ -231,7 +231,8 @@ enum LogicalLinkCloseStatus : 8 {
     UCI_LOGICAL_LINK_CLOSE_SECURE_COMPONENT = 0x03,
     UCI_LOGICAL_LINK_CLOSE_UNKNOWN_REASON = 0x04,
     UCI_LOGICAL_LINK_CLOSE_HOST_INITIATED = 0x05,
-    UCI_LOGICAL_LINK_CLOSE_RFU = 0x06..0x9F,
+    UCI_LOGICAL_LINK_CLOSE_RX_SDU_TOO_LARGE = 0x06,
+    UCI_LOGICAL_LINK_CLOSE_RFU = 0x07..0x9F,
     UCI_LOGICAL_LINK_CLOSE_VENDOR_PROPRIETARY = 0xA0..0xAF,
     UCI_LOGICAL_LINK_CLOSE_RFU_2 = 0xB0..0xFF
 }
@@ -395,7 +396,8 @@ enum CapTlvType : 8 {
     SUPPORTED_V3_LL_CAPABILITY_PARAM = 0x1B,
     SUPPORTED_V3_BYPASS_LOGICAL_LINK_MODE = 0x1C,
     SUPPORTED_V3_UCI_MIN_SLOT_DURATION_RSTU = 0x1D,
-    RFU_CAP_TLV_TYPE_RANGE_1 = 0x1E..0x9F,
+    SUPPORTED_V4_FIRA_LOGICAL_LINK_VERSION = 0x1E,
+    RFU_CAP_TLV_TYPE_RANGE_1 = 0x1F..0x9F,
 
     CCC_RESERVED_CAP_TLV_TYPE_RANGE = 0xA0..0xAF {
         // CCC specific
@@ -1452,11 +1454,19 @@ test SessionGetRangingCountRsp {
     "\x42\x03\x00\x05\x00\x00\x00\x00\x02\x03\x04\x05",
 }
 
-packet CreateLogicalLinkCmd : SessionControlCommand (opcode = 0x7) { // LOGICAL_LINK_CREATE_CMD
+packet CreateLogicalLinkCmd_V_1_0 : SessionControlCommand (opcode = 0x7) { // LOGICAL_LINK_CREATE_CMD
     session_token: 32,
     link_layer_mode: 8,
     dest_mac_address: 64,
     logical_link_class_len: 8
+}
+
+packet CreateLogicalLinkCmd_V_1_1 : SessionControlCommand (opcode = 0x7) { // LOGICAL_LINK_CREATE_CMD
+    session_token: 32,
+    link_layer_mode: 8,
+    dest_mac_address: 64,
+    max_sdu_size_len: 8,
+    max_sdu_size_value: 8,
 }
 
 packet CreateLogicalLinkRsp : SessionControlResponse (opcode = 0x7) { // LOGICAL_LINK_CREATE_RSP
@@ -1464,9 +1474,20 @@ packet CreateLogicalLinkRsp : SessionControlResponse (opcode = 0x7) { // LOGICAL
     connect_id: 32,
 }
 
-packet CreateLogicalLinkNtf : SessionControlNotification (opcode = 0x7) { // LOGICAL_LINK_CREATE_RSP
+packet CreateLogicalLinkNtf : SessionControlNotification (opcode = 0x7) { //LOGICAL_LINK_CREATE_RSP
+    _payload_,
+}
+
+struct CreateLogicalLinkNtf_V_1_0_Payload {
     connect_id: 32,
     status: CreateLogicalLinkNtfStatusCode,
+}
+
+struct CreateLogicalLinkNtf_V_1_1_Payload {
+    connect_id: 32,
+    status: CreateLogicalLinkNtfStatusCode,
+    max_sdu_size_len: 8,
+    max_sdu_size_value: 8,
 }
 
 packet CloseLogicalLinkCmd : SessionControlCommand (opcode = 0x8) { // SESSION_CLOSE_LOGICAL_LINK
@@ -1501,10 +1522,23 @@ packet LogicalLinkUwbsCloseNtf : SessionControlNotification (opcode = 0x9) { //L
 }
 
 packet LogicalLinkUwbsCreateNtf : SessionControlNotification (opcode = 0xA) { //LOGICAL_LINK_UWBS_CREATE_NTF
+    _payload_,
+}
+
+struct LogicalLinkUwbsCreateNtf_V_1_0_Payload {
     session_token: 32, // Session ID or Session Handle (based on UWBS version)
     connect_id: 32,
     link_layer_mode: 8,
     source_mac_address: 64,
+}
+
+struct LogicalLinkUwbsCreateNtf_V_1_1_Payload {
+    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+    connect_id: 32,
+    link_layer_mode: 8,
+    source_mac_address: 64,
+    max_sdu_size_len: 8,
+    max_sdu_size_value: 8,
 }
 
 packet AndroidGetPowerStatsCmd: AndroidCommand (opcode = 0x0) { //ANDROID_GET_POWER_STATS
