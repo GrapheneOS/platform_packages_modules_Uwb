@@ -22,10 +22,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 import androidx.test.filters.SmallTest;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.engine.EngineEventFactory.EngineEvent;
 import com.android.server.ranging.engine.heuristic.RangeHeuristic;
 
@@ -129,7 +130,11 @@ public class EngineEventFactoryTest {
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
+        heuristics.get(0).triggerUpdate(0);
         heuristics.get(1).triggerUpdate(1);
+        // This value does not meet the threshold
         heuristics.get(2).triggerUpdate(100);
 
         verify(mMockListener, never()).eventOccurred(any());

@@ -29,13 +29,13 @@ import static org.mockito.Mockito.when;
 import android.app.AlarmManager;
 import android.app.AlarmManager.OnAlarmListener;
 import android.os.Handler;
+import android.ranging.RangingData;
+import android.ranging.RangingManager;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.SmallTest;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -53,7 +53,6 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
@@ -77,7 +76,6 @@ public class StreakCounterTest {
     @Rule
     public final MockitoRule mMockito = MockitoJUnit.rule();
 
-    private @Mock RangingTechnology mMockTechnology;
     private @Mock RangingData mMockRangingData;
     private @Mock AlarmManager mMockAlarmManager;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingInjector mMockInjector;
@@ -93,11 +91,12 @@ public class StreakCounterTest {
         when(mMockInjector.getContext().getSystemService(eq(AlarmManager.class)))
                 .thenReturn(mMockAlarmManager);
 
-        TechnologyConfig mockConfig = mock(TechnologyConfig.class);
-        when(mockConfig.getTechnology()).thenReturn(mMockTechnology);
-        when(mockConfig.getRangingInterval()).thenReturn(Duration.ofSeconds(1));
+        @RangingManager.RangingTechnology int technology = RangingManager.UWB;
+        TechnologyConfig mockConfig = mock(TechnologyConfig.class, Answers.RETURNS_DEEP_STUBS);
 
-        when(mMockRangingData.getTechnology()).thenReturn(Optional.of(mMockTechnology));
+        when(mockConfig.getTechnology().getValue()).thenReturn(technology);
+        when(mockConfig.getRangingInterval()).thenReturn(Duration.ofSeconds(1));
+        when(mMockRangingData.getRangingTechnology()).thenReturn(technology);
 
         mLastStreakValue = 0;
         // Run the streak heuristic listener in the current thread so that updates to the streak
@@ -174,9 +173,9 @@ public class StreakCounterTest {
     public void onData_forDifferentTechnology_doesNotAffectStreak() {
         mStreakCounter.onData(mMockRangingData);
 
-        RangingData mockData = mock(RangingData.class);
-        when(mockData.getTechnology()).thenReturn(Optional.of(mock(RangingTechnology.class)));
-        mStreakCounter.onData(mockData);
+        RangingData mockRangingData = mock(RangingData.class);
+        when(mockRangingData.getRangingTechnology()).thenReturn(RangingManager.BLE_CS);
+        mStreakCounter.onData(mockRangingData);
 
         Assert.assertEquals(1, mLastStreakValue);
     }
