@@ -82,6 +82,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     product_board = ad.adb.getprop("ro.product.board")
     return ("cf_x86" in product_name) or ("goldfish" in product_board)
 
+  def _is_watch(self, ad1: android_device.AndroidDevice, ad2: android_device.AndroidDevice) -> bool:
+      return ("watch" in ad1.adb.getprop("ro.build.characteristics")) or \
+        ("watch" in ad2.adb.getprop("ro.build.characteristics"))
+
   def setup_class(self):
     super().setup_class()
     self.devices = [RangingDecorator(ad) for ad in self.android_devices]
@@ -486,6 +490,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
+      asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                      "Skipping the test on wearables")
 
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
@@ -549,6 +555,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
+      asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                            "Skipping the test on wearables")
 
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
@@ -779,6 +787,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       """
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
+      asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                            "Skipping the test on wearables")
       SESSION_HANDLE = str(uuid4())
 
       asserts.skip_if(
@@ -989,6 +999,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     """Verifies rssi ranging with peer device, devices range for 10 seconds."""
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                     "Skipping BLE RSSI test on emulator")
+    asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                          "Skipping the test on wearables")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
 
@@ -1076,6 +1088,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     """
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                     "Skipping BLE CS test on emulator")
+    asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                          "Skipping the test on wearables")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_CS}
 
@@ -1169,6 +1183,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                     "Skipping OOB CS test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE CS test on emulator")
+    asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                          "Skipping the test on wearables")
     asserts.skip_if(
         not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
         f"BLE_CS not supported by responder",
@@ -1219,6 +1235,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       """Verifies ble cs ranging with measurement limit."""
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE CS test on emulator")
+      asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                            "Skipping the test on wearables")
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
 
@@ -1316,6 +1334,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                     "Skipping OOB BLE RSSI test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
+    asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                          "Skipping the test on wearables")
     asserts.skip_if(
         self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS) and
         self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
