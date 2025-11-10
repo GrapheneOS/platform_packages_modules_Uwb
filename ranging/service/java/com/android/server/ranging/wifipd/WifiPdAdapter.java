@@ -16,13 +16,35 @@
 
 package com.android.server.ranging.wifipd;
 
+import static android.net.wifi.rtt.PasnConfig.AKM_PASN;
+import static android.net.wifi.rtt.PasnConfig.CIPHER_GCMP_256;
+import static android.net.wifi.rtt.ProximityDetectionConfig.RANGING_SERVICE_ROLE_ADVERTISER;
+import static android.net.wifi.rtt.ProximityDetectionConfig.RANGING_SERVICE_ROLE_SEEKER;
+import static android.net.wifi.rtt.ResponderConfig.RESPONDER_STA;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 
 import android.content.AttributionSource;
 import android.content.Context;
+import android.net.wifi.rtt.ContinuousRangingResultCallback;
+import android.net.wifi.rtt.PasnConfig;
+import android.net.wifi.rtt.ProximityDetectionConfig;
+import android.net.wifi.rtt.RangingRequest;
+import android.net.wifi.rtt.RangingResult;
+import android.net.wifi.rtt.ResponderConfig;
+import android.net.wifi.rtt.SecureRangingConfig;
 import android.net.wifi.rtt.WifiRttManager;
 import android.ranging.DataNotificationConfig;
+import android.ranging.RangingData;
+import android.ranging.RangingDataExtras;
+import android.ranging.RangingDevice;
+import android.ranging.RangingManager;
+import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
+import android.ranging.wifi.pd.WifiPdRangingParams;
+import android.ranging.wifi.rtt.WifiRttSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -31,34 +53,32 @@ import androidx.annotation.Nullable;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.common.DataNotificationManager;
 import com.android.server.ranging.common.RangingUtils;
 import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.session.ConfigurationManager;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
+
+import java.util.List;
 
 public class WifiPdAdapter implements RangingAdapter {
     private static final String TAG = WifiPdAdapter.class.getSimpleName();
-
-    public static final int RANGING_SERVICE_ROLE_SEEKER = 1;
-    public static final int RANGING_SERVICE_ROLE_ADVERTISER = 2;
     private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final AttributionSource mAttributionSource;
     private Callback mCallback;
 
-    private final StateMachine<BleRssiAdapter.State> mStateMachine;
+    private RangingDevice mPeer;
+    private final StateMachine<State> mStateMachine;
 
     private DataNotificationManager mDataNotificationManager;
-
 
     private final ListeningExecutorService mExecutorService;
     private AttributionSource mNonPrivilegedAttributionSource;
     private final int mRangingServiceRole;
     private final WifiRttManager mWifiRttManager;
-
 
     public WifiPdAdapter(
             @NonNull Context context,
@@ -71,7 +91,7 @@ public class WifiPdAdapter implements RangingAdapter {
         mRangingInjector = injector;
         mAttributionSource = attributionSource;
         mExecutorService = executor;
-        mStateMachine = new StateMachine<>(BleRssiAdapter.State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED);
         mRangingServiceRole = role == DEVICE_ROLE_RESPONDER ? RANGING_SERVICE_ROLE_ADVERTISER
                 : RANGING_SERVICE_ROLE_SEEKER;
         mWifiRttManager = context.getSystemService(WifiRttManager.class);
@@ -101,50 +121,92 @@ public class WifiPdAdapter implements RangingAdapter {
             closeForReason(RangingUtils.InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
-//        PasnConfig pasnConfig = new PasnConfig( < akm >, <cipher >)
-// 				.setPassword(password) // String
-//                .deviceIdentityKey(deviceIK) // byte[]
-//                .build();
-//
-//        WifiRttProximityDetectionConfig pdConfig = new
-//                WifiRttProximityDetectionConfig.Builder( < role >)
-//               .setAdvertiserRequireRangeResult( < true | false >)
-//                .setContinuousRangingInterval(rangingInterval)
-//                .setIngressDistanceMm( < int>)
-//                .setEgressDistanceMm( < int>)
-//                .preferredRangingChannelFrequencyMHz( < int>)
-//                .build();
-//
-//        ResponderConfig responderConfig = new ResponderConfig.Builder()
-//                .setMacAddress( < mac - addr >)
-//  		 		.set80211mcSupported( < true | false >)
-//                .set80211azNtbSupported( < true | false >)
-//                .setChannelWidth( < channel - width >)
-//                .setPreamble( < preamble >)
-//                .setResponderType(1) // RESPONDER_STA
-//                .setSecureRangingConfig(
-//                        new SecureRangingConfig.Builder(pasnConfig))
-//                .setProximityDetectionConfig(pdConfig)
-//                .build();
-//
-//        RangingRequest request = new RangingRequest.Builder()
-//                .addResponder(responderConfig)
-//                .build();
-//        // Start ranging
-//        mWifiRttManager.startContinuousRanging(null /*WorkSource*/, request, executor,
-//                callback);
 
+        if (!(config instanceof WifiPdConfig wifiPdConfig)) {
+            Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
+            mCallback.onClosed(INTERNAL_ERROR);
+            return;
+        }
+
+        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
+            Log.v(TAG, "Attempted to start adapter when it was already started");
+            closeForReason(INTERNAL_ERROR);
+            return;
+        }
+
+        WifiPdRangingParams wifiPdRangingParams = wifiPdConfig.getPdRangingParams();
+        mPeer = wifiPdConfig.getPeerDevice();
+        mDataNotificationManager = new DataNotificationManager(
+                wifiPdConfig.getSessionConfig().getDataNotificationConfig(),
+                wifiPdConfig.getSessionConfig().getDataNotificationConfig()
+        );
+        PasnConfig.Builder pasnConfigBuilder = new PasnConfig.Builder(AKM_PASN, CIPHER_GCMP_256);
+        if (wifiPdRangingParams.getPasnMode()
+                == WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE) {
+            if (wifiPdRangingParams.getPassword() == null
+                    || wifiPdRangingParams.getDeviceIk() == null) {
+                Log.e(TAG,
+                        " Password or DeviceIK cannot be null when using Authenticated PASN mode");
+                closeForReason(INTERNAL_ERROR);
+                return;
+            }
+            pasnConfigBuilder
+                    .setPassword(wifiPdRangingParams.getPassword())
+                    .setProximityDetectionSeekerDeviceIdentityKey(
+                            wifiPdRangingParams.getDeviceIk());
+        }
+
+        // TODO: look into ingress and egress for data manager edge trigger
+        //                .setIngressDistanceMm(ingressMm)
+        //                .setEgressDistanceMm(egressMm)
+        ProximityDetectionConfig pdConfig = new
+                ProximityDetectionConfig.Builder(mRangingServiceRole)
+                .setAdvertiserRequireRangeResult(
+                        wifiPdConfig.getSessionConfig().getDataNotificationConfig()
+                                .getNotificationConfigType()
+                                != DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE)
+                .setDiscoveryChannelFrequencyMhz(
+                        wifiPdRangingParams.getDiscoveryChannelFrequencyMhz())
+                .setContinuousRangingIntervalMillis(
+                        (int) wifiPdConfig.getRangingInterval().toMillis())
+                .build();
+
+        ResponderConfig responderConfig = new ResponderConfig.Builder()
+                .setMacAddress(wifiPdRangingParams.getPeerMacAddress())
+                .set80211azNtbSupported(wifiPdRangingParams.isResponder80211azNtbSupported())
+                .setChannelWidth(wifiPdRangingParams.getChannelWidth())
+                .setPreamble(wifiPdRangingParams.getPreambleType())
+                .setResponderType(RESPONDER_STA)
+                .setSecureRangingConfig(
+                        new SecureRangingConfig.Builder(pasnConfigBuilder.build()).build())
+                .setProximityDetectionConfig(pdConfig)
+                .build();
+
+        RangingRequest request = new RangingRequest.Builder()
+                .addResponder(responderConfig)
+                .build();
+        mWifiRttManager.startContinuousRanging(null /*WorkSource*/, request, mExecutorService,
+                mContinuousRangingResultCallback);
     }
 
     @Override
     public void stop() {
+        Log.i(TAG, "Stop called.");
+        if (!mStateMachine.transition(State.STARTED, State.STOPPED)) {
+            Log.v(TAG, "Attempted to stop adapter when it was already stopped");
+            return;
+        }
+
+        if (mWifiRttManager == null) {
+            return;
+        }
         mWifiRttManager.cancelRanging(null);
     }
 
     @Override
     public void appMovedToBackground() {
         if (mNonPrivilegedAttributionSource != null
-                && mStateMachine.getState() != BleRssiAdapter.State.STOPPED) {
+                && mStateMachine.getState() != State.STOPPED) {
             mDataNotificationManager.updateConfigAppMovedToBackground();
         }
     }
@@ -152,7 +214,7 @@ public class WifiPdAdapter implements RangingAdapter {
     @Override
     public void appMovedToForeground() {
         if (mNonPrivilegedAttributionSource != null
-                && mStateMachine.getState() != BleRssiAdapter.State.STOPPED) {
+                && mStateMachine.getState() != State.STOPPED) {
             mDataNotificationManager.updateConfigAppMovedToForeground();
         }
     }
@@ -160,25 +222,95 @@ public class WifiPdAdapter implements RangingAdapter {
     @Override
     public void appInBackgroundTimeout() {
         if (mNonPrivilegedAttributionSource != null
-                && mStateMachine.getState() != BleRssiAdapter.State.STOPPED) {
+                && mStateMachine.getState() != State.STOPPED) {
             stop();
         }
     }
 
-    private void closeForReason(@RangingUtils.InternalReason int reason) {
-//        if (mRangingDevice != null) {
-//            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice), reason);
-//        }
-        mCallback.onClosed(reason);
-        clear();
+    public void closeForReason(@RangingUtils.InternalReason int reason) {
+        synchronized (mStateMachine) {
+            mStateMachine.setState(State.STOPPED);
+            if (mCallback != null) {
+                mCallback.onStopped(ImmutableSet.of(mPeer), reason);
+                mCallback.onClosed(reason);
+            }
+            clear();
+        }
     }
 
     private void clear() {
-//        if (mConfig != null && mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
-//            mAlarmManager.cancel(mMeasurementLimitListener);
-//        }
-        //mSession = null;
         mCallback = null;
-        //mConfig = null;
+        mContinuousRangingResultCallback = null;
+    }
+
+    public enum State {
+        STARTED,
+        STOPPED,
+    }
+
+    private ContinuousRangingResultCallback mContinuousRangingResultCallback;
+
+    {
+        new ContinuousRangingResultCallback() {
+            @Override
+            public void onRangingFailure(int reason) {
+                Log.e(TAG, "onRangingFailure: " + reason);
+                closeForReason(convertReason(reason));
+            }
+
+            @Override
+            public void onRangingStopped(int reason) {
+                Log.e(TAG, "onRangingStopped: " + reason);
+                closeForReason(convertReason(reason));
+            }
+
+            @Override
+            public void onRangingResults(@NonNull List<RangingResult> results) {
+                if (results == null || results.isEmpty()) {
+                    Log.w(TAG, "Wifi PD range results are empty");
+                }
+                RangingResult result = results.get(0);
+                int status = result.getStatus();
+                if (status != RangingResult.STATUS_SUCCESS) {
+                    closeForReason(convertReason(status));
+                    return;
+                }
+                RangingData.Builder rangingDataBuilder = new RangingData.Builder()
+                        .setRangingTechnology(RangingManager.WIFI_PD)
+                        .setDistance(new RangingMeasurement.Builder()
+                                .setMeasurement(result.getDistanceMm() / 1000.0)
+                                .build())
+                        .setRssi(result.getRssi())
+                        .setTimestampMillis(result.getRangingTimestampMillis());
+
+                rangingDataBuilder.setRangingDataExtras(new RangingDataExtras.Builder()
+                        .setRttSpecificData(new WifiRttSpecificData.Builder()
+                                .setNumSuccessfulMeasurements(result.getNumSuccessfulMeasurements())
+                                .setNumAttemptedMeasurements(result.getNumAttemptedMeasurements())
+                                .setMeasurementBandwidth((int) result.getMeasurementBandwidth())
+                                .setMeasurementChannelFrequencyMHz(
+                                        result.getMeasurementChannelFrequencyMHz())
+                                .setLci(result.getLci())
+                                .setDistanceStandardDeviationMeters(
+                                        result.getDistanceStdDevMm() / 1000.0)
+                                .build())
+                        .build());
+                synchronized (mStateMachine) {
+                    if (mStateMachine.getState() == State.STARTED) {
+                        mCallback.onRangingData(mPeer, rangingDataBuilder.build());
+                    }
+                }
+            }
+        };
+    }
+
+    private static @RangingUtils.InternalReason int convertReason(int reason) {
+        return switch (reason) {
+            case RangingResult.STATUS_FAIL,
+                 RangingResult.STATUS_RESPONDER_DOES_NOT_SUPPORT_IEEE80211MC ->
+                    RangingUtils.InternalReason.UNSUPPORTED;
+            case RangingResult.STATUS_BUSY_TRY_LATER -> RangingUtils.InternalReason.SYSTEM_POLICY;
+            default -> RangingUtils.InternalReason.UNKNOWN;
+        };
     }
 }

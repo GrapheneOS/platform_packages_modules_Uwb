@@ -42,6 +42,7 @@ import com.android.server.ranging.session.ConfigurationManager.MulticastTechnolo
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
+import com.android.server.ranging.wifipd.WifiPdConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -124,6 +125,10 @@ public class ConfigurationUtils {
                         role, peer.getRttStationRangingParams(), sessionConfig,
                         peer.getRangingDevice()));
             }
+            if (Flags.rangingStackUpdates26Q2() && peer.getWifiPdRangingParams() != null) {
+                configs.add(new WifiPdConfig(role, peer.getWifiPdRangingParams(), sessionConfig,
+                        peer.getRangingDevice()));
+            }
         }
 
         return configs;
@@ -184,7 +189,7 @@ public class ConfigurationUtils {
         public static Map<
                 PeerIgnoringParamsHasher<UwbRangingParams>,
                 BiMap<RangingDevice, UwbAddress>
-        > groupUwbPeersByParams(@NonNull Collection<RawRangingDevice> peerParams) {
+                > groupUwbPeersByParams(@NonNull Collection<RawRangingDevice> peerParams) {
             Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                     peersByParams = new HashMap<>();
             for (RawRangingDevice peer : peerParams) {
@@ -226,7 +231,9 @@ public class ConfigurationUtils {
 
             if (mParams instanceof UwbRangingParams me
                     && hasher.mParams instanceof UwbRangingParams other
-            ) return me.peerIgnoringEquals(other);
+            ) {
+                return me.peerIgnoringEquals(other);
+            }
 
             return false;
         }

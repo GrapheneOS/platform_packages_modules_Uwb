@@ -18,6 +18,7 @@ package com.android.server.ranging.uwb;
 
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_HIGH;
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_MEDIUM;
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
 import android.content.AttributionSource;
@@ -150,7 +151,7 @@ public class UwbAdapter implements RangingAdapter {
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
         if (!(config instanceof UwbConfig uwbConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(INTERNAL_ERROR);
             return;
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {

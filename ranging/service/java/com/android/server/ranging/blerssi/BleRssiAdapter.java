@@ -19,6 +19,7 @@ package com.android.server.ranging.blerssi;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.common.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.NonNull;
@@ -134,7 +135,7 @@ public class BleRssiAdapter implements RangingAdapter {
         }
         if (!(config instanceof BleRssiConfig bleRssiConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(INTERNAL_ERROR);
             return;
         }
         BleRssiRangingParams bleRssiRangingParams = bleRssiConfig.getRangingParams();

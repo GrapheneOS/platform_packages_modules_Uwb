@@ -63,7 +63,12 @@ java_defaults {
         "androidx.annotation_annotation",
         "framework-bluetooth.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
+    ],
+    stub_only_libs: [
+        "framework-connectivity.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
     ],
     srcs: [
         ":framework-ranging-updatable-sources",
