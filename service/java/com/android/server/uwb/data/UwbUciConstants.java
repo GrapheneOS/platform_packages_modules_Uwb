@@ -239,6 +239,8 @@ public class UwbUciConstants {
             FiraParams.STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT;
     public static final int STATUS_CODE_ERROR_CMT3_SEGMENTATION_NOT_POSSIBLE =
             FiraParams.STATUS_CODE_ERROR_CMT3_SEGMENTATION_NOT_POSSIBLE;
+    public static final int STATUS_CODE_ERROR_PHASE_DURATION_CHANGE_PROHIBITED =
+            FiraParams.STATUS_CODE_ERROR_PHASE_DURATION_CHANGE_PROHIBITED;
     /* UWB Ranging Session Specific Status Codes */
     public static final int STATUS_CODE_RANGING_TX_FAILED =
             FiraParams.STATUS_CODE_RANGING_TX_FAILED;
