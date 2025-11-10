@@ -29,12 +29,13 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CapabilitiesRequestTest {
 
-    private static final byte[] uwbCsTechBitmap = new byte[]{0x3, 0x00};
-    private static final byte[] uwbTechOnlyBitmap = new byte[]{0x01, 0x00};
-    private static final byte[] headerBytes = new byte[]{0x1, 0x0};
-    private static final byte[] uwbCsTechMessage = Bytes.concat(headerBytes, uwbCsTechBitmap);
-    private static final byte[] uwbOnlyMessage = Bytes.concat(headerBytes, uwbTechOnlyBitmap);
-    private static final byte[] noTechsMessage = Bytes.concat(headerBytes, new byte[]{0x0, 0x0});
+    private static final byte[] UWB_CS_TECH_BITMAP = new byte[]{0x3, 0x00};
+    private static final byte[] UWB_TECH_ONLY_BITMAP = new byte[]{0x01, 0x00};
+    private static final byte[] HEADER_BYTES = new byte[]{0x2, 0x0};
+    private static final byte[] UWB_CS_TECH_MESSAGE =
+            Bytes.concat(HEADER_BYTES, UWB_CS_TECH_BITMAP);
+    private static final byte[] UWB_ONLY_MESSAGE = Bytes.concat(HEADER_BYTES, UWB_TECH_ONLY_BITMAP);
+    private static final byte[] NO_TECHS_MESSAGE = Bytes.concat(HEADER_BYTES, new byte[]{0x0, 0x0});
 
     @Test
     public void toBytes_convertsCorrectly() throws Exception {
@@ -51,16 +52,16 @@ public final class CapabilitiesRequestTest {
                 .setRequestedTechnologies(new TechnologySet.Builder().setUwb(true).build())
                 .build();
 
-        assertThat(capabilityRequestUwbCs.toBytes()).isEqualTo(uwbCsTechMessage);
-        assertThat(capabilityRequestUwbOnly.toBytes()).isEqualTo(uwbOnlyMessage);
+        assertThat(capabilityRequestUwbCs.toBytes()).isEqualTo(UWB_CS_TECH_MESSAGE);
+        assertThat(capabilityRequestUwbOnly.toBytes()).isEqualTo(UWB_ONLY_MESSAGE);
     }
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
         CapabilitiesRequest capabilityRequestUwbCs =
-                CapabilitiesRequest.fromBytes(uwbCsTechMessage);
+                CapabilitiesRequest.fromBytes(UWB_CS_TECH_MESSAGE);
         CapabilitiesRequest capabilityRequestUwbOnly =
-                CapabilitiesRequest.fromBytes(uwbOnlyMessage);
+                CapabilitiesRequest.fromBytes(UWB_ONLY_MESSAGE);
 
         assertThat(capabilityRequestUwbCs.getRequestedTechnologies())
                 .isEqualTo(new TechnologySet.Builder().setUwb(true).setBleCs(true).build());
@@ -96,7 +97,8 @@ public final class CapabilitiesRequestTest {
 
     @Test
     public void parseBytes_noTechs() throws Exception {
-        CapabilitiesRequest capabilityRequestEmpty = CapabilitiesRequest.fromBytes(noTechsMessage);
+        CapabilitiesRequest capabilityRequestEmpty =
+                CapabilitiesRequest.fromBytes(NO_TECHS_MESSAGE);
 
         assertThat(capabilityRequestEmpty.getRequestedTechnologies())
                 .isEqualTo(new TechnologySet.Builder().build());

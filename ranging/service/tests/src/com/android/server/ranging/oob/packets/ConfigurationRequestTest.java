@@ -60,7 +60,7 @@ public final class ConfigurationRequestTest {
     private static final byte[] oobHeaderBytes =
             new byte[]{
                     // Version
-                    0x01,
+                    0x02,
                     // Message type
                     0x02,
             };
@@ -142,7 +142,7 @@ public final class ConfigurationRequestTest {
                 .setTechnologiesToStart(new TechnologySet.Builder().build())
                 .setConfigs(new Configuration[]{})
                 .build();
-        byte[] expectedBytes = new byte[]{0x1, 0x2, 0x0, 0x0, 0x0, 0x0};
+        byte[] expectedBytes = new byte[]{0x2, 0x2, 0x0, 0x0, 0x0, 0x0};
 
         assertThat(message.toBytes()).isEqualTo(expectedBytes);
     }

@@ -871,13 +871,13 @@ public class FiraSpecificationParams extends FiraParams {
 
         public FiraSpecificationParams.Builder setAoaCapabilities(
                 Collection<AoaCapabilityFlag> aoaCapabilities) {
-            mAoaCapabilities.addAll(aoaCapabilities);
+            mAoaCapabilities = EnumSet.copyOf(aoaCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setDeviceRoleCapabilities(
                 Collection<DeviceRoleCapabilityFlag> deviceRoleCapabilities) {
-            mDeviceRoleCapabilities.addAll(deviceRoleCapabilities);
+            mDeviceRoleCapabilities = EnumSet.copyOf(deviceRoleCapabilities);
             return this;
         }
 
@@ -950,73 +950,73 @@ public class FiraSpecificationParams extends FiraParams {
 
         public FiraSpecificationParams.Builder setMultiNodeCapabilities(
                 Collection<MultiNodeCapabilityFlag> multiNodeCapabilities) {
-            mMultiNodeCapabilities.addAll(multiNodeCapabilities);
+            mMultiNodeCapabilities = EnumSet.copyOf(multiNodeCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setRangingTimeStructCapabilities(
                 Collection<RangingTimeStructCapabilitiesFlag> rangingTimeStructCapabilities) {
-            mRangingTimeStructCapabilities.addAll(rangingTimeStructCapabilities);
+            mRangingTimeStructCapabilities = EnumSet.copyOf(rangingTimeStructCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setSchedulingModeCapabilities(
                 Collection<SchedulingModeCapabilitiesFlag> schedulingModeCapabilities) {
-            mSchedulingModeCapabilities.addAll(schedulingModeCapabilities);
+            mSchedulingModeCapabilities = EnumSet.copyOf(schedulingModeCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setCcConstraintLengthCapabilities(
                 Collection<CcConstraintLengthCapabilitiesFlag> ccConstraintLengthCapabilities) {
-            mCcConstraintLengthCapabilities.addAll(ccConstraintLengthCapabilities);
+            mCcConstraintLengthCapabilities = EnumSet.copyOf(ccConstraintLengthCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setPrfCapabilities(
                 Collection<PrfCapabilityFlag> prfCapabilities) {
-            mPrfCapabilities.addAll(prfCapabilities);
+            mPrfCapabilities = EnumSet.copyOf(prfCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setRangingRoundCapabilities(
                 Collection<RangingRoundCapabilityFlag> rangingRoundCapabilities) {
-            mRangingRoundCapabilities.addAll(rangingRoundCapabilities);
+            mRangingRoundCapabilities = EnumSet.copyOf(rangingRoundCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setRframeCapabilities(
                 Collection<RframeCapabilityFlag> rframeCapabilities) {
-            mRframeCapabilities.addAll(rframeCapabilities);
+            mRframeCapabilities = EnumSet.copyOf(rframeCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setStsCapabilities(
                 Collection<StsCapabilityFlag> stsCapabilities) {
-            mStsCapabilities.addAll(stsCapabilities);
+            mStsCapabilities = EnumSet.copyOf(stsCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setPsduDataRateCapabilities(
                 Collection<PsduDataRateCapabilityFlag> psduDataRateCapabilities) {
-            mPsduDataRateCapabilities.addAll(psduDataRateCapabilities);
+            mPsduDataRateCapabilities = EnumSet.copyOf(psduDataRateCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setBprfParameterSetCapabilities(
                 Collection<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities) {
-            mBprfParameterSetCapabilities.addAll(bprfParameterSetCapabilities);
+            mBprfParameterSetCapabilities = EnumSet.copyOf(bprfParameterSetCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setHprfParameterSetCapabilities(
                 Collection<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities) {
-            mHprfParameterSetCapabilities.addAll(hprfParameterSetCapabilities);
+            mHprfParameterSetCapabilities = EnumSet.copyOf(hprfParameterSetCapabilities);
             return this;
         }
 
         public FiraSpecificationParams.Builder setRangeDataNtfConfigCapabilities(
                 Collection<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities) {
-            mRangeDataNtfConfigCapabilities.addAll(rangeDataNtfConfigCapabilities);
+            mRangeDataNtfConfigCapabilities = EnumSet.copyOf(rangeDataNtfConfigCapabilities);
             return this;
         }
 

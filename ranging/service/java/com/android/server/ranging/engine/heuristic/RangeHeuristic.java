@@ -58,7 +58,7 @@ public abstract class RangeHeuristic {
     protected final CopyOnWriteArraySet<Listener> mListeners;
     protected final Executor mExecutor;
 
-    RangeHeuristic(Executor executor) {
+    public RangeHeuristic(Executor executor) {
         mListeners = new CopyOnWriteArraySet<>();
         mExecutor = executor;
     }

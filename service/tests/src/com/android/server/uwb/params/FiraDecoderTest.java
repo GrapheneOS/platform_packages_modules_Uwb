@@ -27,7 +27,7 @@ import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HA
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_INITIATOR_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_DT_TAG_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.KEY_LENGTH_256_BITS_SUPPORTED;
+import static com.google.uwb.support.fira.FiraParams.KEY_LENGTH_256_BITS_DYNAMIC_STS;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_1_1;
@@ -235,7 +235,8 @@ public class FiraDecoderTest {
 
         assertEquals(firaSpecificationParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLLER);
         assertFalse(firaSpecificationParams.hasSuspendRangingSupport());
-        assertEquals(firaSpecificationParams.getSessionKeyLength(), KEY_LENGTH_256_BITS_SUPPORTED);
+        assertEquals(firaSpecificationParams.getSessionKeyLength(),
+                KEY_LENGTH_256_BITS_DYNAMIC_STS);
         assertEquals(firaSpecificationParams.getDtTagMaxActiveRr(), 16);
         assertThat(firaSpecificationParams.hasLogicalLinkSupport()).isTrue();
         assertThat(firaSpecificationParams.hasLogicalLinkAggregatedFrameSupport()).isFalse();

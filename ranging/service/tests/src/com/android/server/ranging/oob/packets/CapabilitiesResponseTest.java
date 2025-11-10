@@ -55,7 +55,6 @@ public final class CapabilitiesResponseTest {
                     .build();
     private static final CapabilitiesResponseV1 CAPABILITY_RESPONSE_MESSAGE =
             new CapabilitiesResponseV1.Builder()
-                    .setVersion(Version.Current)
                     .setSupportedTechnologies(technologyBitset(SUPPORTED_RANGING_TECHNOLOGIES))
                     .setCapabilities(new Capabilities[]{ UWB_CAPABILITIES })
                     .build();
@@ -152,7 +151,6 @@ public final class CapabilitiesResponseTest {
     public void toBytes_noTechnologiesSet_convertsCorrectly() throws Exception {
         CapabilitiesResponseV1 capabilityResponseNoTechnologiesSet =
                 new CapabilitiesResponseV1.Builder()
-                        .setVersion(Version.Current)
                         .setSupportedTechnologies(new TechnologySet.Builder().build())
                         .setCapabilities(new Capabilities[] {})
                         .build();

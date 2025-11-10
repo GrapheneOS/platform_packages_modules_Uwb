@@ -16,22 +16,44 @@
 
 package com.android.server.ranging.engine;
 
+import static com.android.server.ranging.common.RangingUtils.InternalReason;
+
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.common.RangingUtils;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import java.util.EnumSet;
+import java.util.Set;
 
+/**
+ * Determines which technologies should be active during a ranging session. This may be done
+ * statically before the session starts as is implemented in the {@link StaticRangingEngine}, or an
+ * engine may choose to activate or deactivate technologies dynamically by notifying an
+ * {@link EngineListener}.
+ */
 public interface RangingEngine {
 
+    /** Called by a {@link RangingEngine} to start or stop technologies. */
+    interface EngineListener {
+        void startTechnologies(Set<RangingTechnology> technologies);
+        void stopTechnologies(Set<RangingTechnology> technologies);
+    }
+
+    /** Get the set of technologies to start ranging with when the session begins. */
     @NonNull EnumSet<RangingTechnology> getTechnologiesToStart();
 
+    /** Start the engine. */
+    void start(Set<TechnologyConfig> configs);
+
+    /** Notify the engine that ranging data has been received. */
+    default void onData(@NonNull RangingData data) { }
+
+    /** Notify the engine that a technology has started. */
     default void onTechnologyStarted(@NonNull RangingTechnology technology) { }
 
+    /** Notify the engine that a technology has stopped. */
     default void onTechnologyStopped(
-            @NonNull RangingTechnology technology, @RangingUtils.InternalReason int reason) { }
-
-    default void onData(RangingData data) { }
+            @NonNull RangingTechnology technology, @InternalReason int reason) { }
 }
