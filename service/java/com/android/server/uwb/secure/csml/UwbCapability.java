@@ -35,7 +35,7 @@ import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
 import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
-import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY_V1;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.OWR_UL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
@@ -236,7 +236,7 @@ public class UwbCapability {
             }
             if (mMultiNodeMode.get().contains(
                     FiraParams.MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT)) {
-                multiMode = (byte) (multiMode | MANY_TO_MANY);
+                multiMode = (byte) (multiMode | MANY_TO_MANY_V1);
             }
             uwbCapabilityBuilder.putByte(MULTI_NODE_MODE, multiMode);
         }
@@ -685,7 +685,7 @@ public class UwbCapability {
             if (isBitSet(multiNodeRaw, ONE_TO_MANY)) {
                 multiNodeMode.add(FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT);
             }
-            if (isBitSet(multiNodeRaw, MANY_TO_MANY)) {
+            if (isBitSet(multiNodeRaw, MANY_TO_MANY_V1)) {
                 multiNodeMode.add(FiraParams.MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT);
             }
             uwbCapabilityBuilder.setMultiMode(multiNodeMode);

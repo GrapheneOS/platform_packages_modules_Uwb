@@ -28,6 +28,7 @@ import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HA
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_DT_TAG_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.KEY_LENGTH_256_BITS_DYNAMIC_STS;
+import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_DATA_TRANSFER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_1_1;
@@ -126,7 +127,7 @@ public class FiraDecoderTest {
                     + "05020301" // Device roles
                     + "0602FF0A" // Ranging method
                     + "070103" // STS config
-                    + "080103" // Multi node modes
+                    + "080107" // Multi node modes
                     + "090100" // Ranging time struct
                     + "0A0100" // Scheduled mode
                     + "0B0100" // Hopping mode
@@ -197,7 +198,8 @@ public class FiraDecoderTest {
                 EnumSet.of(HAS_STATIC_STS_SUPPORT, HAS_DYNAMIC_STS_SUPPORT));
 
         assertThat(firaSpecificationParams.getMultiNodeCapabilities()).isEqualTo(
-                EnumSet.of(HAS_ONE_TO_MANY_SUPPORT, HAS_UNICAST_SUPPORT));
+                EnumSet.of(HAS_ONE_TO_MANY_SUPPORT, HAS_UNICAST_SUPPORT,
+                        HAS_ONE_TO_MANY_DATA_TRANSFER_SUPPORT));
 
         assertThat(firaSpecificationParams.hasBlockStridingSupport()).isEqualTo(true);
 

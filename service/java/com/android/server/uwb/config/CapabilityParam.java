@@ -150,7 +150,8 @@ public class CapabilityParam {
 
     public static final int UNICAST = 0x1;
     public static final int ONE_TO_MANY = 0x2;
-    public static final int MANY_TO_MANY = 0x4;
+    public static final int MANY_TO_MANY_V1 = 0x4;
+    public static final int ONE_TO_MANY_DATA_TRANSFER_V2 = 0x4;
 
     public static final int INTERVAL_BASED_SCHEDULING = 0x1;
     public static final int BLOCK_BASED_SCHEDULING = 0x2;
