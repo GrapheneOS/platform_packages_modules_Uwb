@@ -77,3 +77,26 @@ python_test_host {
     ],
     defaults: ["RangingMultiDevicePythonDefaults"],
 }
+
+python_test_host {
+    name: "CtsMultiDeviceGenericRangingAccuracyTests",
+    main: "CtsMultiDeviceGenericRangingAccuracyTests/ranging_test.py",
+    srcs: [
+        "CtsMultiDeviceGenericRangingAccuracyTests/*.py",
+        "lib/*.py",
+    ],
+    device_common_data: [
+        ":bluetooth_multi_devices_snippet",
+        ":ranging_snippet",
+        ":uwb_snippet",
+        ":mobly-bundled-snippets",
+    ],
+    defaults: ["RangingMultiDevicePythonDefaults"],
+    test_config: "CtsMultiDeviceGenericRangingAccuracyTests/AndroidTest.xml",
+    test_options: {
+        runner: "mobly",
+        unit_test: false,
+    },
+    // test_suites: ["cts-v-host"],
+    // TODO(b/457919483): Re-enable cts-v-host suite once flakiness is fixed.
+}
