@@ -34,7 +34,6 @@ public class DtTagParameters extends RangingParameters {
             byte[] sessionKeyInfo,
             UwbComplexChannel complexChannel,
             @Utils.SlotDuration int slotDuration,
-            boolean isAoaDisabled,
             @Nullable UwbRangeLimitsConfig rangeLimitsConfig,
             int rangingIntervalMs,
             int slotsPerRangingRound,
@@ -50,7 +49,7 @@ public class DtTagParameters extends RangingParameters {
                 Utils.NORMAL,
                 new UwbRangeDataNtfConfig.Builder().build(),
                 slotDuration,
-                isAoaDisabled,
+                true,
                 rangeLimitsConfig);
         mRangingIntervalMs = rangingIntervalMs;
         mSlotsPerRangingRound = slotsPerRangingRound;
