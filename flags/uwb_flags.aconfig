@@ -47,13 +47,6 @@ flag {
 }
 
 flag {
-    name: "cr423_cleanup_interval_scheduling"
-    namespace: "uwb"
-    description: "Implement CR-423: Remove Interval-based scheduling for Fira 2.0+ devices"
-    bug: "285984664"
-}
-
-flag {
     name: "hw_state"
     is_exported: true
     namespace: "uwb"
