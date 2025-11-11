@@ -61,6 +61,7 @@ public class RangingCapabilities {
     private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
     private final String mCountryCode;
+    private final boolean mSupportsDlTdoa;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -80,7 +81,8 @@ public class RangingCapabilities {
                 DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
                 SUPPORTED_BPRF_PREAMBLE_INDEX,
                 false,
-                countryCode);
+                countryCode,
+                false);
     }
 
     public RangingCapabilities(
@@ -96,7 +98,8 @@ public class RangingCapabilities {
             ImmutableList<Integer> supportedRangingUpdateRates,
             ImmutableList<Integer> supportedPreambleIndexes,
             boolean hasBackgroundRangingSupport,
-            String countryCode) {
+            String countryCode,
+            boolean supportsDlTdoa) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
@@ -110,6 +113,7 @@ public class RangingCapabilities {
         this.mSupportedPreambleIndexes = supportedPreambleIndexes;
         this.mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
         this.mCountryCode = countryCode;
+        this.mSupportsDlTdoa = supportsDlTdoa;
     }
 
     /** Whether distance ranging is supported. */
@@ -178,5 +182,10 @@ public class RangingCapabilities {
     /** 2-letter ISO 3166 country code currently being used */
     public String getCountryCode() {
         return mCountryCode;
+    }
+
+    /** Whether DL-TDOA is supported. */
+    public boolean supportsDlTdoa() {
+        return mSupportsDlTdoa;
     }
 }

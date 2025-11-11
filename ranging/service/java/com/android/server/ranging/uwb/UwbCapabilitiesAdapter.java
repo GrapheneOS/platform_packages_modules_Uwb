@@ -107,6 +107,7 @@ public class UwbCapabilitiesAdapter extends CapabilitiesAdapter {
                 .setHasBackgroundRangingSupport(
                         capabilities.hasBackgroundRangingSupport())
                 .setCountryCode(capabilities.getCountryCode())
+                .setDlTdoaSupported(capabilities.supportsDlTdoa())
                 .build();
     }
 
