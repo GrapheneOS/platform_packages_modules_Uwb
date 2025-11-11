@@ -107,6 +107,16 @@ public interface RangingAdapter {
         void onRangingData(@NonNull RangingDevice peer, @NonNull RangingData data);
 
         /**
+         * Notifies the caller on each instance of DL TDOA measurement received from the ranging
+         * technology.
+         *
+         * @param peer device whose distance was measured.
+         * @param measurement the DL TDOA measurement.
+         */
+        default void onDlTdoaRangingResult(@NonNull RangingDevice peer,
+                @NonNull android.ranging.DlTdoaMeasurement measurement){};
+
+        /**
          * Notifies the caller that the ranging session was closed.
          *
          * @param reason why the session was closed.
