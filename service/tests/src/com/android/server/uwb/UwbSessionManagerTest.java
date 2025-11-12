@@ -4892,7 +4892,7 @@ public class UwbSessionManagerTest {
         expectedMacAddressBuf.put(getComputedMacAddress(macAddressBytes));
         firaDataTransferPhaseManagementList.add(
                 new FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList(
-                        uwbAddress, new byte[] { (byte) 0x10 }, (byte) 0x01));
+                        uwbAddress, new byte[] {0x10, 0x20 }, (byte) 0x01));
 
         // Setup Phase #2
         macAddressBytes = new byte[]{0x44, 0x33};
@@ -4900,7 +4900,7 @@ public class UwbSessionManagerTest {
         expectedMacAddressBuf.put(getComputedMacAddress(macAddressBytes));
         firaDataTransferPhaseManagementList.add(
                 new FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList(
-                uwbAddress, new byte[] {(byte) 0x20, 0x30}, (byte) 0x00)); //Invalid slot bit map
+                uwbAddress, new byte[] {0x20, 0x30}, (byte) 0x00));
         FiraDataTransferPhaseConfig firaDataTransferPhaseConfig =
                 new FiraDataTransferPhaseConfig.Builder()
                    .setDtpcmRepetition((byte) dtpcmRepetition)
@@ -4939,7 +4939,7 @@ public class UwbSessionManagerTest {
         expectedMacAddressBuf.put(getComputedMacAddress(macAddressBytes));
         firaDataTransferPhaseManagementList.add(
                 new FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList(
-                uwbAddress, new byte[] {(byte) 0x10}, (byte) 0x01));
+                uwbAddress, new byte[] {0x10, 0x20}, (byte) 0x01));
 
         // Size of dtpml-Size is 2 but only one set of configs are provided
         FiraDataTransferPhaseConfig firaDataTransferPhaseConfig =
