@@ -38,7 +38,6 @@ import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.oob.OobResponderRangingConfig;
-import android.ranging.raw.RawDtTagRangingConfig;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -52,7 +51,6 @@ import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.session.OobInitiatorRangingSession;
 import com.android.server.ranging.session.OobResponderRangingSession;
 import com.android.server.ranging.session.RangingSession;
-import com.android.server.ranging.session.RawDtTagRangingSession;
 import com.android.server.ranging.session.RawInitiatorRangingSession;
 import com.android.server.ranging.session.RawResponderRangingSession;
 import com.android.server.uwb.util.LruList;
@@ -447,15 +445,12 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             RangingConfig baseParams = args.preference.getRangingParams();
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
-                            SessionMetricsLogger.startLogging(
+                    SessionMetricsLogger.startLogging(
                             args.handle, args.preference.getDeviceRole(),
                             baseParams.getRangingSessionType(), args.attributionSource,
-                                    mRangingInjector));
+                            mRangingInjector));
 
             switch (baseParams) {
-                case RawDtTagRangingConfig params -> startSession(params, args,
-                        new RawDtTagRangingSession(args.attributionSource, args.handle,
-                        mRangingInjector, sessionConfig, listener, mAdapterExecutor));
                 case RawInitiatorRangingConfig params -> startSession(params, args,
                         new RawInitiatorRangingSession(args.attributionSource, args.handle,
                                 mRangingInjector, sessionConfig, listener, mAdapterExecutor));

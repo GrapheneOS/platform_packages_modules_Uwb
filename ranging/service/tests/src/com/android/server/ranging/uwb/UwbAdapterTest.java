@@ -48,15 +48,7 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfig;
-import android.ranging.SessionConfig;
-import android.ranging.uwb.DlTdoaRangingParams;
-import com.android.ranging.uwb.backend.internal.DtTagParameters;
-import com.android.ranging.uwb.backend.internal.RangingParameters;
-import com.android.ranging.uwb.backend.internal.RangingTag;
-import static com.google.common.truth.Truth.assertThat;
 
-import com.android.server.ranging.uwb.UwbAdapter;
-import com.android.server.ranging.uwb.UwbConfig;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -80,7 +72,6 @@ import java.util.Map;
 @SmallTest
 @SuppressWarnings("ConstantConditions")
 public class UwbAdapterTest {
-
     @Rule
     public final MockitoRule mMockito = MockitoJUnit.rule();
 
@@ -260,35 +251,5 @@ public class UwbAdapterTest {
         verify(mMockCallback).onRangingData(
                 eq(peerDevice),
                 argThat((arg) -> arg.getRangingTechnology() == RangingTechnology.UWB.getValue()));
-    }
-
-    @Test
-    public void start_startsDlTdoaSession() {
-        RangingTag mockRangingTag = mock(RangingTag.class);
-        mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
-                MoreExecutors.newDirectExecutorService(), mockRangingTag);
-        UwbAddress deviceAddress = UwbAddress.fromBytes(new byte[]{1, 2});
-        UwbComplexChannel complexChannel = new UwbComplexChannel.Builder()
-                .setChannel(9).setPreambleIndex(10).build();
-        DlTdoaRangingParams params = new DlTdoaRangingParams.Builder(1)
-                .setComplexChannel(complexChannel)
-                .setDeviceAddress(deviceAddress)
-                .setSessionKeyInfo(new byte[]{1, 2, 3, 4})
-                .build();
-        SessionConfig sessionConfig = new SessionConfig.Builder().build();
-        RangingDevice rangingDevice = new RangingDevice.Builder().build();
-        DlTdoaConfig dlTdoaConfig = new DlTdoaConfig(params, sessionConfig, 1,
-                rangingDevice, deviceAddress);
-        mUwbAdapter.start(dlTdoaConfig, null, mMockCallback);
-        ArgumentCaptor<RangingSessionCallback> callback =
-                ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mockRangingTag).startRanging(callback.capture());
-        ArgumentCaptor<com.android.ranging.uwb.backend.internal.RangingParameters> paramsCaptor =
-                ArgumentCaptor.forClass(
-                        com.android.ranging.uwb.backend.internal.RangingParameters.class);
-        verify(mockRangingTag).setRangingParameters(paramsCaptor.capture());
-        assertThat(paramsCaptor.getValue()).isInstanceOf(DtTagParameters.class);
-        callback.getValue().onRangingInitialized(mMockLocalDevice);
-        verify(mMockCallback).onStarted(eq(ImmutableSet.of()));
     }
 }

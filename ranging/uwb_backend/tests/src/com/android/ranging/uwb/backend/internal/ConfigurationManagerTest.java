@@ -205,6 +205,7 @@ public class ConfigurationManagerTest {
                         new byte[]{1, 2}, /* sessionKeyInfo */
                         mComplexChannel,
                         Utils.DURATION_2_MS,
+                        false, /* isAoaDisabled */
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         rangingIntervalMs,
                         slotsPerRangingRound,
@@ -225,5 +226,6 @@ public class ConfigurationManagerTest {
         assertEquals(rangingIntervalMs, params.getRangingIntervalMs());
         assertEquals(slotsPerRangingRound, params.getSlotsPerRangingRound());
         assertEquals(MAC_ADDRESS_MODE_2_BYTES, params.getMacAddressMode());
+        assertEquals(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT, params.getAoaResultRequest());
     }
 }
