@@ -77,7 +77,7 @@ public class CsAdapter implements RangingAdapter {
     private Callback mCallbacks;
 
     /** Invariant: non-null while a ranging session is active */
-    private BluetoothDevice mDeviceFromPeerBluetoothAddress;
+    private BluetoothDevice mPeerBluetoothDevice;
 
     /** Invariant: non-null while a ranging session is active */
     private RangingDevice mRangingDevice;
@@ -168,8 +168,15 @@ public class CsAdapter implements RangingAdapter {
         }
         mConfig = csConfig;
         mRangingDevice = csConfig.getPeerDevice();
-        mDeviceFromPeerBluetoothAddress =
-                mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
+        if (csConfig.getPeerBluetoothDevice() != null) {
+            mPeerBluetoothDevice = csConfig.getPeerBluetoothDevice();
+            Log.v(TAG,
+                    "BluetoothDevice is provided. Using it instead of the address.");
+        } else {
+            mPeerBluetoothDevice =
+                    mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
+            Log.v(TAG, "BluetoothDevice not provided, using provided BLE address");
+        }
         DistanceMeasurementManager distanceMeasurementManager =
                 mBluetoothAdapter.getDistanceMeasurementManager();
         int duration = DistanceMeasurementParams.getMaxDurationSeconds();
@@ -177,7 +184,7 @@ public class CsAdapter implements RangingAdapter {
         int methodId = DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING;
 
         DistanceMeasurementParams params =
-                new DistanceMeasurementParams.Builder(mDeviceFromPeerBluetoothAddress)
+                new DistanceMeasurementParams.Builder(mPeerBluetoothDevice)
                         .setChannelSoundingParams(new ChannelSoundingParams.Builder()
                                 .setLocationType(bleCsRangingParams.getLocationType())
                                 .setCsSecurityLevel(bleCsRangingParams.getSecurityLevel())

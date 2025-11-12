@@ -314,6 +314,7 @@ package android.ranging.oob {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class DeviceHandle implements android.os.Parcelable {
     method public int describeContents();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.bluetooth.BluetoothDevice getBluetoothDevice();
     method @NonNull public android.ranging.RangingDevice getRangingDevice();
     method @NonNull public android.ranging.oob.TransportHandle getTransportHandle();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -323,6 +324,7 @@ package android.ranging.oob {
   public static final class DeviceHandle.Builder {
     ctor public DeviceHandle.Builder(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.oob.TransportHandle);
     method @NonNull public android.ranging.oob.DeviceHandle build();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.ranging.oob.DeviceHandle.Builder setBluetoothDevice(@NonNull android.bluetooth.BluetoothDevice);
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class OobInitiatorRangingConfig extends android.ranging.RangingConfig implements android.os.Parcelable {

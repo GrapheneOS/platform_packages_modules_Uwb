@@ -23,6 +23,7 @@ import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT
 
 import static junit.framework.Assert.assertEquals;
 
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingParams;
@@ -32,10 +33,14 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.Mock;
 
 @RunWith(JUnit4.class)
 @SmallTest
 public class CsConfigTest {
+
+    @Mock
+    private BluetoothDevice mMockBluetoothDevice;
 
     @Test
     public void testCsConfig() {
@@ -51,11 +56,14 @@ public class CsConfigTest {
         CsConfig config = new CsConfig(
                 bleCsRangingParams,
                 sessionConfig,
-                rangingDevice);
+                rangingDevice,
+                mMockBluetoothDevice);
 
         assertEquals(config.getDeviceRole(), DEVICE_ROLE_INITIATOR);
         assertEquals(config.getRangingParams(), bleCsRangingParams);
         assertEquals(config.getSessionConfig(), sessionConfig);
         assertEquals(config.getPeerDevice(), rangingDevice);
+        assertEquals(config.getPeerBluetoothDevice(), mMockBluetoothDevice);
+
     }
 }

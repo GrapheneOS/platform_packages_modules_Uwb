@@ -20,6 +20,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
@@ -27,6 +28,7 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.raw.RawRangingDevice;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.ConfigurationManager;
@@ -49,6 +51,7 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
     private final BleRssiRangingParams mRangingParams;
 
     private final RangingDevice mPeerDevice;
+    private final BluetoothDevice mPeerBluetoothDevice;
 
     @RangingPreference.DeviceRole
     private final int mDeviceRole;
@@ -56,11 +59,13 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
     public BleRssiConfig(int deviceRole,
             BleRssiRangingParams bleRssiRangingParams,
             SessionConfig sessionConfig,
-            RangingDevice peerDevice) {
+            RangingDevice peerDevice,
+            @Nullable BluetoothDevice peerBluetoothDevice) {
         mDeviceRole = deviceRole;
         mRangingParams = bleRssiRangingParams;
         mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
+        mPeerBluetoothDevice = peerBluetoothDevice;
     }
 
     @Override
@@ -74,6 +79,10 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
 
     public BleRssiRangingParams getRangingParams() {
         return mRangingParams;
+    }
+
+    public BluetoothDevice getPeerBluetoothDevice() {
+        return mPeerBluetoothDevice;
     }
 
     @Override
@@ -107,6 +116,8 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
                 + mDeviceRole
                 + ", mPeerDevice="
                 + mPeerDevice
+                + ", mPeerBluetoothDevice="
+                + mPeerBluetoothDevice
                 + " }";
     }
 
