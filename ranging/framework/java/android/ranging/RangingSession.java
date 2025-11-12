@@ -259,13 +259,6 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onDlTdoaResults(RangingDevice peer, DlTdoaMeasurement measurement) {
-        mExecutor.execute(() -> mCallback.onDlTdoaResults(peer, measurement));
-    }
-
-    /**
-     * @hide
-     */
     public void onStopped(RangingDevice peer, @RangingManager.RangingTechnology int technology) {
         mExecutor.execute(() -> mCallback.onStopped(peer, technology));
     }
@@ -375,22 +368,9 @@ public final class RangingSession implements AutoCloseable {
          * Called when ranging data has been received from a peer.
          *
          * @param peer {@link RangingDevice} the peer from which ranging data was received.
-         * @param data {@link RangingData} the received data.
+         * @param data {@link RangingData} the received.
          */
         void onResults(@NonNull RangingDevice peer, @NonNull RangingData data);
-
-        /**
-         * Called when DL-TDOA measurement data has been received from a peer.
-         * <p>Only invoked when a DL-TDOA session has been started (i.e.,
-         * {@link RangingPreference#getDeviceRole()} returns
-         * {@link RangingPreference#DEVICE_ROLE_DT_TAG}).
-         *
-         * @param peer {@link RangingDevice} the peer from which ranging data was received.
-         * @param measurement {@link DlTdoaMeasurement} the received measurement.
-         */
-        default void onDlTdoaResults(
-                @NonNull RangingDevice peer, @NonNull DlTdoaMeasurement measurement) {
-        }
 
         /**
          * Called when ranging has stopped with a particular peer using a particular technology

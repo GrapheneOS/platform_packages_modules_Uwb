@@ -22,7 +22,13 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.raw.RawInitiatorRangingConfig;
+import android.ranging.raw.RawResponderRangingConfig;
+
 import com.android.ranging.flags.Flags;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
@@ -45,7 +51,6 @@ public final class RangingPreference implements Parcelable {
     @IntDef({
             DEVICE_ROLE_RESPONDER,
             DEVICE_ROLE_INITIATOR,
-            DEVICE_ROLE_DT_TAG
     })
     public @interface DeviceRole {
     }
@@ -54,12 +59,6 @@ public final class RangingPreference implements Parcelable {
     public static final int DEVICE_ROLE_RESPONDER = 0;
     /** The device that initiates the session. */
     public static final int DEVICE_ROLE_INITIATOR = 1;
-    /**
-     * The device that is a DT tag.
-     * <p>This is only allowed in the RAW API usage.
-     */
-    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
-    public static final int DEVICE_ROLE_DT_TAG = 2;
 
     @DeviceRole
     private final int mDeviceRole;
@@ -212,12 +211,6 @@ public final class RangingPreference implements Parcelable {
          */
         @NonNull
         public RangingPreference build() {
-            if (mRangingConfig.getRangingSessionType()
-                    == RangingConfig.RANGING_SESSION_OOB
-                    && mDeviceRole == DEVICE_ROLE_DT_TAG) {
-                throw new IllegalArgumentException(
-                        "DEVICE_ROLE_DT_TAG is not supported for OOB ranging.");
-            }
             return new RangingPreference(this);
         }
     }

@@ -297,48 +297,6 @@ public final class RangingData implements Parcelable {
         dest.writeParcelable(mRangingDataExtras, flags);
     }
 
-    @Override
-    public String toString() {
-        return "RangingData{"
-                + "mRangingTechnology=" + mRangingTechnology
-                + ", mDistance=" + mDistance
-                + ", mDistanceStdDevMeters=" + mDistanceStdDevMeters
-                + ", mAzimuth=" + mAzimuth
-                + ", mElevation=" + mElevation
-                + ", mRssi=" + mRssi
-                + ", mTimestamp=" + mTimestamp
-                + ", mDelaySpreadMeters=" + mDelaySpreadMeters
-                + ", mDetectedAttackLevel=" + mDetectedAttackLevel
-                + ", mVelocityMetersPerSec=" + mVelocityMetersPerSec
-                + ", mRangingDataExtras=" + mRangingDataExtras
-                + '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RangingData that = (RangingData) o;
-        return mRangingTechnology == that.mRangingTechnology
-                && Double.compare(that.mDistanceStdDevMeters, mDistanceStdDevMeters) == 0
-                && mRssi == that.mRssi
-                && mTimestamp == that.mTimestamp
-                && Double.compare(that.mDelaySpreadMeters, mDelaySpreadMeters) == 0
-                && mDetectedAttackLevel == that.mDetectedAttackLevel
-                && Double.compare(that.mVelocityMetersPerSec, mVelocityMetersPerSec) == 0
-                && Objects.equals(mDistance, that.mDistance)
-                && Objects.equals(mAzimuth, that.mAzimuth)
-                && Objects.equals(mElevation, that.mElevation)
-                && Objects.equals(mRangingDataExtras, that.mRangingDataExtras);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(mRangingTechnology, mDistance, mDistanceStdDevMeters, mAzimuth,
-                mElevation, mRssi, mTimestamp, mDelaySpreadMeters, mDetectedAttackLevel,
-                mVelocityMetersPerSec, mRangingDataExtras);
-    }
-
     /**
      * Builder class for creating instances of {@link RangingData}.
      *
@@ -459,7 +417,7 @@ public final class RangingData implements Parcelable {
          *
          * <p>Must be positive.</p>
          *
-         * @param delaySpread The estimated delay spread in meters.
+         * @param delaySpread The estinamted delay spread in meters.
          * @return This {@link Builder} instance.
          * @throws IllegalArgumentException if the provided value is < 0.
          * @hide

@@ -186,8 +186,7 @@ public class UwbServiceImpl {
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
                     SUPPORTED_BPRF_PREAMBLE_INDEX,
                     /* hasBackgroundRangingSupport */ false,
-                    "00",
-                    false);
+                    "00");
         }
 
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
@@ -234,8 +233,6 @@ public class UwbServiceImpl {
         }
         EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilityFlags =
                 specificationParams.getRangingRoundCapabilities();
-        boolean dlTdoaSupported = rangingRoundCapabilityFlags.contains(
-                FiraParams.RangingRoundCapabilityFlag.HAS_OWR_DL_TDOA_SUPPORT);
         EnumSet<FiraParams.PrfCapabilityFlag> prfModeCapabilityFlags =
                 specificationParams.getPrfCapabilities();
 
@@ -262,7 +259,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedRangingUpdateRates),
                 ImmutableList.copyOf(supportedPreambleIndexes),
                 specificationParams.hasBackgroundRangingSupport(),
-                specificationParams.getCountryCode(),
-                dlTdoaSupported);
+                specificationParams.getCountryCode()
+        );
     }
 }
