@@ -21,6 +21,9 @@ import static android.ranging.RangingCapabilities.ENABLED;
 import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
 import static android.ranging.RangingConfig.RANGING_SESSION_OOB;
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
+import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
+import android.ranging.raw.RawDtTagRangingConfig;
+import android.ranging.uwb.DlTdoaRangingParams;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
@@ -41,6 +44,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -81,6 +85,7 @@ import android.ranging.oob.TransportHandle;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
+import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
@@ -1537,4 +1542,110 @@ public class RangingManagerTest {
         }
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testDlTdoaDtTagRangingSession() throws Exception {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB));
+        enableUwb();
+
+        CapabilitiesCallback capabilitiesCallback = new CapabilitiesCallback(new CountDownLatch(1));
+        mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
+                capabilitiesCallback);
+        assertThat(capabilitiesCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        RangingCapabilities rangingCapabilities = capabilitiesCallback.mRangingCapabilities;
+        assertThat(rangingCapabilities).isNotNull();
+        UwbRangingCapabilities uwbCapabilities = rangingCapabilities.getUwbCapabilities();
+        assertThat(uwbCapabilities).isNotNull();
+        assumeTrue(uwbCapabilities.isDlTdoaSupported());
+
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                Executors.newSingleThreadExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        UwbAddress deviceAddress = UwbAddress.createRandomShortAddress();
+        DlTdoaRangingParams dlTdoaParams = new DlTdoaRangingParams.Builder(1)
+                .setComplexChannel(new UwbComplexChannel.Builder().
+                setChannel(9).setPreambleIndex(10).build())
+                .setDeviceAddress(deviceAddress)
+                .setSessionKeyInfo(new byte[]{0x01, 0x02, 0x03, 0x04})
+                .setRangingIntervalMillis(240)
+                .setSlotDuration(UwbRangingParams.DURATION_2_MS)
+                .setSlotsPerRangingRound(20)
+                .setRangingRoundIndexes(new byte[]{0x01, 0x05})
+                .build();
+
+        RangingDevice rangingDevice = new RangingDevice.Builder().build();
+
+        RawRangingDevice rawTagDevice = new RawRangingDevice.Builder()
+                .setRangingDevice(rangingDevice)
+                .setDlTdoaRangingParams(dlTdoaParams)
+                .build();
+
+        RawDtTagRangingConfig dtTagConfig = new RawDtTagRangingConfig.Builder(rawTagDevice)
+                .build();
+        assertThat(dtTagConfig.getDtTag()).isEqualTo(rawTagDevice);
+
+        RangingPreference preference = new RangingPreference.Builder(
+                DEVICE_ROLE_DT_TAG, dtTagConfig)
+                .setSessionConfig(new SessionConfig.Builder()
+                        .build())
+                .build();
+        assertThat(preference.getDeviceRole()).isEqualTo(DEVICE_ROLE_DT_TAG);
+        assertThat(preference.getRangingParams()).isEqualTo(dtTagConfig);
+
+
+        Log.i(TAG, "Starting DL-TDOA ranging session with preference: " + preference);
+        rangingSession.start(preference);
+        assertThat(callback.mOnOpenedCalled.await(4, TimeUnit.SECONDS)).isTrue();
+
+        Log.i(TAG, "DL-TDOA ranging session opened. Closing.");
+        rangingSession.close();
+        assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+        Log.i(TAG, "DL-TDOA ranging session closed.");
+
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testRawDtTagRangingConfig_missingDlTdoaParams_throwsException() {
+        // Create a valid RawRangingDevice, but one that is invalid for RawDtTagRangingConfig
+        // by providing a different, non-DL-TDOA param.
+        RawRangingDevice rawTagDevice = new RawRangingDevice.Builder()
+                .setRangingDevice(new RangingDevice.Builder().build())
+                // Add a valid param so the RawRangingDevice.Builder doesn't throw.
+                .setUwbRangingParams(
+                        new UwbRangingParams.Builder(1, UwbRangingParams.CONFIG_UNICAST_DS_TWR,
+                                UwbAddress.createRandomShortAddress(),
+                                UwbAddress.createRandomShortAddress()).build())
+                .build();
+
+        // This is the call we actually want to test. It should throw because
+        // DlTdoaRangingParams is missing.
+        assertThrows(IllegalArgumentException.class,
+                () -> new RawDtTagRangingConfig.Builder(rawTagDevice));
+    }
+
+    @Test
+    public void testDlTdoaRangingParams_invalidRangingInterval_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new DlTdoaRangingParams.Builder(1).setRangingIntervalMillis(0).build());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DlTdoaRangingParams.Builder(1).setRangingIntervalMillis(-1).build());
+    }
+
+    @Test
+    public void testDlTdoaRangingParams_invalidSlotsPerRangingRound_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new DlTdoaRangingParams.Builder(1).setSlotsPerRangingRound(0).build());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DlTdoaRangingParams.Builder(1).setSlotsPerRangingRound(-1).build());
+    }
 }

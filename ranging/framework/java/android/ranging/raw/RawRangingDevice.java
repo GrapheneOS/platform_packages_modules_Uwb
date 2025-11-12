@@ -28,6 +28,7 @@ import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.ble.rssi.BleRssiConstants;
 import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbConstants;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
@@ -118,6 +119,7 @@ public final class RawRangingDevice implements Parcelable {
     private final RttRangingParams mRttRangingParams;
     private final BleRssiRangingParams mBleRssiRangingParams;
     private final RttStationRangingParams mRttStationRangingParams;
+    private final DlTdoaRangingParams mDlTdoaRangingParams;
 
     private RawRangingDevice(Builder builder) {
         mRangingDevice = builder.mRangingDevice;
@@ -126,6 +128,7 @@ public final class RawRangingDevice implements Parcelable {
         mRttRangingParams = builder.mRttRangingParams;
         mBleRssiRangingParams = builder.mBleRssiRangingParams;
         mRttStationRangingParams = builder.mRttStationRangingParams;
+        mDlTdoaRangingParams = builder.mDlTdoaRangingParams;
     }
 
 
@@ -143,6 +146,8 @@ public final class RawRangingDevice implements Parcelable {
                 BleRssiRangingParams.class);
         mRttStationRangingParams = in.readParcelable(RttStationRangingParams.class.getClassLoader(),
                 RttStationRangingParams.class);
+        mDlTdoaRangingParams = in.readParcelable(DlTdoaRangingParams.class.getClassLoader(),
+                DlTdoaRangingParams.class);
     }
 
     @Override
@@ -153,6 +158,7 @@ public final class RawRangingDevice implements Parcelable {
         dest.writeParcelable(mRttRangingParams, flags);
         dest.writeParcelable(mBleRssiRangingParams, flags);
         dest.writeParcelable(mRttStationRangingParams, flags);
+        dest.writeParcelable(mDlTdoaRangingParams, flags);
     }
 
     @NonNull
@@ -230,6 +236,17 @@ public final class RawRangingDevice implements Parcelable {
     }
 
     /**
+     * Returns the DL-TDOA ranging parameters, if applicable.
+     *
+     * @return the {@link DlTdoaRangingParams}, or {@code null} if not set.
+     */
+    @Nullable
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public DlTdoaRangingParams getDlTdoaRangingParams() {
+        return mDlTdoaRangingParams;
+    }
+
+    /**
      * Returns a map of ranging technologies to their corresponding ranging interval durations for
      * available ranging technologies parameters.
      *
@@ -271,6 +288,12 @@ public final class RawRangingDevice implements Parcelable {
                     Duration.ofMillis(BleRssiConstants.getIntervalInMs((int) bleRssiUpdateRate)));
         }
 
+        if (mDlTdoaRangingParams != null) {
+            int dlTdoaUpdateRate = mDlTdoaRangingParams.getRangingIntervalMillis();
+            map.put(RangingManager.UWB,
+                    Duration.ofMillis(dlTdoaUpdateRate));
+        }
+
         if (mRttStationRangingParams != null) {
             int wifiStaRttUpdateRateMs = WifiRttConstants.getIntervalMs(
                     (int) mRttStationRangingParams.getRangingUpdateRate(), true);
@@ -294,6 +317,7 @@ public final class RawRangingDevice implements Parcelable {
         private RttRangingParams mRttRangingParams;
         private BleRssiRangingParams mBleRssiRangingParams;
         private RttStationRangingParams mRttStationRangingParams;
+        private DlTdoaRangingParams mDlTdoaRangingParams;
 
         /**
          * Sets the ranging device.
@@ -373,6 +397,21 @@ public final class RawRangingDevice implements Parcelable {
             mRttStationRangingParams = params;
             return this;
         }
+
+        /**
+         * Sets the DL-TDOA ranging parameters.
+         *
+         * @param params the {@link DlTdoaRangingParams} to be set.
+         * @return this {@link Builder} instance for chaining calls.
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        public Builder setDlTdoaRangingParams(@NonNull DlTdoaRangingParams params) {
+            Objects.requireNonNull(params);
+            mDlTdoaRangingParams = params;
+            return this;
+        }
+
         /**
          * Builds and returns a new {@link RawRangingDevice} instance.
          *
@@ -382,7 +421,7 @@ public final class RawRangingDevice implements Parcelable {
         public RawRangingDevice build() {
             Objects.requireNonNull(this.mRangingDevice);
             if (Stream.of(mUwbRangingParams, mBleCsRangingParams, mBleRssiRangingParams,
-                            mRttRangingParams, mRttStationRangingParams)
+                            mRttRangingParams, mRttStationRangingParams, mDlTdoaRangingParams)
                     .allMatch(Objects::isNull)) {
                 throw new IllegalArgumentException(
                         "At least one ranging params should be configured");
@@ -402,10 +441,12 @@ public final class RawRangingDevice implements Parcelable {
                 + mBleCsRangingParams
                 + ", mRttRangingParams="
                 + mRttRangingParams
-                + ", mBleRssiRangingParams="
                 + mBleRssiRangingParams
                 + ", mRttStationRangingParams="
                 + mRttStationRangingParams
+                + ", mDlTdoaRangingParams="
+                + mDlTdoaRangingParams
                 + " }";
     }
 }
+

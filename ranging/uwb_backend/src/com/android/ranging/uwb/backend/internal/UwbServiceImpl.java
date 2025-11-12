@@ -123,6 +123,13 @@ public class UwbServiceImpl {
                 new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
     }
 
+    /** Gets a Ranging Tag session with given context. */
+    public static RangingTag getRangingTag(Context context, ExecutorService executor) {
+        UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
+        return new RangingTag(uwbManagerWithContext, executor, new OpAsyncCallbackRunner<>(),
+                FEATURE_FLAGS);
+    }
+
     /** Returns multi-chip information. */
     public List<ChipInfoParams> getChipInfos() {
         List<PersistableBundle> chipInfoBundles = mUwbManager.getChipInfos();
@@ -186,7 +193,8 @@ public class UwbServiceImpl {
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
                     SUPPORTED_BPRF_PREAMBLE_INDEX,
                     /* hasBackgroundRangingSupport */ false,
-                    "00");
+                    "00",
+                    false);
         }
 
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
@@ -233,6 +241,8 @@ public class UwbServiceImpl {
         }
         EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilityFlags =
                 specificationParams.getRangingRoundCapabilities();
+        boolean dlTdoaSupported = rangingRoundCapabilityFlags.contains(
+                FiraParams.RangingRoundCapabilityFlag.HAS_OWR_DL_TDOA_SUPPORT);
         EnumSet<FiraParams.PrfCapabilityFlag> prfModeCapabilityFlags =
                 specificationParams.getPrfCapabilities();
 
@@ -259,7 +269,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedRangingUpdateRates),
                 ImmutableList.copyOf(supportedPreambleIndexes),
                 specificationParams.hasBackgroundRangingSupport(),
-                specificationParams.getCountryCode()
-        );
+                specificationParams.getCountryCode(),
+                dlTdoaSupported);
     }
 }
