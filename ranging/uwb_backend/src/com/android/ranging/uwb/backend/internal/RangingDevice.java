@@ -254,21 +254,12 @@ public abstract class RangingDevice {
                 mRangingRoundFailureCallback.onRangingRoundFailed(peerAddress);
             }
 
-            if (Conversions.isDlTdoaMeasurement(measurement)) {
-                DlTdoaMeasurement dlTdoaMeasurement =
-                        Conversions.convertToPosition(measurement).getDlTdoaMeasurement();
-                if (dlTdoaMeasurement != null) {
-                    UwbDevice uwbDevice = UwbDevice.createForAddress(peerAddress.toBytes());
-                    callback.onDlTdoaRangingResult(uwbDevice, dlTdoaMeasurement);
-                }
-            } else {
-                RangingPosition currentPosition = Conversions.convertToPosition(measurement);
-                if (currentPosition == null) {
-                    continue;
-                }
-                UwbDevice uwbDevice = UwbDevice.createForAddress(peerAddress.toBytes());
-                callback.onRangingResult(uwbDevice, currentPosition);
+            RangingPosition currentPosition = Conversions.convertToPosition(measurement);
+            if (currentPosition == null) {
+                continue;
             }
+            UwbDevice uwbDevice = UwbDevice.createForAddress(peerAddress.toBytes());
+            callback.onRangingResult(uwbDevice, currentPosition);
         }
     }
 

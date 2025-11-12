@@ -27,9 +27,6 @@ public interface RangingSessionCallback {
     /** Callback when a ranging device's position is received. */
     void onRangingResult(UwbDevice device, RangingPosition position);
 
-    /** Callback when a DL-TDOA measurement is received. */
-    default void onDlTdoaRangingResult(UwbDevice device, DlTdoaMeasurement measurement){};
-
     /** Callback when a session has been suspended. */
     void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason);
 
