@@ -226,7 +226,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
     public synchronized void onTechnologyStopped(
             @NonNull RangingTechnology technology, @InternalReason int reason
     ) {
-        if (reason == InternalReason.LOCAL_REQUEST || reason == InternalReason.REMOTE_REQUEST) {
+        if (reason == InternalReason.ENGINE_REQUEST) {
             return;
         }
         Log.i(TAG, "Unexpected stop of " + technology);

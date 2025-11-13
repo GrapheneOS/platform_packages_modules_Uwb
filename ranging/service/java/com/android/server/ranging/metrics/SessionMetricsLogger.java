@@ -106,6 +106,12 @@ public class SessionMetricsLogger {
                 mAttributionSource.getUid());
     }
 
+    private @InternalReason int covertInternalReason(@InternalReason int reason) {
+        if (reason == InternalReason.ENGINE_REQUEST) return InternalReason.LOCAL_REQUEST;
+
+        return reason;
+    }
+
     public synchronized void logTechnologyStopped(
             RangingTechnology technology, int numPeers, @InternalReason int reason
     ) {
@@ -116,7 +122,7 @@ public class SessionMetricsLogger {
                         technology.getValue(), RangingTechnology.TECHNOLOGIES.size()),
                 coerceUnknownEnumValueToZero(
                         mStateMachine.getState().toInt(), State.values().length),
-                reason,
+                covertInternalReason(reason),
                 numPeers,
                 mAttributionSource.getUid());
     }
@@ -128,7 +134,7 @@ public class SessionMetricsLogger {
                 coerceUnknownEnumValueToZero(
                         mStateMachine.getState().toInt(), State.values().length),
                 System.currentTimeMillis() - mLastStateChangeTimestampMs,
-                reason,
+                covertInternalReason(reason),
                 mAttributionSource.getUid());
         mLastStateChangeTimestampMs = System.currentTimeMillis();
     }

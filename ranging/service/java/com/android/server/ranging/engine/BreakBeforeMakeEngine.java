@@ -186,10 +186,7 @@ public class BreakBeforeMakeEngine implements RangingEngine {
     @Override
     public synchronized void onTechnologyStopped(
             @NonNull RangingTechnology technology, @InternalReason int reason) {
-        // TODO: Add an extra reason code for theonTechnologyStopped engine transition to
-        //  distinguish between user-requested stop and the requests from engine. The user requested
-        //  stop should not result in the transition here.
-        if (reason != InternalReason.LOCAL_REQUEST) return;
+        if (reason != InternalReason.ENGINE_REQUEST) return;
 
         // Local stop request completed.
         if (mNextEvent != null) mNextEvent.cancel();

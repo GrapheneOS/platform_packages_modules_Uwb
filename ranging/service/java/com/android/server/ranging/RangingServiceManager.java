@@ -377,6 +377,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                 case InternalReason.INTERNAL_ERROR -> Callback.REASON_UNKNOWN;
                 case InternalReason.BACKGROUND_RANGING_POLICY -> Callback.REASON_SYSTEM_POLICY;
                 case InternalReason.PEER_CAPABILITIES_MISMATCH -> Callback.REASON_UNSUPPORTED;
+                case InternalReason.ENGINE_REQUEST -> InternalReason.LOCAL_REQUEST;
                 default -> Callback.REASON_UNKNOWN;
             };
         }

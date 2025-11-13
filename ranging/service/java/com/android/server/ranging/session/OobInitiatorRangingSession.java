@@ -175,7 +175,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             var unused = sendStopRangingMessage(this, technologies)
                     .transform(unused1 -> {
                         OobInitiatorRangingSession.super.stopTechnologies(
-                                technologies, InternalReason.LOCAL_REQUEST);
+                                technologies, InternalReason.ENGINE_REQUEST);
                         return null;
                     }, mOobExecutor);
         }
