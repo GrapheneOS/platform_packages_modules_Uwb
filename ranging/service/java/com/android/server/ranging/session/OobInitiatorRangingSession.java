@@ -40,6 +40,7 @@ import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
+import com.android.server.ranging.engine.BreakBeforeMakeEngine;
 import com.android.server.ranging.engine.RangingEngine;
 import com.android.server.ranging.engine.StaticRangingEngine;
 import com.android.server.ranging.engine.UwbMakeBeforeBreakEngine;
@@ -56,8 +57,8 @@ import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
-
 import com.android.server.ranging.uwb.UwbConfigSelector;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
@@ -130,9 +131,12 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                                 RangingTechnology.fromByte(alternate.toByte()), this,
                                 mOobExecutor, mInjector);
                     }
-                    case TechnologyTransitioning.NotSupported unused ->
-                        /* TODO: Add support for break-before-make transitioning */
-                        new StaticRangingEngine(capabilities.keySet(), mConfig, mInjector);
+                    case TechnologyTransitioning.NotSupported unused -> {
+                        Log.i(TAG, "Using break-before-make transitioning UWB <-> " + alternate);
+                        yield new BreakBeforeMakeEngine(
+                            RangingTechnology.fromByte(alternate.toByte()), this,
+                            mOobExecutor, mInjector);
+                    }
                     case TechnologyTransitioning.Reserved other ->
                             throw new IllegalStateException(
                                     "Unexpected technology transitioning " + other);
@@ -224,8 +228,11 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     public void onSuccess(ImmutableSet<TechnologyConfig> localConfigs) {
                         // TODO: Send start ranging message to peers who don't have all active
                         //  technologies in their start ranging list
-                        OobInitiatorRangingSession.super.start(localConfigs);
+
+                        // Start engine before calling session start to ensure the necessary
+                        // initialization completed to interact with technology changes.
                         mPeers.values().forEach(peer -> peer.mEngine.start(localConfigs));
+                        OobInitiatorRangingSession.super.start(localConfigs);
                     }
 
                     @Override
