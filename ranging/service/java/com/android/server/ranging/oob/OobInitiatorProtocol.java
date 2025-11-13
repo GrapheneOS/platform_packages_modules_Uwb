@@ -73,6 +73,7 @@ public class OobInitiatorProtocol {
 
     public PeerCapabilities getCapabilitiesFromResponse(RangingDevice peer, byte[] responseBytes) {
         OobMessage message = OobMessage.fromBytes(responseBytes);
+        Log.v(TAG, "Received " + message);
 
         TechnologyTransitioning transitioning;
         Capabilities[] responseCapabilities;

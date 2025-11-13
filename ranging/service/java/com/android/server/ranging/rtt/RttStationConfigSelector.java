@@ -31,6 +31,7 @@ import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 import android.ranging.wifi.rtt.RttStationRangingParams;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -54,6 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
 public class RttStationConfigSelector extends ConfigurationManager.ConfigSelector {
+    private static final String TAG = RttStationConfigSelector.class.getSimpleName();
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static int sSupportedBands = 0;
@@ -74,7 +76,10 @@ public class RttStationConfigSelector extends ConfigurationManager.ConfigSelecto
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable RttStationRangingCapabilities capabilities) {
 
-        if (capabilities == null) return false;
+        if (capabilities == null) {
+            Log.v(TAG, "Not capable of RTT station");
+            return false;
+        }
         sSupportedBands = capabilities.getNumSupportedBands();
         if (RTT_UPDATE_RATE_DURATIONS == null) {
             getLazyUpdateRate();
@@ -83,6 +88,7 @@ public class RttStationConfigSelector extends ConfigurationManager.ConfigSelecto
         if (getUpdateRateFromDurationRange(
                 oobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS).isEmpty()
         ) {
+            Log.v(TAG, "Not capable of configured ranging interval");
             return false;
         }
 

@@ -43,6 +43,7 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
+import android.util.Log;
 import android.util.Range;
 
 import androidx.annotation.NonNull;
@@ -102,35 +103,52 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
             @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable UwbRangingCapabilities capabilities
     ) {
-        if (capabilities == null) return false;
+        if (capabilities == null) {
+            Log.v(TAG, "Not capable of UWB");
+            return false;
+        }
 
         boolean isMulticast = oobConfig.getDeviceHandles().size() > 1;
 
         if (oobConfig.getSecurityLevel() == SECURITY_LEVEL_BASIC
                 && isMulticast
                 && !capabilities.getSupportedConfigIds().contains(CONFIG_MULTICAST_DS_TWR)
-        ) return false;
+        ) {
+            Log.v(TAG, "Does not support CONFIG_ID necessary for multicast with basic security");
+            return false;
+        }
 
         if (oobConfig.getSecurityLevel() == SECURITY_LEVEL_BASIC
                 && !isMulticast
                 && !capabilities.getSupportedConfigIds().contains(CONFIG_UNICAST_DS_TWR)
-        ) return false;
+        ) {
+            Log.v(TAG, "Does not support CONFIG_ID necessary for unicast with basic security");
+            return false;
+        }
 
         if (oobConfig.getSecurityLevel() == SECURITY_LEVEL_SECURE
                 && isMulticast
                 && !capabilities
                         .getSupportedConfigIds().contains(CONFIG_PROVISIONED_MULTICAST_DS_TWR)
-        ) return false;
+        ) {
+            Log.v(TAG, "Does not support CONFIG_ID necessary for multicast with secure security");
+            return false;
+        }
 
         if (oobConfig.getSecurityLevel() == SECURITY_LEVEL_SECURE
                 && !isMulticast
                 && !capabilities
                         .getSupportedConfigIds().contains(CONFIG_PROVISIONED_UNICAST_DS_TWR)
-        ) return false;
+        ) {
+            Log.v(TAG, "Does not support CONFIG_ID necessary for unicast with secure security");
+            return false;
+        }
 
         // TODO: If we add support for AoA via ARCore in the future, this will need to be changed.
-        if (sessionConfig.isAngleOfArrivalNeeded() && !capabilities.isAzimuthalAngleSupported())
+        if (sessionConfig.isAngleOfArrivalNeeded() && !capabilities.isAzimuthalAngleSupported()) {
+            Log.v(TAG, "Does not support AoA");
             return false;
+        }
 
         return true;
     }
