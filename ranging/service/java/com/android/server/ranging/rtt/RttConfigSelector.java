@@ -30,6 +30,7 @@ import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -55,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
+    private static final String TAG = RttConfigSelector.class.getSimpleName();
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static boolean sLocalPeriodicRangingSupport = false;
@@ -74,7 +76,10 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable RttRangingCapabilities capabilities) {
 
-        if (capabilities == null) return false;
+        if (capabilities == null) {
+            Log.v(TAG, "Not capable of RTT");
+            return false;
+        }
 
         sLocalPeriodicRangingSupport = capabilities.hasPeriodicRangingHardwareFeature();
         if (RTT_UPDATE_RATE_DURATIONS == null) {
@@ -83,7 +88,10 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
 
         if (getUpdateRateFromDurationRange(
                 oobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS).isEmpty()
-        ) return false;
+        ) {
+            Log.v(TAG, "Not capable of configured ranging interval");
+            return false;
+        }
 
         return true;
     }

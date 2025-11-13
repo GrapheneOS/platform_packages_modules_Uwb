@@ -37,7 +37,9 @@ import androidx.annotation.Nullable;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.engine.RangingEngine;
 import com.android.server.ranging.engine.StaticRangingEngine;
 import com.android.server.ranging.engine.UwbMakeBeforeBreakEngine;
@@ -50,9 +52,12 @@ import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.Technology;
 import com.android.server.ranging.oob.packets.TechnologyTransitioning;
+import com.android.server.ranging.rtt.RttConfigSelector;
+import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
+import com.android.server.ranging.uwb.UwbConfigSelector;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
@@ -153,6 +158,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 return;
             }
             ConfigurationRequest request = mProtocol.getConfigurationRequest(mDevice, remote);
+            Log.v(TAG, "Sending " + request);
             var unused = mConnection.sendData(request.toBytes())
                     .transform(unused1 -> {
                         OobInitiatorRangingSession.super.start(local);
@@ -198,11 +204,6 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             mSessionListener.onSessionClosed(InternalReason.INTERNAL_ERROR);
             return;
         }
-        if (!mInjector.isLocalDeviceCapableOfConfig(mSessionConfig, config)) {
-            Log.e(TAG, "Provided config incompatible with local capabilities");
-            mSessionListener.onSessionClosed(InternalReason.UNSUPPORTED);
-            return;
-        }
 
         for (DeviceHandle deviceHandle : config.getDeviceHandles()) {
             OobHandle handle = new OobHandle(mSessionHandle, deviceHandle.getRangingDevice());
@@ -216,7 +217,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 mSessionHandle, mSessionConfig, config, mInjector);
         mProtocol = new OobInitiatorProtocol(mInjector);
 
-        sendCapabilityRequest(mProtocol.getCapabilitiesRequest(getTechnologiesToRequest()))
+        sendCapabilityRequest()
                 .transformAsync(this::sendConfigurationRequest, mOobExecutor)
                 .addCallback(new FutureCallback<>() {
                     @Override
@@ -258,9 +259,14 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 .run(OobInitiatorRangingSession.super::stop, mOobExecutor);
     }
 
-    private FluentFuture<Map<RangingDevice, byte[]>> sendCapabilityRequest(
-            byte[] request
-    ) {
+    private FluentFuture<Map<RangingDevice, byte[]>> sendCapabilityRequest() {
+        EnumSet<RangingTechnology> technologies = getTechnologiesToRequest();
+        if (technologies.isEmpty()) {
+            return FluentFuture.from(Futures.immediateFailedFuture(new ConfigSelectionException(
+                    "No technologies to request", InternalReason.UNSUPPORTED)));
+        }
+        byte[] request = mProtocol.getCapabilitiesRequest(technologies);
+
         Map<RangingDevice, FluentFuture<byte[]>> pendingResponses = new HashMap<>();
         mPeers.forEach((handle, peer) -> pendingResponses.put(
                 handle,
@@ -341,6 +347,8 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
     }
 
     private EnumSet<RangingTechnology> getTechnologiesToRequest() {
+        Log.v(TAG, "Capabilities: " + mInjector.getCapabilitiesProvider().getCapabilities());
+
         List<RangingTechnology> technologyRanking = mInjector.getTechnologyRanking();
         if (mConfig.getRangingMode() == RANGING_MODE_HIGH_ACCURACY
                 && shouldRequest(technologyRanking.getFirst())
@@ -360,13 +368,21 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             return false;
         }
 
-        @RangingCapabilities.RangingTechnologyAvailability int availability = mInjector
-                .getCapabilitiesProvider()
-                .getCapabilities()
-                .getTechnologyAvailability()
-                .get(technology.getValue());
-        return availability == RangingCapabilities.ENABLED
-                || availability == RangingCapabilities.DISABLED_USER;
+        RangingCapabilities capabilities = mInjector.getCapabilitiesProvider().getCapabilities();
+
+        return switch (technology) {
+            case RangingTechnology.UWB -> UwbConfigSelector.isCapableOfConfig(
+                    mSessionConfig, mConfig, capabilities.getUwbCapabilities());
+            case RangingTechnology.CS -> CsConfigSelector.isCapableOfConfig(
+                    mConfig, capabilities.getCsCapabilities());
+            case RangingTechnology.RTT -> RttConfigSelector.isCapableOfConfig(
+                    mConfig, capabilities.getRttRangingCapabilities());
+            case RangingTechnology.RSSI -> BleRssiConfigSelector.isCapableOfConfig(
+                    mConfig, capabilities.getBleRssiCapabilities());
+            case RangingTechnology.RTT_STATION -> RttStationConfigSelector.isCapableOfConfig(
+                    mConfig, capabilities.getRttStationRangingCapabilities());
+            case RangingTechnology.WIFI_PD -> /* TODO: Add support for wifi PD */ false;
+        };
     }
 
     private <T> Map<RangingDevice, T> handleFailedFutures(
