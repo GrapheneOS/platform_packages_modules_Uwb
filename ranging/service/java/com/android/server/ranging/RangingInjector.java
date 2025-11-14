@@ -49,6 +49,9 @@ import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
+import com.android.server.ranging.oob.packets.DeviceType;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.rtt.RttAdapter;
@@ -410,5 +413,28 @@ public class RangingInjector {
         return Arrays.stream(mDeviceConfigFacade.getTechnologyPreferenceList())
                 .map(RangingTechnology::fromName)
                 .toList();
+    }
+
+    public DeviceType getDeviceType() {
+        PackageManager pm = mContext.getPackageManager();
+        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            return DeviceType.Wearable;
+        } else if (pm.hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
+                || pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+        ) {
+            return DeviceType.Phone;
+        } else if (isTablet()) {
+            return DeviceType.Tablet;
+        } else {
+            return DeviceType.Unknown;
+        }
+    }
+
+    private boolean isTablet() {
+        Configuration c = mContext.getResources().getConfiguration();
+        boolean isTablet = (c.screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK)
+                > Configuration.SCREENLAYOUT_SIZE_LARGE;
+        boolean isSmallTablet = c.smallestScreenWidthDp > 600;
+        return isTablet || isSmallTablet;
     }
 }

@@ -50,6 +50,16 @@ enum TechnologyTransitioning: 8 {
     RESERVED = ..,
 }
 
+enum DeviceType: 16 {
+    UNKNOWN = 0x0,
+    PHONE = 0x1,
+    TABLET = 0x2,
+    TAG = 0x3,
+    WEARABLE = 0x4,
+    HEARABLE = 0x5,
+    RESERVED = ..,
+}
+
 packet OobMessage {
     version: Version,
     id: MessageId,
@@ -248,6 +258,7 @@ packet CapabilitiesResponseV2: OobMessage(id = CAPABILITIES_RESPONSE) {
     supported_technologies: TechnologySet,
     capabilities: Capabilities[],
     supported_transitioning : TechnologyTransitioning,
+    device_type: DeviceType,
 }
 
 packet ConfigurationRequest: OobMessage(id = CONFIGURATION_REQUEST) {
