@@ -90,6 +90,7 @@ package android.ranging {
     field public static final int BLE_RSSI = 3; // 0x3
     field public static final int UWB = 0; // 0x0
     field public static final int WIFI_NAN_RTT = 2; // 0x2
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int WIFI_PD = 5; // 0x5
     field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public static final int WIFI_STA_RTT = 4; // 0x4
   }
 
@@ -345,6 +346,7 @@ package android.ranging.raw {
     method @Nullable public android.ranging.wifi.rtt.RttRangingParams getRttRangingParams();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @Nullable public android.ranging.wifi.rtt.RttStationRangingParams getRttStationRangingParams();
     method @Nullable public android.ranging.uwb.UwbRangingParams getUwbRangingParams();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.wifi.pd.WifiPdRangingParams getWifiPdRangingParams();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.raw.RawRangingDevice> CREATOR;
     field public static final int UPDATE_RATE_FREQUENT = 3; // 0x3
@@ -361,6 +363,7 @@ package android.ranging.raw {
     method @NonNull public android.ranging.raw.RawRangingDevice.Builder setRttRangingParams(@NonNull android.ranging.wifi.rtt.RttRangingParams);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public android.ranging.raw.RawRangingDevice.Builder setRttStationRangingParams(@NonNull android.ranging.wifi.rtt.RttStationRangingParams);
     method @NonNull public android.ranging.raw.RawRangingDevice.Builder setUwbRangingParams(@NonNull android.ranging.uwb.UwbRangingParams);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.ranging.raw.RawRangingDevice.Builder setWifiPdRangingParams(@NonNull android.ranging.wifi.pd.WifiPdRangingParams);
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RawResponderRangingConfig extends android.ranging.RangingConfig implements android.os.Parcelable {
@@ -488,6 +491,56 @@ package android.ranging.uwb {
     field public static final int LOS = 0; // 0x0
     field public static final int LOS_UNDETERMINED = 255; // 0xff
     field public static final int NLOS = 1; // 0x1
+  }
+
+}
+
+package android.ranging.wifi.pd {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class WifiPdRangingCapabilities implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getMaxChannelWidth();
+    method public int getMaxPreamble();
+    method @NonNull public java.time.Duration getMinRangingInterval80211mc();
+    method @NonNull public android.net.MacAddress getProximityDetectionMacAddress();
+    method @NonNull public java.time.Duration getRangingInterval80211azNtb();
+    method @IntRange(from=2400, to=7125) @NonNull public java.util.Set<java.lang.Integer> getSupportedDiscoveryChannelFrequenciesMhz();
+    method @NonNull public java.util.Set<java.lang.Integer> getSupportedPasnModes();
+    method public int getTechnology();
+    method public boolean is80211azNtbSupported();
+    method public boolean is80211mcSupported();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int AUTHENTICATED_PASN_MODE = 1; // 0x1
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.pd.WifiPdRangingCapabilities> CREATOR;
+    field public static final int UNAUTHENTICATED_PASN_MODE = 0; // 0x0
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class WifiPdRangingParams implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getChannelWidth();
+    method @Nullable public byte[] getDeviceIk();
+    method @IntRange(from=2400, to=7125) public int getDiscoveryChannelFrequencyMhz();
+    method public int getPasnMode();
+    method @Nullable public String getPassword();
+    method @NonNull public android.net.MacAddress getPeerMacAddress();
+    method public int getPreambleType();
+    method public int getRangingUpdateRate();
+    method public boolean isResponder80211azNtbSupported();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.pd.WifiPdRangingParams> CREATOR;
+  }
+
+  public static final class WifiPdRangingParams.Builder {
+    ctor public WifiPdRangingParams.Builder(@NonNull android.net.MacAddress);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams build();
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setChannelWidth(int);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setDeviceIk(@Nullable byte[]);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setDiscoveryChannelFrequencyMhz(@IntRange(from=2400, to=7125) int);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setPasnMode(int);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setPassword(@Nullable String);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setPreambleType(int);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setRangingUpdateRate(int);
+    method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setResponder80211azNtbSupported(boolean);
   }
 
 }

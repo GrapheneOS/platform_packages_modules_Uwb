@@ -27,6 +27,7 @@ import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
+import com.android.server.ranging.wifipd.WifiPdCapabilitiesAdapter;
 
 import com.google.common.collect.ImmutableList;
 
@@ -39,10 +40,10 @@ public enum RangingTechnology {
     UWB(0), // Ultra-Wide Band
     CS(1), // Channel Sounding, formerly known as HADM
 
-    RTT(2), // Wifi RTT.
+    RTT(2), // Wifi NAN RTT 802.11mc
     RSSI(3), // BLE RSSI.
-    RTT_STATION(4), //Wifi RTT 8011MC
-    WIFI_PD(5); // Wifi proximity detection
+    RTT_STATION(4), // WiFi RTT 802.11mc
+    WIFI_PD(5); // WiFi PD
 
     public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
             ImmutableList.copyOf(RangingTechnology.values());
@@ -91,6 +92,8 @@ public enum RangingTechnology {
                 return BleRssiCapabilitiesAdapter.isSupported(context);
             case RTT_STATION:
                 return RttStationCapabilitiesAdapter.isSupported(context);
+            case WIFI_PD:
+                return WifiPdCapabilitiesAdapter.isSupported(context);
             default:
                 return false;
         }

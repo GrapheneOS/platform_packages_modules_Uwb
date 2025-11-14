@@ -55,6 +55,7 @@ java_library {
         "framework-wifi.stubs.module_lib",
         "framework-bluetooth.stubs.module_lib",
         "framework-location.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
         "ServiceUwbResources",
     ],
 
@@ -67,6 +68,7 @@ java_library {
         "ranging_rtt_backend",
         "ranging_uwb_backend",
         "ranging_flags_lib",
+        "wifi_aconfig_flags_lib",
     ],
 
     apex_available: [
