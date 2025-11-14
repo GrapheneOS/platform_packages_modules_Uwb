@@ -869,7 +869,8 @@ public abstract class FiraParams extends Params {
     public enum MultiNodeCapabilityFlag implements FlagEnum {
         HAS_UNICAST_SUPPORT(1),
         HAS_ONE_TO_MANY_SUPPORT(1 << 1),
-        HAS_MANY_TO_MANY_SUPPORT(1 << 2);
+        HAS_MANY_TO_MANY_SUPPORT(1 << 2),
+        HAS_ONE_TO_MANY_DATA_TRANSFER_SUPPORT(1 << 3);
 
         private final long mValue;
 

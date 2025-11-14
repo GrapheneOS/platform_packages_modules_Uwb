@@ -56,13 +56,14 @@ import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
 import static com.android.server.uwb.config.CapabilityParam.INTERVAL_BASED_SCHEDULING;
 import static com.android.server.uwb.config.CapabilityParam.LOGICAL_LINK_AGGREGATED_FRAME_SUPPORT;
 import static com.android.server.uwb.config.CapabilityParam.LOGICAL_LINK_SUPPORT;
-import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY_V1;
 import static com.android.server.uwb.config.CapabilityParam.MAX_LOGICAL_LINK_MASK;
 import static com.android.server.uwb.config.CapabilityParam.MAX_LOGICAL_LINK_PER_SESSION_SHIFT;
 import static com.android.server.uwb.config.CapabilityParam.MAX_LOGICAL_LINK_UWBS_SHIFT;
 import static com.android.server.uwb.config.CapabilityParam.NON_SECURE_ENDPOINT_SUPPORT;
 import static com.android.server.uwb.config.CapabilityParam.OBSERVER;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY_DATA_TRANSFER_V2;
 import static com.android.server.uwb.config.CapabilityParam.OWR_AOA;
 import static com.android.server.uwb.config.CapabilityParam.OWR_DL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.OWR_UL_TDOA;
@@ -279,7 +280,7 @@ public class FiraDecoder extends TlvDecoder {
             if (isBitSet(multiNodeUci, ONE_TO_MANY)) {
                 multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT);
             }
-            if (isBitSet(multiNodeUci, MANY_TO_MANY)) {
+            if (isBitSet(multiNodeUci, MANY_TO_MANY_V1)) {
                 multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT);
             }
             builder.setMultiNodeCapabilities(multiNodeFlag);
@@ -576,6 +577,9 @@ public class FiraDecoder extends TlvDecoder {
             }
             if (isBitSet(multiNodeUci, ONE_TO_MANY)) {
                 multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT);
+            }
+            if (isBitSet(multiNodeUci, ONE_TO_MANY_DATA_TRANSFER_V2)) {
+                multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_DATA_TRANSFER_SUPPORT);
             }
             builder.setMultiNodeCapabilities(multiNodeFlag);
 
