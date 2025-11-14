@@ -22,8 +22,6 @@ import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
 import static android.ranging.RangingConfig.RANGING_SESSION_OOB;
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
-import android.ranging.raw.RawDtTagRangingConfig;
-import android.ranging.uwb.DlTdoaRangingParams;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
@@ -36,6 +34,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static android.ranging.uwb.UwbRangingParams.DURATION_2_MS;
+import static android.ranging.wifi.pd.WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -43,6 +42,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -60,6 +60,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.net.MacAddress;
 import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.rtt.WifiRttManager;
@@ -82,14 +83,17 @@ import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.oob.TransportHandle;
+import android.ranging.raw.RawDtTagRangingConfig;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
-import android.ranging.uwb.UwbAddress;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
+import android.ranging.wifi.pd.WifiPdRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
 import android.ranging.wifi.rtt.RttStationRangingCapabilities;
@@ -168,6 +172,10 @@ public class RangingManagerTest {
         if (callback.mRangingCapabilities.getTechnologyAvailability().get(
                 RangingManager.WIFI_STA_RTT) != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.WIFI_STA_RTT);
+        }
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.WIFI_PD)
+                != NOT_SUPPORTED) {
+            mSupportedTechnologies.add(RangingManager.WIFI_PD);
         }
         assumeTrue(!mSupportedTechnologies.isEmpty());
     }
@@ -1221,6 +1229,156 @@ public class RangingManagerTest {
         uiAutomation.dropShellPermissionIdentity();
     }
 
+    private void testWifiPdSessionInternal(int deviceRole) throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_PD));
+        enableWifi();
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        CapabilitiesCallback capabilitiesCallback = new CapabilitiesCallback(new CountDownLatch(1));
+        mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
+                capabilitiesCallback);
+
+        assertThat(capabilitiesCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(capabilitiesCallback.mOnCapabilitiesReceived).isTrue();
+        assertThat(capabilitiesCallback.mRangingCapabilities).isNotNull();
+
+        WifiPdRangingCapabilities capabilities =
+                capabilitiesCallback.mRangingCapabilities.getWifiPdRangingCapabilities();
+        assertThat(capabilities).isNotNull();
+        assertThat(capabilities.getSupportedDiscoveryChannelFrequenciesMhz()).isNotNull();
+        assertFalse(capabilities.getSupportedDiscoveryChannelFrequenciesMhz().isEmpty());
+        if (capabilities.is80211mcSupported()) {
+            assertThat(capabilities.getMinRangingInterval80211mc().toMillis()).isGreaterThan(0);
+        }
+        if (capabilities.is80211azNtbSupported()) {
+            assertThat(capabilities.getRangingInterval80211azNtb().toMillis()).isGreaterThan(0);
+        }
+
+        WifiPdRangingParams wifiPdRangingParams = getWifiPdRangingParamsBuilder(capabilities)
+                .build();
+
+        RangingPreference preference;
+        if (deviceRole == DEVICE_ROLE_INITIATOR) {
+            List<RawRangingDevice> rawRangingDevices = new ArrayList<>();
+            rawRangingDevices.add(new RawRangingDevice.Builder()
+                    .setRangingDevice(new RangingDevice.Builder().build())
+                    .setWifiPdRangingParams(wifiPdRangingParams)
+                    .build());
+
+            preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                    new RawInitiatorRangingConfig.Builder()
+                            .addRawRangingDevices(rawRangingDevices)
+                            .build())
+                    .build();
+        } else {
+            preference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER,
+                    new RawResponderRangingConfig.Builder()
+                            .setRawRangingDevice(new RawRangingDevice.Builder()
+                                    .setRangingDevice(new RangingDevice.Builder().build())
+                                    .setWifiPdRangingParams(wifiPdRangingParams)
+                                    .build())
+                            .build())
+                    .build();
+        }
+
+        RawRangingDevice rawRangingDevice;
+        if (deviceRole == DEVICE_ROLE_INITIATOR) {
+            RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
+                    preference.getRangingParams();
+            assertNotNull(config);
+            rawRangingDevice = config.getRawRangingDevices().getFirst();
+        } else {
+            RawResponderRangingConfig config = (RawResponderRangingConfig)
+                    preference.getRangingParams();
+            assertNotNull(config);
+            rawRangingDevice = config.getRawRangingDevice();
+        }
+        assertThat(rawRangingDevice).isNotNull();
+        assertThat(rawRangingDevice.getRangingDevice()).isNotNull();
+
+        WifiPdRangingParams params = rawRangingDevice.getWifiPdRangingParams();
+        assertThat(params).isNotNull();
+        assertThat(params.getPeerMacAddress()).isEqualTo(
+                capabilities.getProximityDetectionMacAddress());
+        assertThat(params.getDiscoveryChannelFrequencyMhz()).isEqualTo(
+                capabilities.getSupportedDiscoveryChannelFrequenciesMhz().stream().findFirst()
+                        .get());
+        assertThat(params.getRangingUpdateRate()).isEqualTo(UPDATE_RATE_FREQUENT);
+        if (capabilities.getSupportedPasnModes().contains(AUTHENTICATED_PASN_MODE)) {
+            assertThat(params.getPasnMode()).isEqualTo(AUTHENTICATED_PASN_MODE);
+            assertThat(params.getPassword()).isEqualTo("test_password");
+            assertThat(params.getDeviceIk()).isEqualTo(new byte[]{1, 2, 3, 4, 5, 6});
+        }
+
+        assertThat(params.getPreambleType()).isEqualTo(capabilities.getMaxPreamble());
+        assertThat(params.isResponder80211azNtbSupported()).isTrue();
+        assertThat(params.getChannelWidth()).isEqualTo(capabilities.getMaxChannelWidth());
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        rangingSession.start(preference);
+        assertThat(callback.mOnOpenedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        Thread.sleep(1000);
+        rangingSession.stop();
+        assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        Thread.sleep(1000);
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    private WifiPdRangingParams.Builder getWifiPdRangingParamsBuilder(
+            WifiPdRangingCapabilities capabilities) {
+        MacAddress peerMacAddress = MacAddress.fromString("00:11:22:33:AA:BB");
+        final WifiPdRangingParams.Builder paramsBuilder =
+                new WifiPdRangingParams.Builder(peerMacAddress)
+                        .setRangingUpdateRate(UPDATE_RATE_FREQUENT);
+
+
+        if (capabilities.getSupportedPasnModes().contains(AUTHENTICATED_PASN_MODE)) {
+            paramsBuilder.setPasnMode(AUTHENTICATED_PASN_MODE)
+                    .setPassword("test_password")
+                    .setDeviceIk(new byte[]{1, 2, 3, 4, 5, 6});
+        }
+
+        if (capabilities.is80211azNtbSupported()) {
+            paramsBuilder.setResponder80211azNtbSupported(true);
+        }
+
+        if (capabilities.getMaxChannelWidth() != 0) {
+            paramsBuilder.setChannelWidth(capabilities.getMaxChannelWidth());
+        }
+
+        if (capabilities.getMaxPreamble() != 0) {
+            paramsBuilder.setPreambleType(capabilities.getMaxPreamble());
+        }
+
+        if (!capabilities.getSupportedDiscoveryChannelFrequenciesMhz().isEmpty()) {
+            paramsBuilder.setDiscoveryChannelFrequencyMhz(
+                    capabilities.getSupportedDiscoveryChannelFrequenciesMhz().stream().findFirst()
+                            .get());
+        }
+        return paramsBuilder;
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
+    public void testWifiPdInitiatorSession() throws InterruptedException {
+        testWifiPdSessionInternal(DEVICE_ROLE_INITIATOR);
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
+    public void testWifiPdResponderSession() throws InterruptedException {
+        testWifiPdSessionInternal(DEVICE_ROLE_RESPONDER);
+    }
+
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
@@ -1275,7 +1433,7 @@ public class RangingManagerTest {
     private RangingPreference createPreferenceAndTestRttRangingParams(Integer channelWidth) {
         final RttStationRangingParams.Builder paramsBuilder =
                 new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
-                    .setRangingUpdateRate(UPDATE_RATE_NORMAL);
+                        .setRangingUpdateRate(UPDATE_RATE_NORMAL);
 
         if (channelWidth != null) {
             paramsBuilder.setChannelWidth(channelWidth.intValue());
@@ -1289,8 +1447,8 @@ public class RangingManagerTest {
         final RangingPreference preference = new RangingPreference.Builder(
                 DEVICE_ROLE_INITIATOR,
                 new RawInitiatorRangingConfig.Builder()
-                    .addRawRangingDevice(rawRangingDevice)
-                    .build())
+                        .addRawRangingDevice(rawRangingDevice)
+                        .build())
                 .build();
 
         final RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
