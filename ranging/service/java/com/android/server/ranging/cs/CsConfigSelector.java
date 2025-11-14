@@ -24,7 +24,6 @@ import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
-import android.os.Build;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
@@ -49,6 +48,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
@@ -140,13 +140,11 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
             return peers.stream()
+                    .filter(mPeerAddresses::containsKey)
                     .map((peer) -> {
-                        String bleAddress = mPeerAddresses.get(peer);
-                        if ("user".equals(Build.TYPE)) {
-                            bleAddress = FAKE_BLE_ADDRESS;
-                        }
                         return new CsConfig(
-                                new BleCsRangingParams.Builder(bleAddress)
+                                new BleCsRangingParams.Builder(
+                                        Objects.requireNonNull(mPeerAddresses.get(peer)))
                                         .setRangingUpdateRate(mRangingUpdateRate)
                                         .setSecurityLevel(mSecurityLevel)
                                         .setLocationType(BleCsRangingParams.LOCATION_TYPE_UNKNOWN)
