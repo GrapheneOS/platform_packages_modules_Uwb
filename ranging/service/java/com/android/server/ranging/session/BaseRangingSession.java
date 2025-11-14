@@ -173,6 +173,9 @@ public class BaseRangingSession {
                     peerDevices = ImmutableSet.of(unicastConfig.getPeerDevice());
                 } else if (config instanceof MulticastTechnologyConfig multicastConfig) {
                     peerDevices = multicastConfig.getPeerDevices();
+                } else if (config instanceof com.android.server.ranging.uwb.DlTdoaConfig) {
+                    // DL-TDOA is peerless, so we create an empty set of peer devices.
+                    peerDevices = ImmutableSet.of();
                 } else {
                     Log.e(TAG, "Received unknown RangingTechnology subclass "
                             + config.getClass());

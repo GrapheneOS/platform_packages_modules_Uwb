@@ -123,6 +123,13 @@ public class UwbServiceImpl {
                 new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
     }
 
+    /** Gets a Ranging Tag session with given context. */
+    public static RangingTag getRangingTag(Context context, ExecutorService executor) {
+        UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
+        return new RangingTag(uwbManagerWithContext, executor, new OpAsyncCallbackRunner<>(),
+                FEATURE_FLAGS);
+    }
+
     /** Returns multi-chip information. */
     public List<ChipInfoParams> getChipInfos() {
         List<PersistableBundle> chipInfoBundles = mUwbManager.getChipInfos();
