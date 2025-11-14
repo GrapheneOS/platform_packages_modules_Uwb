@@ -146,12 +146,12 @@ public class FiraDecoderTest {
                     + "1A0100" //Psdu length support
                     + "1B020D55"  // Logical link capability
                     + "1C0101"  // Bypass logical link mode support
+                    + "1D020000" // Minimum slot duration support
                     + "E30101"
                     + "E40401010101"
                     + "E50403000000"
                     + "E601FF"
                     + "E70101"
-                    + "E80401010101"
                     + "E90401000000";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA_VER_2 =
             UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2);
@@ -245,6 +245,7 @@ public class FiraDecoderTest {
         assertEquals(firaSpecificationParams.getMaxLogicalLinkSupported(), 5);
         assertEquals(firaSpecificationParams.getMaxLogicalLinkSupportPerSession(), 5);
         assertThat(firaSpecificationParams.hasLogicalLinkBypassModeSupport()).isTrue();
+        assertEquals(firaSpecificationParams.getMinSlotDurationUs(), 0);
     }
 
     @Test
@@ -273,7 +274,6 @@ public class FiraDecoderTest {
                 .getParams(tlvDecoderBuffer, FiraSpecificationParams.class, PROTOCOL_VERSION_2_0);
         verifyFiraSpecificationVersion2(firaSpecificationParams);
     }
-
 
     public static void verifyFiraSpecificationVersion1(
             FiraSpecificationParams firaSpecificationParams) {
