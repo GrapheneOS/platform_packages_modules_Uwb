@@ -15,6 +15,8 @@
  */
 package com.google.uwb.support.fira;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import android.os.PersistableBundle;
 import android.uwb.UwbAddress;
 
@@ -23,6 +25,7 @@ import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -203,8 +206,18 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
         public byte[] getSlotBitMap() {
             return mSlotBitMap;
         }
+
         public byte getStopDataTransfer() {
             return mStopDataTransfer;
+        }
+
+        @Override
+        public String toString() {
+            return "FiraDataTransferPhaseManagementList{"
+                    + "mUwbAddress=" + (mUwbAddress != null ? mUwbAddress.toString() : "null")
+                    + ", mSlotBitMap=" + Arrays.toString(mSlotBitMap)
+                    + ", mStopDataTransfer=" + String.format("0x%02X", mStopDataTransfer)
+                    + '}';
         }
     }
 
@@ -237,7 +250,20 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
             return this;
         }
 
+        private void checkSlotBitMap(byte slotBitMapSize,
+                List<FiraDataTransferPhaseManagementList> phaseList) {
+            int expectedLength = 1 << slotBitMapSize;
+
+            for (FiraDataTransferPhaseManagementList list : phaseList) {
+                int actualLength = list.getSlotBitMap().length;
+                checkArgument(actualLength == expectedLength,
+                        "Invalid slot bitmap length: expected " + expectedLength + ", but got "
+                        + actualLength + " for phase list: " + list);
+            }
+        }
+
         public FiraDataTransferPhaseConfig build() {
+            checkSlotBitMap(mSlotBitMapSize, mDataTransferPhaseManagementList);
             return new FiraDataTransferPhaseConfig(
                 mDtpcmRepetition,
                 (byte) ((mSlotBitMapSize << 1) | (mMacAddressMode & 0x01)),
