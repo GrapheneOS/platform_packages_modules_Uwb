@@ -369,6 +369,38 @@ public class UwbAdapter implements RangingAdapter {
             }
         }
 
+        @Override
+        public void onDlTdoaRangingResult(UwbDevice peer,
+                com.android.ranging.uwb.backend.internal.DlTdoaMeasurement measurement) {
+            android.ranging.DlTdoaMeasurement.Builder builder =
+                    new android.ranging.DlTdoaMeasurement.Builder()
+                            .setMessageType(measurement.getMessageType())
+                            .setMessageControl(measurement.getMessageControl())
+                            .setBlockIndex(measurement.getBlockIndex())
+                            .setRoundIndex(measurement.getRoundIndex())
+                            // .setNlos(measurement.getNlos())
+                            .setTxTimestamp(measurement.getTxTimestamp())
+                            .setRxTimestamp(measurement.getRxTimestamp())
+                            .setAnchorCfo(measurement.getAnchorCfo())
+                            .setCfo(measurement.getCfo())
+                            .setInitiatorReplyTime(measurement.getInitiatorReplyTime())
+                            .setResponderReplyTime(measurement.getResponderReplyTime())
+                            .setInitiatorResponderTof(measurement.getInitiatorResponderTof())
+                            .setAnchorLocationData(measurement.getAnchorLocation())
+                            .setActiveRangingRoundIndexes(
+                                    RangingUtils.byteArrayToIntegerList(
+                                            measurement.getActiveRangingRounds()));
+
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() == State.STARTED) {
+                    RangingDevice device = convertPeerDevice(peer);
+                    if (device != null) {
+                        mCallbacks.onDlTdoaRangingResult(device, builder.build());
+                    }
+                }
+            }
+        }
+
 
         private static @InternalReason int convertDisconnectedReason(
                 @PeerDisconnectedReason int reason
