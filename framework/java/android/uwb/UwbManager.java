@@ -778,6 +778,29 @@ public final class UwbManager {
     }
 
     /**
+     * This client has request to clear all ranging sessions opened by this client application.
+     *
+     * <p>This will close all active and pending {@link RangingSession} instances associated with
+     * the calling application's {@link android.content.AttributionSource}.
+     *
+     * @throws IllegalArgumentException if the {@link Context#getAttributionSource()} does not
+     * have a non-null attribution tag.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void clearSessions() {
+        try {
+            if (mContext.getAttributionSource().getAttributionTag() != null) {
+                mUwbAdapter.clearSessions(mContext.getAttributionSource());
+            } else {
+                throw new IllegalArgumentException("attributionTag must not be null");
+            }
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
      * Returns the current enabled/disabled state for UWB.
      *
      * Possible values are:

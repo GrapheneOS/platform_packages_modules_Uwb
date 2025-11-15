@@ -309,6 +309,7 @@ package android.uwb {
 
   public final class UwbManager {
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle addServiceProfile(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void clearSessions();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public long elapsedRealtimeResolutionNanos();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public long elapsedRealtimeResolutionNanos(@NonNull String);
     method public int getAdapterState();

@@ -43,6 +43,7 @@ java_aconfig_library {
     visibility: [
         "//packages/modules/Uwb/ranging:__subpackages__",
         "//packages/modules/Wifi/framework:__subpackages__",
+        "//packages/modules/Uwb:__subpackages__",
     ],
 }
 

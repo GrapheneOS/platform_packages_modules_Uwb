@@ -6096,6 +6096,44 @@ public class UwbSessionManagerTest {
                 .onRadarDataMessageReceived(uwbSession, uwbRadarData);
     }
 
+    @Test
+    public void clearSessions_success() {
+        // Setup a session for the first attribution source.
+        UwbSession uwbSession1 = mock(UwbSession.class);
+        SessionHandle sessionHandle1 = new SessionHandle(1, ATTRIBUTION_SOURCE, 1);
+        when(uwbSession1.getSessionHandle()).thenReturn(sessionHandle1);
+        when(uwbSession1.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
+        mUwbSessionManager.mSessionTable.put(sessionHandle1, uwbSession1);
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE))
+                .when(uwbSession1).getApiState();
+
+        // Setup a session for the second attribution source (should not be removed).
+        UwbSession uwbSession2 = mock(UwbSession.class);
+        SessionHandle sessionHandle2 = new SessionHandle(2, ATTRIBUTION_SOURCE_2, 2);
+        when(uwbSession2.getSessionHandle()).thenReturn(sessionHandle2);
+        when(uwbSession2.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE_2);
+        mUwbSessionManager.mSessionTable.put(sessionHandle2, uwbSession2);
+
+        // Setup a third session for the same attribution source as the first (should be removed).
+        UwbSession uwbSession3 = mock(UwbSession.class);
+        SessionHandle sessionHandle3 = new SessionHandle(3, ATTRIBUTION_SOURCE, 3);
+        when(uwbSession3.getSessionHandle()).thenReturn(sessionHandle3);
+        when(uwbSession3.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
+        mUwbSessionManager.mSessionTable.put(sessionHandle3, uwbSession3);
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE))
+                .when(uwbSession3).getApiState();
+
+        // Clear sessions for the first attribution source.
+        mUwbSessionManager.clearSessions(ATTRIBUTION_SOURCE);
+
+        // Verify that deInitSession is called for the first and third sessions.
+        verify(mUwbSessionManager).deInitSession(eq(sessionHandle1));
+        verify(mUwbSessionManager).deInitSession(eq(sessionHandle3));
+
+        // Verify that deInitSession is not called for the second session.
+        verify(mUwbSessionManager, never()).deInitSession(eq(sessionHandle2));
+    }
+
     private UwbSessionManager.ReceivedDataInfo buildReceivedDataInfo(long macAddress) {
         return buildReceivedDataInfo(macAddress, DATA_SEQUENCE_NUM);
     }
