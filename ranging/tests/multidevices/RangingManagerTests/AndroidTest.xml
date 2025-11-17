@@ -29,12 +29,15 @@
 
     <device name="device1">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="ranging_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="uwb_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
@@ -51,12 +54,15 @@
     </device>
     <device name="device2">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="ranging_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="uwb_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="grant-permissions" value="true" />
             <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
