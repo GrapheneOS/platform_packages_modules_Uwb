@@ -672,7 +672,10 @@ public abstract class FiraParams extends Params {
                     STATUS_CODE_DATA_TRANSFER_NTF_ERROR_REJECTED,
                     STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED,
                     STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING,
-                    STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT
+                    STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT,
+                    STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_LL_CONNECT_ID,
+                    STATUS_CODE_DATA_TRANSFER_NTF_STATUS_SDU_SIZE_ERROR,
+                    STATUS_CODE_DATA_TRANSFER_NTF_STATUS_ERROR_RANGING_ROUND_IS_SUSPENDED
             })
     public @interface DataTransferStatusNtfCode {}
 
@@ -684,6 +687,10 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED = 5;
     public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING = 6;
     public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT = 7;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_LL_CONNECT_ID = 8;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_SDU_SIZE_ERROR = 9;
+    public static final int
+            STATUS_CODE_DATA_TRANSFER_NTF_STATUS_ERROR_RANGING_ROUND_IS_SUSPENDED = 0x0A;
 
     /**
      * Status codes for Data Transfer configuration as per Table 56 of the FiRa specification.

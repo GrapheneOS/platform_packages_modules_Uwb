@@ -504,12 +504,14 @@ public class UwbSessionNotificationManager {
     /** Notify about failure in sending payload data during the UWB ranging session. */
     public void onDataSendFailed(
             UwbSession uwbSession, UwbAddress remoteDeviceAddress,
-            int reason, PersistableBundle parameters) {
+            int status, PersistableBundle parameters) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onDataSendFailed(
-                    sessionHandle, remoteDeviceAddress, reason, parameters);
+            uwbRangingCallbacks.onDataSendFailed(sessionHandle, remoteDeviceAddress,
+                    UwbSessionNotificationHelper
+                            .convertDataTransferNotificationStatusCodeToApiReasonCode(status),
+                    parameters);
             Log.i(TAG, "IUwbRangingCallbacks - onDataSendFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onDataSendFailed : Failed");
