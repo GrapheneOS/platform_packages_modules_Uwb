@@ -18,10 +18,10 @@ package com.android.server.ranging.engine.heuristic;
 
 import android.app.AlarmManager;
 import android.os.SystemClock;
+import android.ranging.RangingData;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.engine.heuristic.RangeHeuristic.HeuristicThreshold;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
@@ -142,7 +142,7 @@ public class StreakCounter {
 
     /** Provide ranging data to pass to the {@link Streak} heuristics managed by this counter. */
     public void onData(@NonNull RangingData data) {
-        if (data.getTechnology().stream().noneMatch(mConfig.getTechnology()::equals)) return;
+        if (data.getRangingTechnology() != mConfig.getTechnology().getValue()) return;
 
         stopFailureListener();
         mStreaks.forEach(count -> count.onData(data));

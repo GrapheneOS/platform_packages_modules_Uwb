@@ -606,6 +606,7 @@ public abstract class FiraParams extends Params {
                 STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT,
                 STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT,
                 STATUS_CODE_ERROR_CMT3_SEGMENTATION_NOT_POSSIBLE,
+                STATUS_CODE_ERROR_PHASE_DURATION_CHANGE_PROHIBITED,
                 STATUS_CODE_RANGING_TX_FAILED,
                 STATUS_CODE_RANGING_RX_TIMEOUT,
                 STATUS_CODE_RANGING_RX_PHY_DEC_FAILED,
@@ -644,6 +645,7 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT = 0x19;
     public static final int STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT = 0x1B;
     public static final int STATUS_CODE_ERROR_CMT3_SEGMENTATION_NOT_POSSIBLE = 0x1C;
+    public static final int STATUS_CODE_ERROR_PHASE_DURATION_CHANGE_PROHIBITED = 0x1E;
     public static final int STATUS_CODE_RANGING_TX_FAILED = 0x20;
     public static final int STATUS_CODE_RANGING_RX_TIMEOUT = 0x21;
     public static final int STATUS_CODE_RANGING_RX_PHY_DEC_FAILED = 0x22;
@@ -867,7 +869,8 @@ public abstract class FiraParams extends Params {
     public enum MultiNodeCapabilityFlag implements FlagEnum {
         HAS_UNICAST_SUPPORT(1),
         HAS_ONE_TO_MANY_SUPPORT(1 << 1),
-        HAS_MANY_TO_MANY_SUPPORT(1 << 2);
+        HAS_MANY_TO_MANY_SUPPORT(1 << 2),
+        HAS_ONE_TO_MANY_DATA_TRANSFER_SUPPORT(1 << 3);
 
         private final long mValue;
 

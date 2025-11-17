@@ -31,6 +31,7 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -50,6 +51,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 public class BleRssiConfigSelector extends ConfigurationManager.ConfigSelector {
+    private static final String TAG = BleRssiConfigSelector.class.getSimpleName();
+
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final String mLocalAddress;
@@ -60,9 +63,19 @@ public class BleRssiConfigSelector extends ConfigurationManager.ConfigSelector {
     public static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig, BleRssiRangingCapabilities capabilities
     ) {
-        if (capabilities == null) return false;
-        return getUpdateRateFromDurationRange(
-                oobConfig.getRangingIntervalRange(), BLE_RSSI_UPDATE_RATE_DURATIONS).isPresent();
+        if (capabilities == null) {
+            Log.v(TAG, "Not capable of BLE RSSI");
+            return false;
+        }
+
+        if (getUpdateRateFromDurationRange(
+                oobConfig.getRangingIntervalRange(), BLE_RSSI_UPDATE_RATE_DURATIONS).isEmpty()
+        ) {
+            Log.v(TAG, "Not capable of configured ranging interval");
+            return false;
+        }
+
+        return true;
     }
 
     public BleRssiConfigSelector(

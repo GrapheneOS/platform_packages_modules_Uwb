@@ -173,6 +173,9 @@ public class BaseRangingSession {
                     peerDevices = ImmutableSet.of(unicastConfig.getPeerDevice());
                 } else if (config instanceof MulticastTechnologyConfig multicastConfig) {
                     peerDevices = multicastConfig.getPeerDevices();
+                } else if (config instanceof com.android.server.ranging.uwb.DlTdoaConfig) {
+                    // DL-TDOA is peerless, so we create an empty set of peer devices.
+                    peerDevices = ImmutableSet.of();
                 } else {
                     Log.e(TAG, "Received unknown RangingTechnology subclass "
                             + config.getClass());
@@ -194,28 +197,6 @@ public class BaseRangingSession {
                 Log.v(TAG, "Starting ranging with technology : " + config.getTechnology());
                 adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
                 Binder.restoreCallingIdentity(token);
-            }
-        }
-    }
-
-    /**
-     * <ul>
-     *     <li>If this session currently active with a different configuration from the one
-     *     provided, return false.</li>
-     *     <li>If this session is currently active with the same configuration as the one provided,
-     *     return true.</li>
-     *     <li>If this session is not currently active, start it with the provided configuration and
-     *     return true.</li>
-     * </ul>
-     */
-    protected boolean startOrReAttach(ImmutableSet<TechnologyConfig> technologyConfigs) {
-        synchronized (mLock) {
-            if (mStateMachine.getState() == State.STARTING
-                    || mStateMachine.getState() == State.STARTED) {
-                return Sets.difference(technologyConfigs, mAdapters.keySet()).isEmpty();
-            } else {
-                start(technologyConfigs);
-                return true;
             }
         }
     }
@@ -369,12 +350,24 @@ public class BaseRangingSession {
         }
     }
 
+    /** Let subclasses override how onTechnologyStarted gets called. */
+    protected void onTechnologyStarted(
+            @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers
+    ) {
+        mSessionListener.onTechnologyStarted(technology, peers);
+    }
+
     /** Let subclasses override how onTechnologyStopped gets called. */
     protected void onTechnologyStopped(
             @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
             @InternalReason int reason
     ) {
         mSessionListener.onTechnologyStopped(technology, peers, reason);
+    }
+
+    /** Let subclasses override to inspect ranging data. */
+    protected void onResults(@NonNull RangingDevice peer, @NonNull RangingData data) {
+        mSessionListener.onResults(peer, data);
     }
 
     /** Let subclasses override how onSessionClosed gets called. */
@@ -400,7 +393,7 @@ public class BaseRangingSession {
                     mStateMachine.transition(State.STARTING, State.STARTED);
                     mPeers.get(peerDevice).setUsingTechnology(mConfig.getTechnology());
                 }
-                mSessionListener.onTechnologyStarted(mConfig.getTechnology(), peerDevices);
+                onTechnologyStarted(mConfig.getTechnology(), peerDevices);
             }
         }
 
@@ -473,7 +466,7 @@ public class BaseRangingSession {
                 if (mStateMachine.getState() != State.STOPPING
                         && mStateMachine.getState() != State.STOPPED
                 ) {
-                    mSessionListener.onResults(mPeer, data);
+                    onResults(mPeer, data);
                 }
             }
         }

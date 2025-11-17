@@ -16,7 +16,9 @@
 
 package com.android.server.uwb.config;
 
+import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.ANTENNA_BITMAP;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.BITS_PER_SAMPLE;
+import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.GPIO_BITMAP;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.NUMBER_OF_BURSTS;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RADAR_CHANNEL_NUMBER;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RADAR_DATA_TYPE;
@@ -26,8 +28,10 @@ import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RADAR_RFRAME_CONFIG;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RADAR_SESSION_PRIORITY;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RADAR_TIMING_PARAMS;
+import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.RX_GAIN;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.SAMPLES_PER_SWEEP;
 import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.SWEEP_OFFSET;
+import static android.hardware.uwb.fira_android.UwbVendorRadarAppConfigTlvTypes.TX_POWER;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_HOP_MODE_KEY;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_LAST_INDEX_USED;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_PULSESHAPE_COMBO;
@@ -159,6 +163,10 @@ public class ConfigParam {
     public static final int PRF_MODE_KEY = RADAR_PRF_MODE;
     public static final int NUMBER_OF_BURSTS_KEY = NUMBER_OF_BURSTS;
     public static final int RADAR_DATA_TYPE_KEY = RADAR_DATA_TYPE;
+    public static final int ANTENNA_BITMAP_KEY = ANTENNA_BITMAP;
+    public static final int GPIO_BITMAP_KEY = GPIO_BITMAP;
+    public static final int TX_POWER_KEY = TX_POWER;
+    public static final int RX_GAIN_KEY = RX_GAIN;
 
     // Aliro
     public static final int ALIRO_MAC_MODE = 0xA9;

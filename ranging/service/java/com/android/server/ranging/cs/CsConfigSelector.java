@@ -24,7 +24,6 @@ import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
-import android.os.Build;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
@@ -32,6 +31,7 @@ import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -48,9 +48,12 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
+    private static final String TAG = CsConfigSelector.class.getSimpleName();
+
     private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
@@ -64,15 +67,24 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable BleCsRangingCapabilities capabilities
     ) {
-        if (capabilities == null) return false;
+        if (capabilities == null) {
+            Log.v(TAG, "Not capable of BLE CS");
+            return false;
+        }
 
         if (!(capabilities.getSupportedSecurityLevels().contains(CS_SECURITY_LEVEL_ONE)
                 || capabilities.getSupportedSecurityLevels().contains(CS_SECURITY_LEVEL_FOUR))
-        ) return false;
+        ) {
+            Log.v(TAG, "Not capable of configurable security levels");
+            return false;
+        }
 
         if (getUpdateRateFromDurationRange(
                 oobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS).isEmpty()
-        ) return false;
+        ) {
+            Log.v(TAG, "Not capable of configured ranging interval");
+            return false;
+        }
 
         return true;
     }
@@ -128,13 +140,11 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
             return peers.stream()
+                    .filter(mPeerAddresses::containsKey)
                     .map((peer) -> {
-                        String bleAddress = mPeerAddresses.get(peer);
-                        if ("user".equals(Build.TYPE)) {
-                            bleAddress = FAKE_BLE_ADDRESS;
-                        }
                         return new CsConfig(
-                                new BleCsRangingParams.Builder(bleAddress)
+                                new BleCsRangingParams.Builder(
+                                        Objects.requireNonNull(mPeerAddresses.get(peer)))
                                         .setRangingUpdateRate(mRangingUpdateRate)
                                         .setSecurityLevel(mSecurityLevel)
                                         .setLocationType(BleCsRangingParams.LOCATION_TYPE_UNKNOWN)

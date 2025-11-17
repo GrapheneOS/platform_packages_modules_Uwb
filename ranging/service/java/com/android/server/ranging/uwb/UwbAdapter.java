@@ -18,6 +18,7 @@ package com.android.server.ranging.uwb;
 
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_HIGH;
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_MEDIUM;
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
 import android.content.AttributionSource;
@@ -30,21 +31,25 @@ import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
 import android.ranging.raw.RawResponderRangingConfig;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbSpecificData;
-import android.util.Log;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.ranging.uwb.backend.internal.DtTagParameters;
 import com.android.ranging.uwb.backend.internal.RangingController;
+import com.android.ranging.uwb.backend.internal.RangingParameters;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.ranging.uwb.backend.internal.UwbHwSwitchHelper;
+import com.android.ranging.uwb.backend.internal.UwbRangeLimitsConfig;
 import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.RangingAdapter;
@@ -78,6 +83,7 @@ public class UwbAdapter implements RangingAdapter {
     private final RangingSessionCallback mUwbListener = new UwbListener();
     private final StateMachine<State> mStateMachine;
     private final BiMap<RangingDevice, UwbAddress> mPeers;
+    private boolean mIsDlTdoaSession = false;
 
     private DataNotificationManager mDataNotificationManager;
 
@@ -97,9 +103,23 @@ public class UwbAdapter implements RangingAdapter {
             @RangingPreference.DeviceRole int role
     ) {
         this(context, injector, attributionSource, executor,
-                role == RangingPreference.DEVICE_ROLE_INITIATOR
-                        ? UwbServiceImpl.getController(context, executor)
-                        : UwbServiceImpl.getControlee(context, executor));
+                getBackendDevice(context, executor, role));
+    }
+
+    private static com.android.ranging.uwb.backend.internal.RangingDevice getBackendDevice(
+            @NonNull Context context,
+            @NonNull ListeningExecutorService executor,
+            @RangingPreference.DeviceRole int role) {
+        switch (role) {
+            case RangingPreference.DEVICE_ROLE_INITIATOR:
+                return UwbServiceImpl.getController(context, executor);
+            case RangingPreference.DEVICE_ROLE_RESPONDER:
+                return UwbServiceImpl.getControlee(context, executor);
+            case RangingPreference.DEVICE_ROLE_DT_TAG:
+                return UwbServiceImpl.getRangingTag(context, executor);
+            default:
+                throw new IllegalArgumentException("Invalid device role: " + role);
+        }
     }
 
     /** Injectable constructor for testing. */
@@ -148,37 +168,51 @@ public class UwbAdapter implements RangingAdapter {
         Log.i(TAG, "Start called.");
         mCallbacks = callbacks;
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
-        if (!(config instanceof UwbConfig uwbConfig)) {
-            Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
-            return;
-        }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
             closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
-        mDataNotificationManager = new DataNotificationManager(
-                uwbConfig.getSessionConfig().getDataNotificationConfig(),
-                uwbConfig.getSessionConfig().getDataNotificationConfig());
-        if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
-                mNonPrivilegedAttributionSource.getUid(),
-                mNonPrivilegedAttributionSource.getPackageName())) {
-            if (!mIsBackgroundRangingSupported) {
-                Log.w(TAG, "Background ranging is not supported");
-                closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
-                return;
-            }
-            mDataNotificationManager.updateConfigAppMovedToBackground();
-        }
 
-        mPeers.putAll(uwbConfig.getPeerAddresses());
-        mUwbClient.setRangingParameters(
-                uwbConfig.asBackendParameters(mDataNotificationManager.getCurrentConfig()));
-        mUwbClient.setLocalAddress(toBackend(uwbConfig.getParameters().getDeviceAddress()));
-        if (mUwbClient instanceof RangingController controller) {
-            controller.setComplexChannel(
-                    toBackend(uwbConfig.getParameters().getComplexChannel()));
+        if (config instanceof UwbConfig uwbConfig) {
+            mDataNotificationManager = new DataNotificationManager(
+                    uwbConfig.getSessionConfig().getDataNotificationConfig(),
+                    uwbConfig.getSessionConfig().getDataNotificationConfig());
+            if (mNonPrivilegedAttributionSource != null &&
+                    !mRangingInjector.isForegroundAppOrService(
+                    mNonPrivilegedAttributionSource.getUid(),
+                    mNonPrivilegedAttributionSource.getPackageName())) {
+                if (!mIsBackgroundRangingSupported) {
+                    Log.w(TAG, "Background ranging is not supported");
+                    closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+                    return;
+                }
+                mDataNotificationManager.updateConfigAppMovedToBackground();
+            }
+
+            mPeers.putAll(uwbConfig.getPeerAddresses());
+            mUwbClient.setRangingParameters(
+                    uwbConfig.asBackendParameters(mDataNotificationManager.getCurrentConfig()));
+            mUwbClient.setLocalAddress(toBackend(uwbConfig.getParameters().getDeviceAddress()));
+            if (mUwbClient instanceof RangingController controller) {
+                controller.setComplexChannel(
+                        toBackend(uwbConfig.getParameters().getComplexChannel()));
+            }
+        } else if (config instanceof DlTdoaConfig dlTdoaConfig) {
+            mIsDlTdoaSession = true;
+            // TODO: Handle DataNotificationManager for DL-TDOA.
+            mUwbClient.setLocalAddress(
+                    toBackend(dlTdoaConfig.getDeviceAddress()));
+            if (mUwbClient instanceof com.android.ranging.uwb.backend.internal.RangingTag) {
+                ((com.android.ranging.uwb.backend.internal.RangingTag) mUwbClient)
+                    .setComplexChannel(toBackend(dlTdoaConfig.getParams().getComplexChannel()));
+            }
+            mUwbClient.setRangingParameters(
+                    dlTdoaAsBackendParameters(dlTdoaConfig));
+        } else {
+            Log.w(TAG, "Tried to start adapter with invalid ranging parameters: " + config);
+            mCallbacks.onClosed(INTERNAL_ERROR);
+            return;
         }
         if (mUwbClient.isHwTurnOffEnabled()) {
             if (!UwbHwSwitchHelper.enable(mContext, mAttributionSource)) {
@@ -296,8 +330,12 @@ public class UwbAdapter implements RangingAdapter {
         public void onRangingInitialized(UwbDevice localDevice) {
             Log.i(TAG, "onRangingInitialized");
             synchronized (mStateMachine) {
-                if (mStateMachine.getState() == State.STARTED && !mPeers.isEmpty()) {
-                    mCallbacks.onStarted(ImmutableSet.copyOf(mPeers.keySet()));
+                if (mStateMachine.getState() == State.STARTED) {
+                    if (mIsDlTdoaSession) {
+                        mCallbacks.onStarted(ImmutableSet.of());
+                    } else if (!mPeers.isEmpty()) {
+                        mCallbacks.onStarted(ImmutableSet.copyOf(mPeers.keySet()));
+                    }
                 }
             }
         }
@@ -368,6 +406,38 @@ public class UwbAdapter implements RangingAdapter {
             }
         }
 
+        @Override
+        public void onDlTdoaRangingResult(UwbDevice peer,
+                com.android.ranging.uwb.backend.internal.DlTdoaMeasurement measurement) {
+            android.ranging.DlTdoaMeasurement.Builder builder =
+                    new android.ranging.DlTdoaMeasurement.Builder()
+                            .setMessageType(measurement.getMessageType())
+                            .setMessageControl(measurement.getMessageControl())
+                            .setBlockIndex(measurement.getBlockIndex())
+                            .setRoundIndex(measurement.getRoundIndex())
+                            // .setNlos(measurement.getNlos())
+                            .setTxTimestamp(measurement.getTxTimestamp())
+                            .setRxTimestamp(measurement.getRxTimestamp())
+                            .setAnchorCfo(measurement.getAnchorCfo())
+                            .setCfo(measurement.getCfo())
+                            .setInitiatorReplyTime(measurement.getInitiatorReplyTime())
+                            .setResponderReplyTime(measurement.getResponderReplyTime())
+                            .setInitiatorResponderTof(measurement.getInitiatorResponderTof())
+                            .setAnchorLocationData(measurement.getAnchorLocation())
+                            .setActiveRangingRoundIndexes(
+                                    RangingUtils.byteArrayToIntegerList(
+                                            measurement.getActiveRangingRounds()));
+
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() == State.STARTED) {
+                    RangingDevice device = convertPeerDevice(peer);
+                    if (device != null) {
+                        mCallbacks.onDlTdoaRangingResult(device, builder.build());
+                    }
+                }
+            }
+        }
+
 
         private static @InternalReason int convertDisconnectedReason(
                 @PeerDisconnectedReason int reason
@@ -398,6 +468,10 @@ public class UwbAdapter implements RangingAdapter {
         private @Nullable RangingDevice convertPeerDevice(
                 @NonNull com.android.ranging.uwb.backend.internal.UwbDevice peer
         ) {
+            if (mIsDlTdoaSession) {
+                // For DL-TDOA, the "peer" is the anchor. We create a RangingDevice on the fly.
+                return new RangingDevice.Builder().build();
+            }
             RangingDevice device = mPeers
                     .inverse()
                     .get(UwbAddress.fromBytes(peer.getAddress().toBytes()));
@@ -441,6 +515,7 @@ public class UwbAdapter implements RangingAdapter {
     private void clear() {
         mCallbacks = null;
         mPeers.clear();
+        mIsDlTdoaSession = false;
     }
 
     public enum State {
@@ -501,5 +576,27 @@ public class UwbAdapter implements RangingAdapter {
             case CONFIDENCE_MEDIUM -> android.ranging.RangingMeasurement.CONFIDENCE_MEDIUM;
             default -> android.ranging.RangingMeasurement.CONFIDENCE_LOW;
         };
+    }
+
+    private static RangingParameters dlTdoaAsBackendParameters(
+            DlTdoaConfig config) {
+
+        DlTdoaRangingParams params = config.getParams();
+
+        final UwbRangeLimitsConfig rangeLimitsConfig =
+                new UwbRangeLimitsConfig.Builder()
+                        .setRangeMaxNumberOfMeasurements(
+                                config.getSessionConfig().getRangingMeasurementsLimit())
+                        .build();
+
+        return new DtTagParameters(
+                params.getSessionId(),
+                params.getSessionKeyInfo(),
+                toBackend(params.getComplexChannel()),
+                params.getSlotDuration(),
+                rangeLimitsConfig,
+                params.getRangingIntervalMillis(),
+                params.getSlotsPerRangingRound(),
+                params.getRangingRoundIndexes());
     }
 }

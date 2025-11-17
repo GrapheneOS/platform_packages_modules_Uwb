@@ -26,6 +26,7 @@ import android.ranging.RangingManager.RangingTechnology;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 
@@ -73,6 +74,9 @@ public final class RangingCapabilities implements Parcelable {
 
     @Nullable
     private final RttStationRangingCapabilities mRttStationRangingCapabilities;
+
+    @Nullable
+    private final WifiPdRangingCapabilities mWifiPdRangingCapabilities;
 
     /**
      * @hide
@@ -134,6 +138,9 @@ public final class RangingCapabilities implements Parcelable {
         mRttStationRangingCapabilities =
                 (RttStationRangingCapabilities) builder.mCapabilities.get(
                 RangingManager.WIFI_STA_RTT);
+        mWifiPdRangingCapabilities =
+                (WifiPdRangingCapabilities) builder.mCapabilities.get(
+                RangingManager.WIFI_PD);
         mAvailabilities = builder.mAvailabilities;
     }
 
@@ -151,6 +158,9 @@ public final class RangingCapabilities implements Parcelable {
         mRttStationRangingCapabilities = in.readParcelable(
                 RttStationRangingCapabilities.class.getClassLoader(),
                 RttStationRangingCapabilities.class);
+        mWifiPdRangingCapabilities = in.readParcelable(
+                WifiPdRangingCapabilities.class.getClassLoader(),
+                WifiPdRangingCapabilities.class);
 
         int size = in.readInt();
         mAvailabilities = new HashMap<>(size);
@@ -242,6 +252,18 @@ public final class RangingCapabilities implements Parcelable {
         return mRttStationRangingCapabilities;
     }
 
+    /**
+     * Gets the WiFi PD ranging capabilities.
+     *
+     * @return a {@link WifiPdRangingCapabilities} object or {@code null} if not available.
+     * @hide
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @Nullable
+    public WifiPdRangingCapabilities getWifiPdRangingCapabilities() {
+        return mWifiPdRangingCapabilities;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -254,6 +276,7 @@ public final class RangingCapabilities implements Parcelable {
         dest.writeParcelable(mCsCapabilities, flags);
         dest.writeParcelable(mBleRssiCapabilities, flags);
         dest.writeParcelable(mRttStationRangingCapabilities, flags);
+        dest.writeParcelable(mWifiPdRangingCapabilities, flags);
         dest.writeInt(mAvailabilities.size()); // Write map size
         for (Map.Entry<Integer, Integer> entry : mAvailabilities.entrySet()) {
             dest.writeInt(entry.getKey()); // Write the key
@@ -298,6 +321,8 @@ public final class RangingCapabilities implements Parcelable {
                 + mCsCapabilities
                 + ", mBleRssiCapabilities="
                 + mBleRssiCapabilities
+                + ", mWifiPdRangingCapabilities="
+                + mWifiPdRangingCapabilities
                 + ", mAvailabilities="
                 + mAvailabilities
                 + " }";

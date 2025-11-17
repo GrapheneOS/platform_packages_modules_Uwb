@@ -1,31 +1,42 @@
 from abc import ABC, abstractmethod
 import dataclasses
-from enum import IntEnum
+import enum
 from typing import Tuple, List, Optional
 from lib.cs import CsRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
 from lib.rssi import BleRssiRangingParams
 
-
-class DeviceRole(IntEnum):
+@enum.unique
+class DeviceRole(enum.IntEnum):
   RESPONDER = 0
   INITIATOR = 1
 
 
-class RangingSessionType(IntEnum):
+@enum.unique
+class RangingSessionType(enum.IntEnum):
   RAW = 0
   OOB = 1
 
-class SecurityLevel(IntEnum):
+@enum.unique
+class RangingTechnology(enum.IntEnum):
+  UWB = 0
+  BLE_CS = 1
+  WIFI_RTT = 2
+  BLE_RSSI = 3
+
+@enum.unique
+class SecurityLevel(enum.IntEnum):
   BASIC = 0
   SECURE = 1
 
-class RangingMode(IntEnum):
+@enum.unique
+class RangingMode(enum.IntEnum):
   AUTO = 0
   HIGH_ACCURACY = 1
   HIGH_ACCURACY_PREFERRED = 2
   FUSED = 3
+
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class DeviceParams:

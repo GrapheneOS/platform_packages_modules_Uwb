@@ -116,7 +116,6 @@ public class RangingTagTest {
                         new byte[]{1, 2}, /* sessionKeyInfo */
                         mTestComplexChannel,
                         Utils.DURATION_2_MS,
-                        false, /* isAoaDisabled */
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         180, /* rangingIntervalMs */
                         20, /* slotsPerRangingRound */
@@ -271,7 +270,6 @@ public class RangingTagTest {
                         new byte[]{1, 2}, /* sessionKeyInfo */
                         mTestComplexChannel,
                         Utils.DURATION_2_MS,
-                        false, /* isAoaDisabled */
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         180, /* rangingIntervalMs */
                         20, /* slotsPerRangingRound */

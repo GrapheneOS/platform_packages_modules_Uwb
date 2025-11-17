@@ -20,7 +20,6 @@ import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
-import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.OobHandle;
@@ -31,7 +30,6 @@ import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager.SessionListener;
-import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
@@ -40,17 +38,13 @@ import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.StopRequest;
-import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * OOB responder session. For this session, the callbacks have different semantics:
@@ -72,7 +66,6 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
     private OobHandle mPeer;
     private OobController.OobConnection mOobConnection;
     private OobResponderProtocol mProtocol;
-    private AtomicReference<ImmutableSet<TechnologyConfig>> mRestartingWithConfigs;
     private AtomicBoolean mKeepAliveFlag;
 
     public OobResponderRangingSession(
@@ -101,7 +94,6 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
         mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
         mOobConnection = mInjector.getOobController().createConnection(mPeer);
         mProtocol = new OobResponderProtocol(mInjector);
-        mRestartingWithConfigs = new AtomicReference<>(null);
         mKeepAliveFlag = new AtomicBoolean(true);
 
         mOobConnection.receiveData().addCallback(mOobConnectionListener, mOobExecutor);
@@ -113,24 +105,9 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
         stopSessionForReason(InternalReason.LOCAL_REQUEST);
     }
 
-
-    @Override
-    protected void onTechnologyStopped(
-            @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
-            @InternalReason int reason
-    ) {
-        // Don't send onTechnologyStopped if the technologies stopped due to a restart.
-        if (mRestartingWithConfigs.get() == null) {
-            mSessionListener.onTechnologyStopped(technology, peers, reason);
-        }
-    }
-
     @Override
     protected void onSessionClosed(@InternalReason int reason) {
-        ImmutableSet<TechnologyConfig> configsForRestart = mRestartingWithConfigs.getAndSet(null);
-        if (configsForRestart != null) {
-            super.start(configsForRestart);
-        } else if (!mKeepAliveFlag.getAndSet(true)) {
+        if (!mKeepAliveFlag.getAndSet(true)) {
             mSessionListener.onSessionClosed(reason);
         }
     }
@@ -142,14 +119,17 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
             Log.v(TAG, "Received " + message);
             (switch (message) {
                 case CapabilitiesRequest request ->
-                        sendCapabilityResponse(request).transformAsync(unused ->
-                                mOobConnection.receiveData(), mOobExecutor);
+                        sendCapabilityResponse(request).transformAsync(
+                                unused -> mOobConnection.receiveData(), mOobExecutor);
                 case ConfigurationRequest request -> {
-                    handleSetConfig(request);
+                    OobResponderRangingSession.super.start(
+                            mProtocol.getConfigurations(mPeer, request));
                     yield mOobConnection.receiveData();
                 }
                 case StopRequest request -> {
-                    handleStopRanging(request);
+                    OobResponderRangingSession.super.stopTechnologies(
+                            technologyBitset(request.getTechnologiesToStop()),
+                            InternalReason.REMOTE_REQUEST);
                     yield mOobConnection.receiveData();
                 }
                 default -> {
@@ -181,22 +161,6 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
     private FluentFuture<Void> sendCapabilityResponse(CapabilitiesRequest request) {
         return mOobConnection.sendData(mProtocol.getCapabilitiesResponse(request).toBytes());
-    }
-
-    private void handleSetConfig(ConfigurationRequest request) {
-        ImmutableSet<TechnologyConfig> configs = mProtocol.getConfigurations(mPeer, request);
-        boolean sessionAlreadyActive = !super.startOrReAttach(configs);
-        if (sessionAlreadyActive) {
-            Log.w(TAG, "Session already exists with active ranging. Restarting it with newly "
-                    + "provided config...");
-            mRestartingWithConfigs.set(configs);
-            super.stop(InternalReason.SYSTEM_POLICY);
-        }
-    }
-
-    private void handleStopRanging(StopRequest request) {
-        OobResponderRangingSession.super.stopTechnologies(
-                technologyBitset(request.getTechnologiesToStop()), InternalReason.REMOTE_REQUEST);
     }
 
     @Override

@@ -214,38 +214,6 @@ public class RangingInjector {
         };
     }
 
-    public boolean isLocalDeviceCapableOfConfig(
-            @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig
-    ) {
-        RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
-        if (capabilities.getUwbCapabilities() != null && !UwbConfigSelector
-                .isCapableOfConfig(sessionConfig, oobConfig, capabilities.getUwbCapabilities())) {
-            return false;
-        }
-
-        if (capabilities.getCsCapabilities() != null && !CsConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getCsCapabilities())) {
-            return false;
-        }
-
-        if (capabilities.getRttRangingCapabilities() != null && !RttConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getRttRangingCapabilities())) {
-            return false;
-        }
-
-        if (capabilities.getBleRssiCapabilities() != null && !BleRssiConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getBleRssiCapabilities())) {
-            return false;
-        }
-
-        if (capabilities.getRttStationRangingCapabilities() != null && !RttStationConfigSelector
-                .isCapableOfConfig(oobConfig, capabilities.getRttStationRangingCapabilities())) {
-            return false;
-        }
-
-        return true;
-    }
-
     public void enforceRangingPermissionForPreflight(
             @NonNull AttributionSource attributionSource) {
         if (!attributionSource.checkCallingUid()) {

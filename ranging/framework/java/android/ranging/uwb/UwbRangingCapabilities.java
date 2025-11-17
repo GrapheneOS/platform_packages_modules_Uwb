@@ -58,6 +58,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
     private final String mCountryCode;
+    private final boolean mSupportsDlTdoa;
 
     private UwbRangingCapabilities(Builder builder) {
         mSupportsDistance = builder.mSupportsDistance;
@@ -73,6 +74,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mSupportedPreambleIndexes = builder.mSupportedPreambleIndexes;
         mHasBackgroundRangingSupport = builder.mHasBackgroundRangingSupport;
         mCountryCode = builder.mCountryCode;
+        mSupportsDlTdoa = builder.mSupportsDlTdoa;
     }
 
     private UwbRangingCapabilities(Parcel in) {
@@ -95,6 +97,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         in.readList(mSupportedPreambleIndexes, Integer.class.getClassLoader(), Integer.class);
         mHasBackgroundRangingSupport = in.readByte() != 0;
         mCountryCode = in.readString();
+        mSupportsDlTdoa = in.readBoolean();
     }
 
     @NonNull
@@ -254,6 +257,16 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
+     * Whether Downlink time difference of arrival (DL-TDOA) is supported.
+     *
+     * @return true if DL-TDOA is supported.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public boolean isDlTdoaSupported() {
+        return mSupportsDlTdoa;
+    }
+
+    /**
      * @hide
      */
     @Override
@@ -276,6 +289,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         dest.writeList(mSupportedPreambleIndexes);
         dest.writeByte((byte) (mHasBackgroundRangingSupport ? 1 : 0));
         dest.writeString(mCountryCode);
+        dest.writeBoolean(mSupportsDlTdoa);
     }
 
     /**
@@ -297,6 +311,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         private List<Integer> mSupportedPreambleIndexes;
         private boolean mHasBackgroundRangingSupport;
         private String mCountryCode;
+        private boolean mSupportsDlTdoa = false;
 
         /**
          * Sets supports distance.
@@ -461,6 +476,17 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         }
 
         /**
+         * @param supportsDlTdoa whether DL-TDOA is supported.
+         * @return this builder instance for method chaining.
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        public Builder setDlTdoaSupported(boolean supportsDlTdoa) {
+            this.mSupportsDlTdoa = supportsDlTdoa;
+            return this;
+        }
+
+        /**
          * Build uwb ranging capabilities.
          *
          * @return the uwb ranging capabilities
@@ -500,6 +526,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
                 + mHasBackgroundRangingSupport
                 + ", mCountryCode="
                 + mCountryCode
+                + ", mSupportsDlTdoa="
+                + mSupportsDlTdoa
                 + " }";
     }
 }

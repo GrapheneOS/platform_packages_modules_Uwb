@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.common;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
@@ -28,6 +29,8 @@ import android.ranging.SessionConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.uwb.DlTdoaRangingParams;
+import android.util.Log;
 import android.util.Range;
 
 import androidx.annotation.NonNull;
@@ -41,7 +44,9 @@ import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
+import com.android.server.ranging.uwb.DlTdoaConfig;
 import com.android.server.ranging.uwb.UwbConfig;
+import com.android.server.ranging.wifipd.WifiPdConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -60,6 +65,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public class ConfigurationUtils {
+    private static final String TAG = "ConfigurationUtils";
     private ConfigurationUtils() {
         throw new IllegalStateException();
     }
@@ -69,9 +75,25 @@ public class ConfigurationUtils {
             @NonNull SessionConfig sessionConfig,
             @RangingPreference.DeviceRole int role
     ) {
-        return ImmutableSet.copyOf(Sets.union(
-                extractUnicastTechnologies(deviceConfigs, sessionConfig, role),
-                extractMulticastTechnologies(deviceConfigs, sessionConfig, role)));
+        Set<TechnologyConfig> configs = new HashSet<>();
+
+        if (role == DEVICE_ROLE_DT_TAG){
+            // DL-TDOA is a special case that is neither unicast nor multicast.
+            for (RawRangingDevice device : deviceConfigs) {
+                if (device.getDlTdoaRangingParams() != null) {
+                    DlTdoaRangingParams dlTdoaParams = device.getDlTdoaRangingParams();
+                    UwbAddress localAddress = dlTdoaParams.getDeviceAddress();
+                    configs.add(new DlTdoaConfig(
+                            dlTdoaParams, sessionConfig, role,
+                            device.getRangingDevice(), localAddress));
+                }
+            }
+            return ImmutableSet.copyOf(configs);
+        }
+
+        configs.addAll(extractUnicastTechnologies(deviceConfigs, sessionConfig, role));
+        configs.addAll(extractMulticastTechnologies(deviceConfigs, sessionConfig, role));
+        return ImmutableSet.copyOf(configs);
     }
 
     private static @NonNull Set<MulticastTechnologyConfig> extractMulticastTechnologies(
@@ -119,9 +141,14 @@ public class ConfigurationUtils {
                 configs.add(new CsConfig(
                         peer.getCsRangingParams(), sessionConfig, peer.getRangingDevice()));
             }
+
             if (Flags.rangingStackUpdates25q4() && peer.getRttStationRangingParams() != null) {
                 configs.add(new RttConfig(
                         role, peer.getRttStationRangingParams(), sessionConfig,
+                        peer.getRangingDevice()));
+            }
+            if (Flags.rangingStackUpdates26Q2() && peer.getWifiPdRangingParams() != null) {
+                configs.add(new WifiPdConfig(role, peer.getWifiPdRangingParams(), sessionConfig,
                         peer.getRangingDevice()));
             }
         }
@@ -184,7 +211,7 @@ public class ConfigurationUtils {
         public static Map<
                 PeerIgnoringParamsHasher<UwbRangingParams>,
                 BiMap<RangingDevice, UwbAddress>
-        > groupUwbPeersByParams(@NonNull Collection<RawRangingDevice> peerParams) {
+                > groupUwbPeersByParams(@NonNull Collection<RawRangingDevice> peerParams) {
             Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                     peersByParams = new HashMap<>();
             for (RawRangingDevice peer : peerParams) {
@@ -226,7 +253,9 @@ public class ConfigurationUtils {
 
             if (mParams instanceof UwbRangingParams me
                     && hasher.mParams instanceof UwbRangingParams other
-            ) return me.peerIgnoringEquals(other);
+            ) {
+                return me.peerIgnoringEquals(other);
+            }
 
             return false;
         }

@@ -127,8 +127,14 @@ public class UwbConfigurationManager {
             ProtocolVersion protocolVersion) {
 
         Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
-        UwbTlvData getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
+        UwbTlvData getAppConfig = null;
+        if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
+            getAppConfig = mNativeUwbManager.getRadarAppConfigurations(sessionId,
                     appConfigIds.length, appConfigIds.length, appConfigIds, chipId);
+        } else {
+            getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
+                    appConfigIds.length, appConfigIds.length, appConfigIds, chipId);
+        }
         Log.i(TAG, "getAppConfigurations respData: "
                 + (getAppConfig != null ? getAppConfig.toString() : "null"));
         return decodeTLV(protocolName, getAppConfig, paramType, protocolVersion);

@@ -24,7 +24,6 @@ import com.google.common.collect.ObjectArrays;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,8 +73,7 @@ class EngineEventFactory {
     }
 
     static class HeuristicConjunctionEvent extends EngineEvent {
-        private final AtomicInteger mConditionTrueCount = new AtomicInteger(0);
-        private final List<Listener> mListeners;
+        private final AtomicInteger mNumEventsRemaining;
 
         /**
          * Use {@link EngineEventFactory#whenAll(
@@ -83,30 +81,30 @@ class EngineEventFactory {
          */
         private HeuristicConjunctionEvent(Executor executor, HeuristicThreshold... thresholds) {
             super(executor);
-            mListeners = Arrays.stream(thresholds).map(Listener::new).toList();
+            mNumEventsRemaining = new AtomicInteger(thresholds.length);
+            for (HeuristicThreshold threshold : thresholds) {
+                threshold.getHeuristic().registerListener(new Listener(threshold.getCondition()));
+            }
         }
 
         private class Listener implements RangeHeuristic.Listener {
+            private final AtomicBoolean mIsCondition = new AtomicBoolean(false);
             private final DoublePredicate mCondition;
 
-            Listener(HeuristicThreshold threshold) {
-                threshold.getHeuristic().registerListener(this);
-                mCondition = threshold.getCondition();
+            Listener(DoublePredicate condition) {
+                mCondition = condition;
             }
 
             @Override
             public void onHeuristicUpdated(double value) {
                 if (mCondition.test(value)) {
-                    if (mConditionTrueCount.incrementAndGet() == mListeners.size()) {
+                    if (mIsCondition.compareAndSet(false, true)
+                            && mNumEventsRemaining.decrementAndGet() == 0
+                    ) {
                         complete(HeuristicConjunctionEvent.this);
                     }
-                } else {
-                    int current;
-                    int next;
-                    do {
-                        current = mConditionTrueCount.get();
-                        next = Math.max(0, current - 1);
-                    } while (!mConditionTrueCount.compareAndSet(current, next));
+                } else if (mIsCondition.compareAndSet(true, false)) {
+                    mNumEventsRemaining.incrementAndGet();
                 }
             }
         }

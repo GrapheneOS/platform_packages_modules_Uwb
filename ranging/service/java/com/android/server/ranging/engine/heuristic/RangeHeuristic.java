@@ -17,9 +17,9 @@
 package com.android.server.ranging.engine.heuristic;
 
 
-import androidx.annotation.NonNull;
+import android.ranging.RangingData;
 
-import com.android.server.ranging.RangingData;
+import androidx.annotation.NonNull;
 
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;

@@ -21,6 +21,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import static com.android.server.ranging.common.RangingUtils.InternalReason;
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.common.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.Nullable;
@@ -145,7 +146,7 @@ public class CsAdapter implements RangingAdapter {
         }
         if (!(config instanceof CsConfig csConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(INTERNAL_ERROR);
             return;
         }
         BleCsRangingParams bleCsRangingParams = csConfig.getRangingParams();

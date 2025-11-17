@@ -18,11 +18,11 @@ package com.android.server.ranging.engine;
 
 import static com.android.server.ranging.common.RangingUtils.InternalReason;
 
+import android.ranging.RangingData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.StateMachine;
@@ -46,6 +46,13 @@ import java.util.concurrent.Executor;
  */
 public class UwbMakeBeforeBreakEngine implements RangingEngine {
     private static final String TAG = UwbMakeBeforeBreakEngine.class.getSimpleName();
+    /** Distance in meters where the transitioning should occur. */
+    private static final Range<Double> SWAP_THRESHOLD = Range.closed(6.0, 8.0);
+    /**
+     * The lowest streak allowed (most consecutive ranging round failures) before the technology is
+     * deemed to have failed.
+     */
+    private static final int MIN_ALLOWED_STREAK = -6;
 
     private final RangingTechnology mAlt;
     private final EngineListener mListener;
@@ -53,7 +60,6 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
     private final RangingInjector mInjector;
 
     private final StateMachine<State> mStateStateMachine;
-    private final Range<Double> mSwapDistanceM;
     private final EngineEventFactory mEventFactory;
     private final RawRangeMeters mRangeM;
     private final DerivativeEstimator mDerivative;
@@ -85,8 +91,6 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         mExecutor = executor;
         mInjector = injector;
         mStateStateMachine = new StateMachine<>(State.SWAPPING);
-        // TODO(449167692): Find suitable threshold values
-        mSwapDistanceM = Range.closed(9.0, 10.0);
         mEventFactory = new EngineEventFactory(executor);
         mRangeM = new RawRangeMeters(mExecutor);
         mDerivative = new DerivativeEstimator(0.4, mExecutor);
@@ -118,7 +122,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         // mAlt -> UWB transition events, distance decreasing.
         mStartUwb = mEventFactory.whenAll(
                 mAltStreakCounter
-                        .count(mRangeM.threshold(range -> range <= mSwapDistanceM.upperEndpoint()))
+                        .count(mRangeM.threshold(range -> range <= SWAP_THRESHOLD.upperEndpoint()))
                         .threshold(count -> count >= 2),
                 mAltStreakCounter
                         .count(mDerivative.threshold(d -> d < 0))
@@ -127,7 +131,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
                 mUwbStreakCounter
                         .count(mRangeM).threshold(count -> count >= 4),
                 mUwbStreakCounter
-                        .count(mRangeM.threshold(range -> range <= mSwapDistanceM.lowerEndpoint()))
+                        .count(mRangeM.threshold(range -> range <= SWAP_THRESHOLD.lowerEndpoint()))
                         .threshold(count -> count >= 2),
                 mUwbStreakCounter
                         .count(mDerivative.threshold(d -> d < 0))
@@ -136,7 +140,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         // UWB -> mAlt transition events, distance increasing.
         mStartAlt = mEventFactory.whenAll(
                 mUwbStreakCounter
-                        .count(mRangeM.threshold(range -> range >= mSwapDistanceM.lowerEndpoint()))
+                        .count(mRangeM.threshold(range -> range >= SWAP_THRESHOLD.lowerEndpoint()))
                         .threshold(count -> count >= 2),
                 mUwbStreakCounter
                         .count(mDerivative.threshold(d -> d > 0))
@@ -145,7 +149,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
                 mAltStreakCounter
                         .count(mRangeM).threshold(count -> count >= 4),
                 mAltStreakCounter
-                        .count(mRangeM.threshold(range -> range >= mSwapDistanceM.upperEndpoint()))
+                        .count(mRangeM.threshold(range -> range >= SWAP_THRESHOLD.upperEndpoint()))
                         .threshold(count -> count >= 2),
                 mAltStreakCounter
                         .count(mDerivative.threshold(d -> d > 0))
@@ -153,10 +157,12 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
 
         // Failure detection.
         mAltFailure = mEventFactory.when(
-                mAltStreakCounter.count(mRangeM).threshold(count -> count <= -4));
+                mAltStreakCounter.count(mRangeM).threshold(count -> count <= MIN_ALLOWED_STREAK));
         mUwbFailure = mEventFactory.when(
-                mUwbStreakCounter.count(mRangeM).threshold(count -> count <= -4));
+                mUwbStreakCounter.count(mRangeM).threshold(count -> count <= MIN_ALLOWED_STREAK));
 
+        mAltFailure.onNextOccurrence(this::handleFailureEvent);
+        mUwbFailure.onNextOccurrence(this::handleFailureEvent);
         swapping();
     }
 
@@ -166,9 +172,11 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
 
         mNextEvent = mStartAlt;
         mNextEvent.onNextOccurrence(unused -> {
-            mListener.startTechnologies(Set.of(mAlt));
-            mAltFailure.onNextOccurrence(this::handleFailure);
-            swapping();
+            synchronized (UwbMakeBeforeBreakEngine.this) {
+                mListener.startTechnologies(Set.of(mAlt));
+                mAltFailure.onNextOccurrence(this::handleFailureEvent);
+                swapping();
+            }
         });
     }
 
@@ -178,14 +186,16 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
 
         mNextEvent = mEventFactory.whenAny(mOkToStopUwb, mOkToStopAlt);
         mNextEvent.onNextOccurrence(any -> {
-            if (any == mOkToStopUwb) {
-                mUwbFailure.cancel();
-                mListener.stopTechnologies(Set.of(RangingTechnology.UWB));
-                altOnly();
-            } else if (any == mOkToStopAlt) {
-                mAltFailure.cancel();
-                mListener.stopTechnologies(Set.of(mAlt));
-                uwbOnly();
+            synchronized (UwbMakeBeforeBreakEngine.this) {
+                if (any == mOkToStopUwb) {
+                    mUwbFailure.cancel();
+                    mListener.stopTechnologies(Set.of(RangingTechnology.UWB));
+                    altOnly();
+                } else if (any == mOkToStopAlt) {
+                    mAltFailure.cancel();
+                    mListener.stopTechnologies(Set.of(mAlt));
+                    uwbOnly();
+                }
             }
         });
     }
@@ -196,9 +206,11 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
 
         mNextEvent = mStartUwb;
         mNextEvent.onNextOccurrence(unused -> {
-            mListener.startTechnologies(Set.of(RangingTechnology.UWB));
-            mUwbFailure.onNextOccurrence(this::handleFailure);
-            swapping();
+            synchronized (UwbMakeBeforeBreakEngine.this) {
+                mListener.startTechnologies(Set.of(RangingTechnology.UWB));
+                mUwbFailure.onNextOccurrence(this::handleFailureEvent);
+                swapping();
+            }
         });
     }
 
@@ -214,7 +226,9 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
     public synchronized void onTechnologyStopped(
             @NonNull RangingTechnology technology, @InternalReason int reason
     ) {
-        if (reason == InternalReason.LOCAL_REQUEST) return;
+        if (reason == InternalReason.LOCAL_REQUEST || reason == InternalReason.REMOTE_REQUEST) {
+            return;
+        }
         Log.i(TAG, "Unexpected stop of " + technology);
 
         if (technology == RangingTechnology.UWB) {
@@ -224,15 +238,16 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         }
     }
 
-    private synchronized void handleFailure(EngineEvent failureEvent) {
-        if (failureEvent == mUwbFailure) {
+    private synchronized void handleFailureEvent(EngineEvent event) {
+        if (event == mUwbFailure) {
+            Log.i(TAG, "Detected UWB failure");
             handleUwbFailure();
-        } else if (failureEvent == mAltFailure) {
+        } else if (event == mAltFailure) {
+            Log.i(TAG, "Detected " + mAlt + " failure");
             handleAltFailure();
         }
     }
     private synchronized void handleUwbFailure() {
-        Log.i(TAG, "Handling UWB failure");
         switch (mStateStateMachine.getState()) {
             case UWB_ONLY -> reset();
             case SWAPPING -> {
@@ -244,7 +259,6 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
     }
 
     private synchronized void handleAltFailure() {
-        Log.i(TAG, "Handling " + mAlt + " failure");
         switch (mStateStateMachine.getState()) {
             case UWB_ONLY -> { /* ignore */ }
             case SWAPPING -> {

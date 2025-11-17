@@ -131,6 +131,7 @@ custom_bootclasspath_fragment {
             "android.ranging.raw",
             "android.ranging.uwb",
             "android.ranging.wifi.rtt",
+            "android.ranging.wifi.pd",
         ],
 
         // The following packages and all their subpackages currently only

@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -251,5 +252,17 @@ public class RangingUtils {
             result |= 1 << op.applyAsInt(offset);
         }
         return result;
+    }
+
+    /** Converts a byte array to a list of integers. */
+    public static List<Integer> byteArrayToIntegerList(byte[] bytes) {
+        if (bytes == null) {
+            return new ArrayList<>();
+        }
+        List<Integer> list = new ArrayList<>(bytes.length);
+        for (byte b : bytes) {
+            list.add((int) b);
+        }
+        return list;
     }
 }

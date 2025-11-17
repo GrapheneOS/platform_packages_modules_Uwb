@@ -73,8 +73,13 @@ public class CapabilityParam {
     public static final int SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0 = 0x18;
     public static final int SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0 = 0x19;
     public static final int SUPPORTED_PSDU_LENGTH_2_0 = 0x1A;
-    public static final int SUPPORTED_LL_CAPABILITY_2_0 = 0x1B;
-    public static final int SUPPORTED_BYPASS_MODE_2_0 = 0x1C;
+
+    /**
+     * Fira Version 3.0
+     */
+    public static final int SUPPORTED_LL_CAPABILITY_VER_3_0 = 0x1B;
+    public static final int SUPPORTED_BYPASS_MODE_VER_3_0 = 0x1C;
+    public static final int SUPPORTED_UCI_MIN_SLOT_DURATION_RSTU_VER_3_0 = 0x1D;
 
     /**
      * CR 287 params common across versions
@@ -150,7 +155,8 @@ public class CapabilityParam {
 
     public static final int UNICAST = 0x1;
     public static final int ONE_TO_MANY = 0x2;
-    public static final int MANY_TO_MANY = 0x4;
+    public static final int MANY_TO_MANY_V1 = 0x4;
+    public static final int ONE_TO_MANY_DATA_TRANSFER_V2 = 0x4;
 
     public static final int INTERVAL_BASED_SCHEDULING = 0x1;
     public static final int BLOCK_BASED_SCHEDULING = 0x2;

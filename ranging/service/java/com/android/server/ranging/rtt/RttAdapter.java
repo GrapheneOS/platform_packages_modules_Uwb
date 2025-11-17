@@ -18,6 +18,8 @@ package com.android.server.ranging.rtt;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
+import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
+
 import android.annotation.Nullable;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
@@ -173,7 +175,7 @@ public class RttAdapter implements RangingAdapter {
         }
         if (!(config instanceof RttConfig rttConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(INTERNAL_ERROR);
             return;
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {

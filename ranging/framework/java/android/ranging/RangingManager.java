@@ -76,6 +76,7 @@ public final class RangingManager {
             WIFI_NAN_RTT,
             BLE_RSSI,
             WIFI_STA_RTT,
+            WIFI_PD,
     })
     public @interface RangingTechnology {}
     /**
@@ -89,7 +90,7 @@ public final class RangingManager {
     public static final int BLE_CS = 1;
 
     /**
-     * WiFi Round Trip Time (WiFi-RTT) technology.
+     * WiFi Round Trip Time (WiFi-NAN-RTT 802.11mc) technology.
      */
     public static final int WIFI_NAN_RTT = 2;
 
@@ -99,10 +100,16 @@ public final class RangingManager {
     public static final int BLE_RSSI = 3;
 
     /**
-     * WiFi Round Trip Time (WiFi-RTT 8011MC) technology.
+     * WiFi Round Trip Time (WiFi-STA-AP-RTT 8011.mc) technology.
      */
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
     public static final int WIFI_STA_RTT = 4;
+
+    /**
+     * WiFi Alliance Wi-Fi Proximity Detection (Wi-Fi PD) technology.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int WIFI_PD = 5;
 
     /**
      * @hide

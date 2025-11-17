@@ -89,6 +89,7 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
             case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
             case UwbUciConstants.STATUS_CODE_ERROR_CMT3_SEGMENTATION_NOT_POSSIBLE:
+            case UwbUciConstants.STATUS_CODE_ERROR_PHASE_DURATION_CHANGE_PROHIBITED:
                 rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
                 break;
             case UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST:

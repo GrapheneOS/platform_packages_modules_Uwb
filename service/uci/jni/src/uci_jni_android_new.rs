@@ -39,7 +39,7 @@ use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AndroidRadarConfigResponse, AppConfigTlv, ControllerPhaseList, CountryCode,
     CreateLogicalLinkResponse, GetDeviceInfoResponse, GetLogicalLinkParamResponse, RadarConfigTlv,
-    RawAppConfigTlv, RawUciMessage, RfTestConfigResponse, RfTestConfigTlv,
+    RadarConfigTlvType, RawAppConfigTlv, RawUciMessage, RfTestConfigResponse, RfTestConfigTlv,
     SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
     SetAppConfigResponse,
 };
@@ -762,6 +762,51 @@ fn native_set_radar_app_configurations(
     uci_manager.android_set_radar_config(session_id as u32, tlvs)
 }
 
+/// Get radar app configurations on a single UWB device. Return null JObject if failed.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetRadarAppConfigurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    _no_of_params: jint,
+    _radar_config_param_len: jint,
+    radar_config_params: jbyteArray,
+    chip_id: JString,
+) -> jbyteArray {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_get_radar_app_configurations(env, obj, session_id, radar_config_params, chip_id),
+        function_name!(),
+    ) {
+        Some(v) => create_get_radar_config_response(v, env)
+            .inspect_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
+}
+
+fn native_get_radar_app_configurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    radar_config_params: jbyteArray,
+    chip_id: JString,
+) -> Result<Vec<RadarConfigTlv>> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    let config_byte_array =
+        env.convert_byte_array(radar_config_params).map_err(|_| Error::ForeignFunctionInterface)?;
+    let tlvs_types = config_byte_array
+        .into_iter()
+        .map(RadarConfigTlvType::try_from)
+        .map(std::result::Result::ok)
+        .collect::<Option<Vec<_>>>()
+        .ok_or(Error::BadParameters)?;
+    uci_manager.android_get_radar_config(session_id as u32, tlvs_types)
+}
+
 fn parse_hybrid_controller_config_phase_list(
     number_of_phases: usize,
     byte_array: &[u8],
@@ -927,6 +972,35 @@ fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jb
     let mut buf = Vec::<u8>::new();
     for tlv in tlvs.into_iter() {
         let tlv = tlv.into_inner();
+        buf.push(u8::from(tlv.cfg_id));
+        buf.push(tlv.v.len() as u8);
+        buf.extend(&tlv.v);
+    }
+    let tlvs_jbytearray =
+        env.byte_array_from_slice(&buf).map_err(|_| Error::ForeignFunctionInterface)?;
+
+    // Safety: tlvs_jbytearray is safely instantiated above.
+    let tlvs_jobject = unsafe { JObject::from_raw(tlvs_jbytearray) };
+    let tlvs_jobject_env = env
+        .new_object(
+            tlv_data_class,
+            "(II[B)V",
+            &[
+                JValue::Int(i32::from(StatusCode::UciStatusOk)),
+                JValue::Int(tlvs_len as i32),
+                JValue::Object(tlvs_jobject),
+            ],
+        )
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    Ok(*tlvs_jobject_env)
+}
+
+fn create_get_radar_config_response(tlvs: Vec<RadarConfigTlv>, env: JNIEnv) -> Result<jbyteArray> {
+    let tlv_data_class =
+        env.find_class(TLV_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
+    let tlvs_len = tlvs.len();
+    let mut buf = Vec::<u8>::new();
+    for tlv in tlvs.into_iter() {
         buf.push(u8::from(tlv.cfg_id));
         buf.push(tlv.v.len() as u8);
         buf.extend(&tlv.v);
