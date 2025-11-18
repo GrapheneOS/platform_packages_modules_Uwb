@@ -21,11 +21,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
+import android.net.MacAddress;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingManager;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 
@@ -104,18 +106,27 @@ public class OobResponderProtocolTest {
         final RttStationRangingCapabilities wifiStaCap = new RttStationRangingCapabilities.Builder()
                 .setSupportedSecurity(2).build();
 
+
+        final WifiPdRangingCapabilities wifiPdCap = new WifiPdRangingCapabilities.Builder()
+                .setProximityDetectionMacAddress(MacAddress.fromString(FAKE_BLE_ADDRESS))
+                .set80211azNtbSupported(true)
+                .build();
+
+
         return new RangingCapabilities.Builder()
-              .addCapabilities(uwbCap)
-              .addCapabilities(csCap)
-              .addCapabilities(wifiNanCap)
-              .addCapabilities(rssiCap)
-              .addCapabilities(wifiStaCap)
-              .addAvailability(RangingManager.UWB, RangingCapabilities.ENABLED)
-              .addAvailability(RangingManager.BLE_CS, RangingCapabilities.ENABLED)
-              .addAvailability(RangingManager.WIFI_NAN_RTT, RangingCapabilities.ENABLED)
-              .addAvailability(RangingManager.BLE_RSSI, RangingCapabilities.ENABLED)
-              .addAvailability(RangingManager.WIFI_STA_RTT , RangingCapabilities.ENABLED)
-              .build();
+                .addCapabilities(uwbCap)
+                .addCapabilities(csCap)
+                .addCapabilities(wifiNanCap)
+                .addCapabilities(rssiCap)
+                .addCapabilities(wifiStaCap)
+                .addCapabilities(wifiPdCap)
+                .addAvailability(RangingManager.UWB, RangingCapabilities.ENABLED)
+                .addAvailability(RangingManager.BLE_CS, RangingCapabilities.ENABLED)
+                .addAvailability(RangingManager.WIFI_NAN_RTT, RangingCapabilities.ENABLED)
+                .addAvailability(RangingManager.BLE_RSSI, RangingCapabilities.ENABLED)
+                .addAvailability(RangingManager.WIFI_STA_RTT, RangingCapabilities.ENABLED)
+                .addAvailability(RangingManager.WIFI_PD, RangingCapabilities.ENABLED)
+                .build();
     }
 
     @Test
@@ -143,7 +154,6 @@ public class OobResponderProtocolTest {
         assertThat(responseV1.getSupportedTechnologies().getBleCs()).isTrue();
         assertThat(responseV1.getSupportedTechnologies().getWifiNanRtt()).isTrue();
         assertThat(responseV1.getSupportedTechnologies().getBleRssi()).isTrue();
-        assertThat(responseV1.getSupportedTechnologies().getWifiApRtt()).isFalse();
 
         // Verify number of capability objects
         assertEquals(responseV1.getCapabilities().length, 4);
@@ -163,7 +173,7 @@ public class OobResponderProtocolTest {
                 .setBleCs(true)
                 .setWifiNanRtt(true)
                 .setBleRssi(true)
-                .setWifiApRtt(true)
+                .setWifiPd(true)
                 .build();
         final CapabilitiesRequest request = new CapabilitiesRequest.Builder()
                 .setVersion(VERSION_2)
@@ -183,7 +193,7 @@ public class OobResponderProtocolTest {
         assertThat(responseV2.getSupportedTechnologies().getBleCs()).isTrue();
         assertThat(responseV2.getSupportedTechnologies().getBleRssi()).isTrue();
         assertThat(responseV2.getSupportedTechnologies().getWifiNanRtt()).isTrue();
-        assertThat(responseV2.getSupportedTechnologies().getWifiApRtt()).isFalse();
+        assertThat(responseV2.getSupportedTechnologies().getWifiPd()).isTrue();
 
         // Verify TechnologyTransitioning is set to MakeBeforeBreak (1)
         assertEquals(

@@ -207,6 +207,7 @@ public class RangingUtils {
                 case CS -> bitset.setBleCs(true);
                 case RTT -> bitset.setWifiNanRtt(true);
                 case RSSI -> bitset.setBleRssi(true);
+                case WIFI_PD -> bitset.setWifiPd(true);
                 case RTT_STATION -> {
                     continue;
                 }
@@ -221,7 +222,7 @@ public class RangingUtils {
         if (bitset.getBleCs()) technologies.add(RangingTechnology.CS);
         if (bitset.getWifiNanRtt()) technologies.add(RangingTechnology.RTT);
         if (bitset.getBleRssi()) technologies.add(RangingTechnology.RSSI);
-        if (bitset.getWifiStaRtt()) technologies.add(RangingTechnology.RTT_STATION);
+        if (bitset.getWifiPd()) technologies.add(RangingTechnology.WIFI_PD);
         return technologies;
     }
 

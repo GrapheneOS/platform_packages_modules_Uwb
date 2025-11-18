@@ -31,6 +31,7 @@ android_test {
         "framework-bluetooth.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
         "framework-uwb.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "androidx.test.runner",

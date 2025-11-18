@@ -257,8 +257,8 @@
      of technology in device specific overlay.-->
     <string-array name="technology_preference_list">
         <item>UWB</item>
-        <item>CS</item>
         <item>WIFI_PD</item>
+        <item>CS</item>
         <item>RTT</item>
         <item>RSSI</item>
         <!--item>RTT_STATION</item-->

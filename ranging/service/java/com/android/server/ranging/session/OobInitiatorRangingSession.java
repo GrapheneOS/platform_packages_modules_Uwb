@@ -30,20 +30,20 @@ import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.util.Log;
-import com.android.ranging.flags.Flags;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.ranging.flags.Flags;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.engine.UwbBreakBeforeMakeEngine;
 import com.android.server.ranging.engine.RangingEngine;
 import com.android.server.ranging.engine.StaticRangingEngine;
+import com.android.server.ranging.engine.UwbBreakBeforeMakeEngine;
 import com.android.server.ranging.engine.UwbMakeBeforeBreakEngine;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobController.OobConnection;
@@ -59,6 +59,7 @@ import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
+import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
@@ -122,7 +123,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 RangingTechnology alternate = mInjector.getTechnologyRanking().stream()
                         .filter(technology -> technology != RangingTechnology.UWB
                                 && capabilities.containsKey(
-                                        Technology.fromByte(technology.toByte())))
+                                Technology.fromByte(technology.toByte())))
                         .findFirst()
                         .get();
 
@@ -136,12 +137,11 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     case TechnologyTransitioning.NotSupported unused -> {
                         Log.i(TAG, "Using break-before-make transitioning UWB <-> " + alternate);
                         yield new UwbBreakBeforeMakeEngine(
-                            RangingTechnology.fromByte(alternate.toByte()), this,
-                            mOobExecutor, mInjector);
+                                RangingTechnology.fromByte(alternate.toByte()), this,
+                                mOobExecutor, mInjector);
                     }
-                    case TechnologyTransitioning.Reserved other ->
-                            throw new IllegalStateException(
-                                    "Unexpected technology transitioning " + other);
+                    case TechnologyTransitioning.Reserved other -> throw new IllegalStateException(
+                            "Unexpected technology transitioning " + other);
                 };
             } else {
                 mEngine = new StaticRangingEngine(capabilities.keySet(), mConfig, mInjector);
@@ -241,14 +241,14 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     public void onFailure(@NonNull Throwable t) {
                         Log.w(TAG, "Oob failed: ", t);
                         switch (t) {
-                            case ConfigSelectionException e ->
-                                    mSessionListener.onSessionClosed(e.getReason());
+                            case ConfigSelectionException e -> mSessionListener.onSessionClosed(
+                                    e.getReason());
                             case ConnectionClosedException unused ->
                                     mSessionListener.onSessionClosed(InternalReason.NO_PEERS_FOUND);
-                            case TimeoutException unused ->
-                                    mSessionListener.onSessionClosed(InternalReason.NO_PEERS_FOUND);
-                            default ->
-                                    mSessionListener.onSessionClosed(InternalReason.INTERNAL_ERROR);
+                            case TimeoutException unused -> mSessionListener.onSessionClosed(
+                                    InternalReason.NO_PEERS_FOUND);
+                            default -> mSessionListener.onSessionClosed(
+                                    InternalReason.INTERNAL_ERROR);
                         }
                     }
                 }, mOobExecutor);
@@ -390,7 +390,8 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     mConfig, capabilities.getBleRssiCapabilities());
             case RangingTechnology.RTT_STATION -> RttStationConfigSelector.isCapableOfConfig(
                     mConfig, capabilities.getRttStationRangingCapabilities());
-            case RangingTechnology.WIFI_PD -> /* TODO: Add support for wifi PD */ false;
+            case RangingTechnology.WIFI_PD -> WifiPdConfigSelector.isCapableOfConfig(
+                    mConfig, capabilities.getWifiPdRangingCapabilities());
         };
     }
 

@@ -16,11 +16,23 @@
 
 package com.android.server.ranging.oob;
 
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_1;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_11;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_153;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_157;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_161;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_165;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_36;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_40;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_44;
+import static android.ranging.wifi.pd.WifiPdConstants.CHANNEL_48;
+
 import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromIntervalMs;
 import static com.android.server.ranging.common.RangingUtils.bitset;
 import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 
+import android.net.MacAddress;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
@@ -31,9 +43,11 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.pd.WifiPdConstants;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
+import android.ranging.wifi.pd.WifiPdRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
-import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -49,32 +63,35 @@ import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.DiscoveryChannels;
 import com.android.server.ranging.oob.packets.OobMessage;
+import com.android.server.ranging.oob.packets.PreambleType;
 import com.android.server.ranging.oob.packets.TechnologySet;
 import com.android.server.ranging.oob.packets.TechnologyTransitioning;
-import com.android.server.ranging.oob.packets.UnknownConfiguration;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceRole;
 import com.android.server.ranging.oob.packets.Version;
-import com.android.server.ranging.oob.packets.WiFiSecurityMethod;
-import com.android.server.ranging.oob.packets.WifiApRttConfiguration;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV3;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV3;
-import com.android.server.ranging.oob.packets.WifiStaRttCapabilities;
-import com.android.server.ranging.oob.packets.WifiStaRttConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdCapabilities;
+import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
 import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
+import com.android.server.ranging.wifipd.WifiPdConfig;
+import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Set;
 
 public class OobResponderProtocol {
     private static final String TAG = OobInitiatorProtocol.class.getSimpleName();
@@ -95,9 +112,9 @@ public class OobResponderProtocol {
      * @param request The {@link CapabilitiesRequest} specifying the desired technologies
      *                and the requested protocol version.
      * @return A {@link CapabilitiesResponseV1} or {@link CapabilitiesResponseV2} object
-     *         containing the agreed-upon version, a set of all supported technologies,
-     *         and a list of detailed capability objects for each supported and requested
-     *         technology. The specific response version depends on the negotiated protocol version.
+     * containing the agreed-upon version, a set of all supported technologies,
+     * and a list of detailed capability objects for each supported and requested
+     * technology. The specific response version depends on the negotiated protocol version.
      */
     public OobMessage getCapabilitiesResponse(CapabilitiesRequest request) {
         if (request.getVersion() instanceof Version.Future) {
@@ -162,32 +179,61 @@ public class OobResponderProtocol {
                     .build());
         }
 
-        RttStationRangingCapabilities wifiSta = myCapabilities.getRttStationRangingCapabilities();
-        if (Byte.toUnsignedInt(mVersion.toByte()) >= 3
-                && request.getRequestedTechnologies().getWifiApRtt()
-                && wifiSta != null
-        ) {
-            supported.setWifiStaRtt(true);
-            // TODO: Correctly handle WiFi STA
-            capabilities.add(new WifiStaRttCapabilities.Builder()
-                    .setSecurityMethod(
-                            WiFiSecurityMethod.fromByte((byte) wifiSta.getSupportedSecurity()))
-                    .build());
+        WifiPdRangingCapabilities pdCapabilities = myCapabilities.getWifiPdRangingCapabilities();
+        if (request.getRequestedTechnologies().getWifiPd() && pdCapabilities != null) {
+            supported.setWifiPd(true);
+            Set<Integer> discoveryChannels =
+                    pdCapabilities.getSupportedDiscoveryChannelFrequenciesMhz();
+            capabilities.add(
+                    new WifiPdCapabilities.Builder()
+                            .setUnauthenticatedPasnSupport(
+                                    pdCapabilities.getSupportedPasnModes().contains(
+                                            WifiPdRangingCapabilities.UNAUTHENTICATED_PASN_MODE))
+                            .setAuthenticatedPasnSupport(
+                                    pdCapabilities.getSupportedPasnModes().contains(
+                                            WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE))
+                            .setAddress(
+                                    pdCapabilities.getProximityDetectionMacAddress().toByteArray())
+                            .setFeature11mc(pdCapabilities.is80211mcSupported())
+                            .setFeature11az(pdCapabilities.is80211azNtbSupported())
+                            .setMinInterval11mc((short)
+                                    pdCapabilities.getMinRangingInterval80211mc().toMillis())
+                            .setMinInterval11az((short)
+                                    pdCapabilities.getRangingInterval80211azNtb().toMillis())
+                            .setMaxPreamble(
+                                    PreambleType.fromByte((byte) pdCapabilities.getMaxPreamble()))
+                            .setMaxChannelWidth(
+                                    WifiBandwidth.fromByte(
+                                            (byte) pdCapabilities.getMaxChannelWidth()))
+                            .setChannels(
+                                    new DiscoveryChannels.Builder()
+                                            .setChannel1(discoveryChannels.contains(CHANNEL_1))
+                                            .setChannel11(discoveryChannels.contains(CHANNEL_11))
+                                            .setChannel36(discoveryChannels.contains(CHANNEL_36))
+                                            .setChannel40(discoveryChannels.contains(CHANNEL_40))
+                                            .setChannel44(discoveryChannels.contains(CHANNEL_44))
+                                            .setChannel48(discoveryChannels.contains(CHANNEL_48))
+                                            .setChannel153(discoveryChannels.contains(CHANNEL_153))
+                                            .setChannel157(discoveryChannels.contains(CHANNEL_157))
+                                            .setChannel161(discoveryChannels.contains(CHANNEL_161))
+                                            .setChannel165(discoveryChannels.contains(CHANNEL_165))
+                                            .build())
+                            .build());
         }
 
         if (mVersion == Version.V1) {
             return new CapabilitiesResponseV1.Builder()
-                .setSupportedTechnologies(supported.build())
-                .setCapabilities(capabilities.toArray(new Capabilities[0]))
-                .build();
+                    .setSupportedTechnologies(supported.build())
+                    .setCapabilities(capabilities.toArray(new Capabilities[0]))
+                    .build();
         } else {
             return new CapabilitiesResponseV2.Builder()
-                .setVersion(mVersion)
-                .setSupportedTechnologies(supported.build())
-                .setCapabilities(capabilities.toArray(new Capabilities[0]))
-                .setSupportedTransitioning(TechnologyTransitioning.MakeBeforeBreak)
-                .setDeviceType(mInjector.getDeviceType())
-                .build();
+                    .setVersion(mVersion)
+                    .setSupportedTechnologies(supported.build())
+                    .setCapabilities(capabilities.toArray(new Capabilities[0]))
+                    .setSupportedTransitioning(TechnologyTransitioning.MakeBeforeBreak)
+                    .setDeviceType(mInjector.getDeviceType())
+                    .build();
         }
     }
 
@@ -244,14 +290,41 @@ public class OobResponderProtocol {
                                 .build(),
                         new SessionConfig.Builder().build(),
                         handle.getRangingDevice()));
-                case WifiStaRttConfiguration unused -> {
-                    // TODO: Support WiFi STA RTT
-                }
-                case WifiApRttConfiguration unused -> {
-                    // TODO: Protocol v3
-                }
-                case UnknownConfiguration unknown ->
-                    Log.w(TAG, "Received unknown configuration " + unknown);
+                case WifiPdUnauthenticatedConfiguration wifiPd -> configs.add(
+                        new WifiPdConfig(
+                                RangingPreference.DEVICE_ROLE_RESPONDER,
+                                new WifiPdRangingParams.Builder(
+                                        MacAddress.fromBytes(wifiPd.getPeerAddress()))
+                                        .setRangingUpdateRate(WifiPdConstants.getUpdateRateFromMs(
+                                                wifiPd.getRangingInterval()))
+                                        .setPreambleType(wifiPd.getPreamble().toByte())
+                                        .setChannelWidth(wifiPd.getChannelWidth().toByte())
+                                        .setDiscoveryChannelFrequencyMhz(
+                                                WifiPdConfigSelector.convertChannelToFrequency(
+                                                        wifiPd.getChannel()))
+                                        .build(),
+                                new SessionConfig.Builder().build(),
+                                handle.getRangingDevice()));
+                case WifiPdAuthenticatedConfiguration wifiPd -> configs.add(
+                        new WifiPdConfig(
+                                RangingPreference.DEVICE_ROLE_RESPONDER,
+                                new WifiPdRangingParams.Builder(
+                                        MacAddress.fromBytes(wifiPd.getPeerAddress()))
+                                        .setRangingUpdateRate(WifiPdConstants.getUpdateRateFromMs(
+                                                wifiPd.getRangingInterval()))
+                                        .setPreambleType(wifiPd.getPreamble().toByte())
+                                        .setChannelWidth(wifiPd.getChannelWidth().toByte())
+                                        .setDiscoveryChannelFrequencyMhz(
+                                                WifiPdConfigSelector.convertChannelToFrequency(
+                                                        wifiPd.getChannel()))
+                                        .setDeviceIk(wifiPd.getDeviceIk())
+                                        .setPassword(
+                                                new String(wifiPd.getPassword(),
+                                                        StandardCharsets.UTF_8))
+                                        .build(),
+                                new SessionConfig.Builder().build(),
+                                handle.getRangingDevice()));
+                default -> Log.w(TAG, "Received unhandled configuration");
             }
         }
 
