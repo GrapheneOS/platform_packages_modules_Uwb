@@ -43,4 +43,5 @@ android_test {
         "general-tests",
         "mts-uwb",
     ],
+    jarjar_rules: ":ranging-jarjar-rules",
 }
