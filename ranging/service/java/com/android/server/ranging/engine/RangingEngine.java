@@ -45,7 +45,12 @@ public interface RangingEngine {
     /** Get the set of technologies to start ranging with when the session begins. */
     @NonNull EnumSet<RangingTechnology> getTechnologiesToStart();
 
-    /** Start the engine. */
+    /**
+     * Start the engine.
+     *
+     * Noted that the design should ensure that this method be called before
+     * {@link #onTechnologyStopped}.
+     **/
     void start(Set<TechnologyConfig> configs);
 
     /** Notify the engine that ranging data has been received. */
