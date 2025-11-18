@@ -30,6 +30,7 @@ import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.util.Log;
+import com.android.ranging.flags.Flags;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,7 +41,7 @@ import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.engine.BreakBeforeMakeEngine;
+import com.android.server.ranging.engine.UwbBreakBeforeMakeEngine;
 import com.android.server.ranging.engine.RangingEngine;
 import com.android.server.ranging.engine.StaticRangingEngine;
 import com.android.server.ranging.engine.UwbMakeBeforeBreakEngine;
@@ -113,7 +114,8 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 Map<Technology, Capabilities> capabilities
         ) {
 
-            if (mConfig.getRangingMode() == RANGING_MODE_AUTO
+            if (Flags.rangingTechnologyTransitioning()
+                    && mConfig.getRangingMode() == RANGING_MODE_AUTO
                     && transitioningSupport != null
                     && capabilities.size() >= 2 && capabilities.containsKey(Technology.Uwb)
             ) {
@@ -133,7 +135,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     }
                     case TechnologyTransitioning.NotSupported unused -> {
                         Log.i(TAG, "Using break-before-make transitioning UWB <-> " + alternate);
-                        yield new BreakBeforeMakeEngine(
+                        yield new UwbBreakBeforeMakeEngine(
                             RangingTechnology.fromByte(alternate.toByte()), this,
                             mOobExecutor, mInjector);
                     }
