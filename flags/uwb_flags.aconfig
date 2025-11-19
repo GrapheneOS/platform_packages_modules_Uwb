@@ -33,13 +33,6 @@ flag {
 }
 
 flag {
-    name: "use_network_country_iso"
-    namespace: "uwb"
-    description: "Configure country code from getNetworkCountryIso() when telephony list is empty or null"
-    bug: "299961333"
-}
-
-flag {
     name: "hw_state"
     is_exported: true
     namespace: "uwb"
