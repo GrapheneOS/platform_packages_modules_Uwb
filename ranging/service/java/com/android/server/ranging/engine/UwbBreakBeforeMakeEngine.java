@@ -22,6 +22,7 @@ import android.ranging.RangingData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
@@ -205,5 +206,20 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
             mNextTechnology = RangingTechnology.UWB;
             mListener.stopTechnologies(Set.of(mAlt));
         }
+    }
+
+    @VisibleForTesting
+    EngineEvent getNextEvent() {
+        return mNextEvent;
+    }
+
+    @VisibleForTesting
+    EngineEvent getAltFailure() {
+        return mAltFailure;
+    }
+
+    @VisibleForTesting
+    EngineEvent getUwbFailure() {
+        return mUwbFailure;
     }
 }
