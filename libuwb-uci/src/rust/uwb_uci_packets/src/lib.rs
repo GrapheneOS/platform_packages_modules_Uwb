@@ -976,34 +976,33 @@ pub fn build_data_transfer_phase_config_cmd(
     };
 
     // Calculate slot bitmap size from data transfer control
-    let slot_bitmap_size = 1 << ((data_transfer_control & 0x0F) >> 1);
+    let slot_bitmap_value = ((data_transfer_control & 0x0F) >> 1);
+    // If slot bit map value is 7 then size of Slot bitmap is 0 octet
+    let slot_bitmap_size = if slot_bitmap_value == 7 { 0 } else { 1 << slot_bitmap_value };
 
     // Prepare segmented vectors for mac_address
     let mac_address_vec: Vec<_> =
         mac_address.chunks(mac_address_size).map(|chunk| chunk.to_owned()).collect();
 
     // Prepare segmented vectors for slot_bitmap
-    let slot_bitmap_vec: Vec<_> =
-        slot_bitmap.chunks(slot_bitmap_size).map(|chunk| chunk.to_owned()).collect();
+    let slot_bitmap_vec: Vec<_> = if slot_bitmap_size == 0 {
+        vec![Vec::new(); mac_address_vec.len()]
+    } else {
+        slot_bitmap.chunks(slot_bitmap_size).map(|chunk| chunk.to_owned()).collect()
+    };
 
     // Validate sizes of mac_address and slot_bitmap
-    if slot_bitmap_vec.len() != dtpml_size.into() || mac_address_vec.len() != dtpml_size.into() {
+    if slot_bitmap_vec.len() != dtpml_size.into()
+        || mac_address_vec.len() != dtpml_size.into()
+        || stop_data_transfer.len() != dtpml_size.into()
+    {
         return Err(DecodeError::InvalidPacketError);
     }
 
-    // Prepare segmented vectors for stop_data_transfer
-    let stop_data_transfer_vector: Vec<_> =
-        stop_data_transfer.chunks(1).map(|chunk| chunk.to_owned()).collect();
-
-    // Combine segmented vectors into dtpml_buffer
-    for ((elem1, elem2), elem3) in mac_address_vec
-        .into_iter()
-        .zip(slot_bitmap_vec.into_iter())
-        .zip(stop_data_transfer.into_iter())
-    {
-        dtpml_buffer.extend_from_slice(&elem1);
-        dtpml_buffer.extend_from_slice(&elem2);
-        dtpml_buffer.extend_from_slice(&[elem3]);
+    for i in 0..dtpml_size as usize {
+        dtpml_buffer.extend_from_slice(&mac_address_vec[i]);
+        dtpml_buffer.extend_from_slice(&slot_bitmap_vec[i]);
+        dtpml_buffer.extend_from_slice(&[stop_data_transfer[i]]);
     }
 
     Ok(SessionDataTransferPhaseConfigCmdBuilder {
