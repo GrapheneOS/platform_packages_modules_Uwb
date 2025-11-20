@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
-
+<issues
+    format="6"
+    by="lint 8.4.0-alpha08"
+    type="baseline"
+    client=""
+    dependencies="true"
+    name=""
+    variant="all"
+    version="8.4.0-alpha08">
     <issue
         id="NewApi"
         message="Call requires API level 34 (current min is 33): `java.util.stream.Stream#toList`"
@@ -21,6 +28,72 @@
             file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/RangingEngine.java"
             line="290"
             column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 33): `java.util.stream.Stream#toList`"
+        errorLine1="                c -&gt; RangingTechnology.fromByte(c.getTechnology().toByte())).toList());"
+        errorLine2="                                                                             ~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/oob/OobInitiatorProtocol.java"
+            line="134"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 33): `java.util.SequencedCollection#getFirst`"
+        errorLine1="                &amp;&amp; shouldRequest(technologyRanking.getFirst())"
+        errorLine2="                                                   ~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/session/OobInitiatorRangingSession.java"
+            line="363"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 33): `java.util.SequencedCollection#getFirst`"
+        errorLine1="            return EnumSet.of(technologyRanking.getFirst());"
+        errorLine2="                                                ~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/session/OobInitiatorRangingSession.java"
+            line="365"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 33): `java.util.stream.Stream#toList`"
+        errorLine1="                .toList();"
+        errorLine2="                 ~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/RangingInjector.java"
+            line="383"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 33): `java.util.SequencedCollection#getFirst`"
+        errorLine1="                if (mTechnologies.contains(mTechnologyRanking.getFirst())) {"
+        errorLine2="                                                              ~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/engine/StaticRangingEngine.java"
+            line="70"
+            column="63"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 33): `java.util.SequencedCollection#getFirst`"
+        errorLine1="                    toStart.add(mTechnologyRanking.getFirst());"
+        errorLine2="                                                   ~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/service/java/com/android/server/ranging/engine/StaticRangingEngine.java"
+            line="71"
+            column="52"/>
     </issue>
 
 </issues>

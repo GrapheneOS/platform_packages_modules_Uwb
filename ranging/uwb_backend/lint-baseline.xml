@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues
+    type="baseline"
+    client=""
+    dependencies="true"
+    name=""
+    variant=""
+    version="">
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 33): `android.uwb.RangingSession#updateRangingRoundsDtTag`"
+        errorLine1="                        () -&gt; mRangingSession.updateRangingRoundsDtTag("
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/uwb_backend/src/com/android/ranging/uwb/backend/internal/RangingTag.java"
+            line="137"
+            column="47"/>
+    </issue>
+
+</issues>
