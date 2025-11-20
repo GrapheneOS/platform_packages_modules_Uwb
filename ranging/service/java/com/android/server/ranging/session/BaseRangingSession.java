@@ -39,6 +39,7 @@ import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.fusion.FilteringFusionEngine;
 import com.android.server.ranging.fusion.FusionEngine;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
@@ -97,8 +98,7 @@ public class BaseRangingSession {
     @GuardedBy("mLock")
     private final ConcurrentMap<TechnologyConfig, RangingAdapter> mAdapters;
     @GuardedBy("mLock")
-    private final ConcurrentMap<TechnologyConfig, @InternalReason Integer>
-            mStopReasonOverride;
+    private final ConcurrentMap<TechnologyConfig, @InternalReason Integer> mStopReasonOverride;
 
     /** State of all peers in the session */
     @GuardedBy("mLock")
@@ -106,12 +106,15 @@ public class BaseRangingSession {
 
     /** The state of a peer that is ranging with the local device. */
     private class Peer {
+        public final DeviceType mDeviceType;
         /** Technologies that this peer is ranging with. */
         public final Set<RangingTechnology> technologies;
         /** Fusion engine to use for this device. */
         public final FusionEngine fusionEngine;
+        public volatile RangingData mLastData;
 
         Peer(@NonNull RangingDevice device) {
+            mDeviceType = getPeerType(device);
             technologies = Sets.newConcurrentHashSet();
             if (mSessionConfig.getSensorFusionParams().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
@@ -367,12 +370,18 @@ public class BaseRangingSession {
 
     /** Let subclasses override to inspect ranging data. */
     protected void onResults(@NonNull RangingDevice peer, @NonNull RangingData data) {
+        mPeers.get(peer).mLastData = data;
         mSessionListener.onResults(peer, data);
     }
 
     /** Let subclasses override how onSessionClosed gets called. */
     protected void onSessionClosed(@InternalReason int reason) {
         mSessionListener.onSessionClosed(reason);
+    }
+
+    /** Let subclasses provide the type of each peer. */
+    protected DeviceType getPeerType(RangingDevice peer) {
+        return DeviceType.Unknown;
     }
 
     private class AdapterListener implements RangingAdapter.Callback {

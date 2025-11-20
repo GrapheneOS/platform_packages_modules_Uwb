@@ -30,20 +30,20 @@ import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.util.Log;
-import com.android.ranging.flags.Flags;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.ranging.flags.Flags;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.engine.UwbBreakBeforeMakeEngine;
 import com.android.server.ranging.engine.RangingEngine;
 import com.android.server.ranging.engine.StaticRangingEngine;
+import com.android.server.ranging.engine.UwbBreakBeforeMakeEngine;
 import com.android.server.ranging.engine.UwbMakeBeforeBreakEngine;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobController.OobConnection;
@@ -52,6 +52,7 @@ import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.Technology;
 import com.android.server.ranging.oob.packets.TechnologyTransitioning;
 import com.android.server.ranging.rtt.RttConfigSelector;
@@ -266,6 +267,11 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 .toList();
         var unused = Futures.whenAllComplete(pendingSends)
                 .run(OobInitiatorRangingSession.super::stop, mOobExecutor);
+    }
+
+    @Override
+    public DeviceType getPeerType(RangingDevice peer) {
+        return mProtocol.getPeerType(peer);
     }
 
     private FluentFuture<Map<RangingDevice, byte[]>> sendCapabilityRequest() {
