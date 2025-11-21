@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.engine;
+package com.android.server.ranging.heuristic;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -27,8 +27,7 @@ import android.ranging.RangingData;
 import androidx.annotation.NonNull;
 import androidx.test.filters.SmallTest;
 
-import com.android.server.ranging.engine.EngineEventFactory.EngineEvent;
-import com.android.server.ranging.engine.heuristic.RangeHeuristic;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeuristicEvent;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -46,7 +45,7 @@ import java.util.List;
 
 @RunWith(JUnit4.class)
 @SmallTest
-public class EngineEventFactoryTest {
+public class RangeHeuristicEventFactoryTest {
 
     private static class TestHeuristic extends RangeHeuristic {
         TestHeuristic() {
@@ -62,7 +61,7 @@ public class EngineEventFactoryTest {
     }
 
     private interface EventListener{
-        void eventOccurred(EngineEvent event);
+        void eventOccurred(RangeHeuristicEvent event);
     }
 
     @Rule
@@ -70,11 +69,11 @@ public class EngineEventFactoryTest {
 
     private @Mock EventListener mMockListener;
 
-    private EngineEventFactory mEventFactory;
+    private RangeHeuristicEventFactory mEventFactory;
 
     @Before
     public void setup() {
-        mEventFactory = new EngineEventFactory(MoreExecutors.newDirectExecutorService());
+        mEventFactory = new RangeHeuristicEventFactory(MoreExecutors.newDirectExecutorService());
     }
 
     private boolean always(double unused) {
@@ -85,7 +84,8 @@ public class EngineEventFactoryTest {
     public void heuristicEvent_doesNotOccur_whenHeuristicFailsThreshold() {
         TestHeuristic heuristic = new TestHeuristic();
 
-        EngineEvent event = mEventFactory.when(heuristic.threshold(value -> ((int) value) > 10));
+        RangeHeuristicEvent event = mEventFactory.when(
+                heuristic.threshold(value -> ((int) value) > 10));
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristic.triggerUpdate(0);
@@ -96,7 +96,8 @@ public class EngineEventFactoryTest {
     public void heuristicEvent_doesOccur_whenHeuristicMeetsThreshold() {
         TestHeuristic heuristic = new TestHeuristic();
 
-        EngineEvent event = mEventFactory.when(heuristic.threshold(value -> ((int) value) >= 10));
+        RangeHeuristicEvent event = mEventFactory.when(
+                heuristic.threshold(value -> ((int) value) >= 10));
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristic.triggerUpdate(11);
@@ -107,7 +108,7 @@ public class EngineEventFactoryTest {
     public void heuristicEvent_callsNotifierOnlyOnce() {
         TestHeuristic heuristic = new TestHeuristic();
 
-        EngineEvent event = mEventFactory.when(heuristic.threshold(this::always));
+        RangeHeuristicEvent event = mEventFactory.when(heuristic.threshold(this::always));
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristic.triggerUpdate(0);
@@ -123,7 +124,7 @@ public class EngineEventFactoryTest {
                 new TestHeuristic(),
                 new TestHeuristic());
 
-        EngineEvent event = mEventFactory.whenAll(
+        RangeHeuristicEvent event = mEventFactory.whenAll(
                 heuristics.get(0).threshold(value -> value == 0),
                 heuristics.get(1).threshold(value -> value == 1),
                 heuristics.get(2).threshold(value -> value == 2));
@@ -147,7 +148,7 @@ public class EngineEventFactoryTest {
                 new TestHeuristic(),
                 new TestHeuristic());
 
-        EngineEvent event = mEventFactory.whenAll(
+        RangeHeuristicEvent event = mEventFactory.whenAll(
                 heuristics.get(0).threshold(this::always),
                 heuristics.get(1).threshold(this::always),
                 heuristics.get(2).threshold(this::always));
@@ -164,12 +165,13 @@ public class EngineEventFactoryTest {
                 new TestHeuristic(),
                 new TestHeuristic());
 
-        List<EngineEvent> events = List.of(
+        List<RangeHeuristicEvent> events = List.of(
                 mEventFactory.when(heuristics.get(0).threshold(value -> value == 0)),
                 mEventFactory.when(heuristics.get(1).threshold(value -> value == 1)),
                 mEventFactory.when(heuristics.get(2).threshold(value -> value == 2)));
 
-        EngineEvent event = mEventFactory.whenAny(events.get(0), events.get(1), events.get(2));
+        RangeHeuristicEvent event = mEventFactory.whenAny(
+                events.get(0), events.get(1), events.get(2));
         event.onNextOccurrence(mMockListener::eventOccurred);
 
         heuristics.get(0).triggerUpdate(1);

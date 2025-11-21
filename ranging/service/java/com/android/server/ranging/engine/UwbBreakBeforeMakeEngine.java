@@ -26,10 +26,11 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.engine.EngineEventFactory.EngineEvent;
-import com.android.server.ranging.engine.heuristic.DerivativeEstimator;
-import com.android.server.ranging.engine.heuristic.RawRangeMeters;
-import com.android.server.ranging.engine.heuristic.StreakCounter;
+import com.android.server.ranging.heuristic.DerivativeEstimator;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeuristicEvent;
+import com.android.server.ranging.heuristic.RawRangeMeters;
+import com.android.server.ranging.heuristic.StreakCounter;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.Range;
@@ -59,7 +60,7 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
     private final EngineListener mListener;
     private final Executor mExecutor;
     private final RangingInjector mInjector;
-    private final EngineEventFactory mEventFactory;
+    private final RangeHeuristicEventFactory mEventFactory;
     private final RawRangeMeters mRangeM;
     private final DerivativeEstimator mDerivative;
 
@@ -67,13 +68,13 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
     private StreakCounter mAltStreakCounter;
 
     // Events that trigger a transition to the next stage
-    private EngineEvent mStartAltTransition;
-    private EngineEvent mStartUwbTransition;
+    private RangeHeuristicEvent mStartAltTransition;
+    private RangeHeuristicEvent mStartUwbTransition;
 
     // Failure detection.
-    private EngineEvent mAltFailure;
-    private EngineEvent mUwbFailure;
-    private EngineEvent mNextEvent; // Used to cancel the pending event in a given state
+    private RangeHeuristicEvent mAltFailure;
+    private RangeHeuristicEvent mUwbFailure;
+    private RangeHeuristicEvent mNextEvent; // Used to cancel the pending event in a given state
     private RangingTechnology mNextTechnology = null;
 
     public UwbBreakBeforeMakeEngine(
@@ -84,7 +85,7 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
         mListener = listener;
         mExecutor = executor;
         mInjector = injector;
-        mEventFactory = new EngineEventFactory(executor);
+        mEventFactory = new RangeHeuristicEventFactory(executor);
         mRangeM = new RawRangeMeters(mExecutor);
         mDerivative = new DerivativeEstimator(RECENCY_BIAS, mExecutor);
     }
@@ -198,7 +199,7 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
         else startAlt();
     }
 
-    private synchronized void handleFailureEvent(EngineEvent event) {
+    private synchronized void handleFailureEvent(RangeHeuristicEvent event) {
         if (event == mUwbFailure) {
             mNextTechnology = mAlt;
             mListener.stopTechnologies(Set.of(RangingTechnology.UWB));
@@ -209,17 +210,17 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
     }
 
     @VisibleForTesting
-    EngineEvent getNextEvent() {
+    RangeHeuristicEvent getNextEvent() {
         return mNextEvent;
     }
 
     @VisibleForTesting
-    EngineEvent getAltFailure() {
+    RangeHeuristicEvent getAltFailure() {
         return mAltFailure;
     }
 
     @VisibleForTesting
-    EngineEvent getUwbFailure() {
+    RangeHeuristicEvent getUwbFailure() {
         return mUwbFailure;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.engine.heuristic;
+package com.android.server.ranging.heuristic;
 
 import android.app.AlarmManager;
 import android.os.SystemClock;
@@ -23,7 +23,7 @@ import android.ranging.RangingData;
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.engine.heuristic.RangeHeuristic.HeuristicThreshold;
+import com.android.server.ranging.heuristic.RangeHeuristic.HeuristicThreshold;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.util.concurrent.AtomicDouble;
@@ -101,7 +101,7 @@ public class StreakCounter {
         }
     }
 
-    private final int mFailureTimeoutMs;
+    private final long mFailureTimeoutMs;
     private final TechnologyConfig mConfig;
     private final AtomicBoolean mIsListeningForFailure = new AtomicBoolean(false);
     private final AlarmManager mAlarmManager;
@@ -110,7 +110,7 @@ public class StreakCounter {
     private final CopyOnWriteArrayList<Streak> mStreaks;
 
     public StreakCounter(TechnologyConfig config, Executor executor, RangingInjector injector) {
-        mFailureTimeoutMs = (int) (1.1 * (double) config.getRangingInterval().toMillis());
+        mFailureTimeoutMs = config.getRangingInterval().toMillis();
         mConfig = config;
         mAlarmManager = injector.getContext().getSystemService(AlarmManager.class);
         mExecutor = executor;
@@ -118,8 +118,15 @@ public class StreakCounter {
         mStreaks = new CopyOnWriteArrayList<>();
     }
 
+    /** Create a {@link Streak} heuristic that counts success and failure streaks. */
+    public Streak count() {
+        Streak count = new Streak(new RawRangeMeters(mExecutor), mExecutor);
+        mStreaks.add(count);
+        return count;
+    }
+
     /**
-     * Create a {@link Streak} heuristic that counts success and failure streaks in a heuristic.
+     * Create a {@link Streak} heuristic that counts success and failure streaks of a heuristic.
      * The failure streak is incremented only when the heuristic fails to produce a value within
      * the ranging interval.
      */
@@ -138,7 +145,6 @@ public class StreakCounter {
         mStreaks.add(count);
         return count;
     }
-
 
     /** Provide ranging data to pass to the {@link Streak} heuristics managed by this counter. */
     public void onData(@NonNull RangingData data) {
