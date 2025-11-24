@@ -21,10 +21,10 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -37,36 +37,38 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
-    AppBarConfiguration mAppBarConfiguration;
+    private AppBarConfiguration mAppBarConfiguration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Passing each menu ID as a set of Ids because each
-        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
-        // to make the Navigation drawer icon always appear on the action bar
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
         NavHostFragment navHostFragment =
-                (NavHostFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.nav_host_fragment);
+                (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
         NavigationView navView = findViewById(R.id.nav_view);
+
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_initiator, R.id.navigation_initiator_configuration,
                 R.id.navigation_responder, R.id.navigation_responder_configuration)
                 .setOpenableLayout(drawerLayout)
                 .build();
-        NavigationUI.setupWithNavController(navView, navController);
+
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
+        NavigationUI.setupWithNavController(navView, navController);
 
         requestPermissions();
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        NavController navController = ((NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment)).getNavController();
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }

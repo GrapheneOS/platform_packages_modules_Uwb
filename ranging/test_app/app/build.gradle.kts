@@ -34,7 +34,6 @@ android {
     debug {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.findByName("config")
     }
   }
   compileOptions {
@@ -43,11 +42,21 @@ android {
   }
   buildFeatures {
     viewBinding = true
+    compose = true
+  }
+  composeOptions {
+      kotlinCompilerExtensionVersion = "1.5.1"
   }
   buildToolsVersion = "35.0.0"
 }
 
 dependencies {
+  implementation(platform(libs.compose.bom))
+  implementation(libs.activity.compose)
+  implementation(libs.compose.ui)
+  implementation(libs.compose.ui.graphics)
+  implementation(libs.compose.ui.tooling.preview)
+  implementation(libs.compose.material3)
 
   implementation(libs.appcompat)
   implementation(libs.material)

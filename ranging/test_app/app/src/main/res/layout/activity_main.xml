@@ -6,25 +6,45 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity"
-    tools:ignore="HardcodedText">
+    tools:openDrawer="start">
 
-  <!-- Layout to contain contents of main body of screen (drawer will slide over this) -->
-  <androidx.fragment.app.FragmentContainerView
-      android:name="androidx.navigation.fragment.NavHostFragment"
-      android:id="@+id/nav_host_fragment"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent"
-      app:defaultNavHost="true"
-      app:navGraph="@navigation/nav_graph" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-  <!-- this the navigation view which draws and shows the navigation drawer -->
-  <!-- include the menu created in the menu folder -->
-  <com.google.android.material.navigation.NavigationView
-      android:id="@+id/nav_view"
-      android:layout_width="wrap_content"
-      android:layout_height="match_parent"
-      android:layout_gravity="start"
-      app:menu="@menu/nav_menu"
-      android:fitsSystemWindows="true" />
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/Theme.RangingTestApp.AppBarOverlay">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorPrimary"
+                app:popupTheme="@style/Theme.RangingTestApp.PopupOverlay" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/nav_host_fragment"
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:defaultNavHost="true"
+            app:navGraph="@navigation/nav_graph" />
+
+    </LinearLayout>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/nav_header_main"
+        app:menu="@menu/nav_menu" />
+
 </androidx.drawerlayout.widget.DrawerLayout>
