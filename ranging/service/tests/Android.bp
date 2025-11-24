@@ -41,6 +41,9 @@ android_test {
         "libdexmakerjvmtiagent",
         "libstaticjvmtiagent",
     ],
+
+    jarjar_rules: ":ranging-jarjar-rules",
+
     test_suites: [
         "general-tests",
         "mts-uwb",

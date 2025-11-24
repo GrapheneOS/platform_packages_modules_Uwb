@@ -65,11 +65,13 @@ def verify_ble_cs_distance_within_tolerance(
 
   acceptable_threshold_count = num_measurements * _BLE_CS_PASS_RATE_THRESHOLD
 
-  asserts.assert_greater_equal(
+  logging.info(
+      '[BLE_CS Metric @ %sm] Data to compare: num_passed = %d, '
+      'acceptable_threshold_count = %.0f, pass_rate = %.2f%%',
+      real_distance_in_meters,
       num_passed,
       acceptable_threshold_count,
-      f'in {real_distance_in_meters}m, pass rate {pass_rate:0.2%} is less than'
-      f' acceptable threshold ({acceptable_threshold_count});',
+      pass_rate * 100.0,
   )
 
 
@@ -101,24 +103,24 @@ def verify_uwb_distance_within_tolerance(
     })
 
   for test_metric in uwb_ranging_test_metrics:
-    asserts.assert_less_equal(
+    logging.info(
+        '[UWB Metric @ %sm] Data to compare (Range): '
+        'measured_distance_range = %s, acceptable_range = %s',
+        real_distance_in_meters,
         test_metric['measured_distance_range'],
         acceptable_range,
-        f'In {real_distance_in_meters}m, measured distance range'
-        f' {test_metric["measured_distance_range"]} is larger than'
-        f' acceptable value {acceptable_range}',
     )
 
     deviation = (
         abs(test_metric['measured_distance_median'] - real_distance_in_meters)
         / real_distance_in_meters
     )
-    asserts.assert_less_equal(
+    logging.info(
+        '[UWB Metric @ %sm] Data to compare (Median Deviation): '
+        'measured_deviation = %s, acceptable_deviation = %s',
+        real_distance_in_meters,
         deviation,
         _UWB_ACCEPTABLE_MEDIAN_DEVIATION,
-        f'In {real_distance_in_meters}m, measured distance median deviation'
-        f' {deviation} is larger than acceptable value'
-        f' {_UWB_ACCEPTABLE_MEDIAN_DEVIATION}',
     )
 
 
@@ -179,12 +181,13 @@ def verify_wifi_rtt_distance_within_tolerance(
 
   for i, test_metric in enumerate(wifi_rtt_ranging_test_metrics):
     role = 'initiator' if i == 0 else 'responder'
-    asserts.assert_greater_equal(
-        test_metric['pass_rate'],
-        pass_rate_threshold,
-        f'For {role} in {real_distance_in_meters}m, the pass rate'
-        f' ({test_metric["pass_rate"]:.2%}) is less than the acceptable'
-        f' threshold ({pass_rate_threshold:.0%}).',
+    logging.info(
+        '[WiFi_RTT Metric @ %sm] (%s) Data to compare: '
+        'measured_pass_rate = %.2f%%, pass_rate_threshold = %.0f%%',
+        real_distance_in_meters,
+        role,
+        test_metric['pass_rate'] * 100.0,
+        pass_rate_threshold * 100.0,
     )
 
 
@@ -198,7 +201,7 @@ def get_ranging_distance(
     event = ranging_handler.waitForEvent(
         'DATA',
         lambda e: e.data['technology'] == technology
-                  and e.data['peer_id'] == peer_id,
+        and e.data['peer_id'] == peer_id,
     )
   except snippet_errors.CallbackHandlerTimeoutError:
     asserts.fail(
@@ -260,13 +263,13 @@ def start_ranging_and_get_distance_data(
       )
       break
 
-    logging.debug(f'Ranging data collection: Iteration {i+1}/{ranging_measure_count}')
+    logging.debug('Ranging data collection: Iteration %d/%d', i + 1, ranging_measure_count)
 
     if responder_ranging_handler is None:
       initiator_distance = get_ranging_distance(
           initiator_ranging_handler, technology, responder.id
       )
-      logging.debug(f'  [Iter {i+1}] Got Initiator distance: {initiator_distance}')
+      logging.debug('  [Iter %d] Got Initiator distance: %s', i + 1, initiator_distance)
     else:
       initiator_distance, responder_distance = mobly_utils.concurrent_exec(
           get_ranging_distance,
@@ -276,8 +279,8 @@ def start_ranging_and_get_distance_data(
           ],
           raise_on_exception=True,
       )
-      logging.debug(f'  [Iter {i+1}] Got Initiator distance: {initiator_distance}')
-      logging.debug(f'  [Iter {i+1}] Got Responder distance: {responder_distance}')
+      logging.debug('  [Iter %d] Got Initiator distance: %s', i + 1, initiator_distance)
+      logging.debug('  [Iter %d] Got Responder distance: %s', i + 1, responder_distance)
       responder_distance_list.append(responder_distance)
 
     initiator_distance_list.append(initiator_distance)

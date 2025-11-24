@@ -175,18 +175,18 @@ public class OobResponderProtocol {
                     .build());
         }
 
-        // Build either CapabilitiesResponseV1 or CapabilitiesResponseV2 based on mVersion
-        if (Byte.toUnsignedInt(mVersion.toByte()) >= 2) {
+        if (mVersion == Version.V1) {
+            return new CapabilitiesResponseV1.Builder()
+                .setSupportedTechnologies(supported.build())
+                .setCapabilities(capabilities.toArray(new Capabilities[0]))
+                .build();
+        } else {
             return new CapabilitiesResponseV2.Builder()
                 .setVersion(mVersion)
                 .setSupportedTechnologies(supported.build())
                 .setCapabilities(capabilities.toArray(new Capabilities[0]))
                 .setSupportedTransitioning(TechnologyTransitioning.MakeBeforeBreak)
-                .build();
-        } else {
-            return new CapabilitiesResponseV1.Builder()
-                .setSupportedTechnologies(supported.build())
-                .setCapabilities(capabilities.toArray(new Capabilities[0]))
+                .setDeviceType(mInjector.getDeviceType())
                 .build();
         }
     }

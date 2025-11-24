@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues
+    type="baseline"
+    client=""
+    dependencies="true"
+    name=""
+    variant=""
+    version="">
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 33): `android.net.wifi.rtt.RangingResult#getMeasurementBandwidth`"
+        errorLine1="        mMeasurementBandwidth = rangingResult.getMeasurementBandwidth();"
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/rtt_backend/src/com/android/ranging/rtt/backend/RttRangingPosition.java"
+            line="54"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 34 (current min is 33): `android.net.wifi.rtt.RangingResult#getMeasurementChannelFrequencyMHz`"
+        errorLine1="        mMeasurementChannelFrequencyMHz = rangingResult.getMeasurementChannelFrequencyMHz();"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/rtt_backend/src/com/android/ranging/rtt/backend/RttRangingPosition.java"
+            line="55"
+            column="57"/>
+    </issue>
+
+</issues>

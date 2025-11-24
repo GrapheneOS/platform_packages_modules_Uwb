@@ -179,6 +179,7 @@ public class RangingUtils {
             InternalReason.INTERNAL_ERROR,
             InternalReason.BACKGROUND_RANGING_POLICY,
             InternalReason.PEER_CAPABILITIES_MISMATCH,
+            InternalReason.ENGINE_REQUEST,
     })
     @Target({ElementType.TYPE_USE})
     public @interface InternalReason {
@@ -191,6 +192,7 @@ public class RangingUtils {
         int INTERNAL_ERROR = 6;
         int BACKGROUND_RANGING_POLICY = 7;
         int PEER_CAPABILITIES_MISMATCH = 8;
+        int ENGINE_REQUEST = 9;
     }
 
     public static String privateAddressIfUserBuild(String address) {
