@@ -59,6 +59,7 @@ import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.telemetry.TelemetryManager;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbConfigSelector;
@@ -84,6 +85,7 @@ public class RangingInjector {
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
     private final OobController mOobController;
+    private final TelemetryManager mTelemetryManager;
 
     private final CapabilitiesProvider mCapabilitiesProvider;
     private final PermissionManager mPermissionManager;
@@ -106,6 +108,7 @@ public class RangingInjector {
                 mContext.getSystemService(ActivityManager.class),
                 mLooper);
         mOobController = new OobController(this);
+        mTelemetryManager = new TelemetryManager(this);
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
@@ -143,6 +146,10 @@ public class RangingInjector {
 
     public DeviceConfigFacade getDeviceConfigFacade() {
         return mDeviceConfigFacade;
+    }
+
+    public TelemetryManager getTelemetryManager() {
+        return mTelemetryManager;
     }
 
     /**

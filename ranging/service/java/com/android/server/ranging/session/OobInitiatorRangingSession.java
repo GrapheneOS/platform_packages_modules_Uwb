@@ -52,6 +52,7 @@ import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.Technology;
 import com.android.server.ranging.oob.packets.TechnologyTransitioning;
 import com.android.server.ranging.rtt.RttConfigSelector;
@@ -266,6 +267,11 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 .toList();
         var unused = Futures.whenAllComplete(pendingSends)
                 .run(OobInitiatorRangingSession.super::stop, mOobExecutor);
+    }
+
+    @Override
+    public DeviceType getPeerType(RangingDevice peer) {
+        return mProtocol.getPeerType(peer);
     }
 
     private FluentFuture<Map<RangingDevice, byte[]>> sendCapabilityRequest() {

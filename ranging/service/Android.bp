@@ -152,7 +152,7 @@ genrule {
     cmd: "$(location stats-log-api-gen) " +
         "--java $(out) " +
         "--module ranging " +
-        "--javaPackage com.android.server.ranging.metrics " +
+        "--javaPackage com.android.server.ranging.telemetry " +
         "--javaClass RangingStatsLog",
     out: ["com/android/server/ranging/metrics/RangingStatsLog.java"],
 }
