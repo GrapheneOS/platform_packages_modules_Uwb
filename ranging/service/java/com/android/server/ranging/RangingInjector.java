@@ -69,6 +69,7 @@ import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -122,6 +123,26 @@ public class RangingInjector {
     @VisibleForTesting
     public static void setInstance(RangingInjector rangingInjector) {
         sInstance = rangingInjector;
+    }
+
+    /**
+     * @param method name of the method to call in {@link com.android.ranging.flags.Flags}.
+     */
+    public static boolean isFlagEnabled(String method) {
+        Class<com.android.ranging.flags.Flags> c = com.android.ranging.flags.Flags.class;
+        return RangingInjector.isFlagEnabled(c, method);
+    }
+
+    public static <C> boolean isFlagEnabled(Class<C> c, String method) {
+        try {
+            return (boolean) c.getDeclaredMethod(method).invoke(null);
+        } catch (NoSuchMethodException e) {
+            Log.w(TAG, "Could not find flag " + c + "#" + method);
+            return false;
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            Log.e(TAG, "Could not access flag " + c + "#" + method + ": " + e);
+            return false;
+        }
     }
 
     public Context getContext() {

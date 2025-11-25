@@ -63,7 +63,7 @@ java_library {
         "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
-        "framework-ranging-pre-jarjar",
+        "framework-ranging-lib",
         "com.uwb.fusion",
         "ranging_rtt_backend",
         "ranging_uwb_backend",
