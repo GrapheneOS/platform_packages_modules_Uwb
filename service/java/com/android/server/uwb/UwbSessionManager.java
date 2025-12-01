@@ -491,7 +491,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         } else {
             mSessionNotificationManager.onDataSendFailed(
                     uwbSession, sendDataInfo.remoteDeviceAddress, dataTransferStatus,
-                     sendDataInfo.params);
+                    sendDataInfo.params);
             uwbSession.removeSendDataInfo(sequenceNum);
         }
         // when transmission count equals to data repetition count, SendDataInfo will be removed for

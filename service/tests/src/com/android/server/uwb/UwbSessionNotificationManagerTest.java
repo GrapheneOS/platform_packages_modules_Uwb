@@ -707,11 +707,11 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnDataSendFailed() throws Exception {
         mUwbSessionNotificationManager.onDataSendFailed(mUwbSession, PEER_EXTENDED_UWB_ADDRESS,
-                STATUS_CODE_FAILED, PERSISTABLE_BUNDLE);
+                UwbUciConstants.STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER, PERSISTABLE_BUNDLE);
 
         verify(mIUwbRangingCallbacks).onDataSendFailed(eq(mSessionHandle), eq(
                         PEER_EXTENDED_UWB_ADDRESS),
-                eq(STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
+                eq(RangingChangeReason.PROTOCOL_SPECIFIC), eq(PERSISTABLE_BUNDLE));
     }
 
     @Test
