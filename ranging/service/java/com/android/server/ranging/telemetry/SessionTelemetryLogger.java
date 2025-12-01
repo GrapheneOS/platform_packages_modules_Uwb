@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.metrics;
+package com.android.server.ranging.telemetry;
 
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
+import android.ranging.RangingData;
 import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 
@@ -27,8 +28,9 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.common.StateMachine;
+import com.android.server.ranging.oob.packets.DeviceType;
 
-public class SessionMetricsLogger {
+public class SessionTelemetryLogger {
     private final SessionHandle mSessionHandle;
     private final @RangingPreference.DeviceRole int mDeviceRole;
     private final @RangingConfig.RangingSessionType int mSessionType;
@@ -38,18 +40,7 @@ public class SessionMetricsLogger {
 
     private long mLastStateChangeTimestampMs;
 
-    public static SessionMetricsLogger startLogging(
-            SessionHandle sessionHandle,
-            @RangingPreference.DeviceRole int deviceRole,
-            @RangingConfig.RangingSessionType int sessionType,
-            AttributionSource attributionSource,
-            RangingInjector injector
-    ) {
-        return new SessionMetricsLogger(sessionHandle, deviceRole, sessionType, attributionSource,
-                injector);
-    }
-
-    private SessionMetricsLogger(
+    protected SessionTelemetryLogger(
             SessionHandle sessionHandle,
             @RangingPreference.DeviceRole int deviceRole,
             @RangingConfig.RangingSessionType int sessionType,
@@ -137,6 +128,46 @@ public class SessionMetricsLogger {
                 covertInternalReason(reason),
                 mAttributionSource.getUid());
         mLastStateChangeTimestampMs = System.currentTimeMillis();
+    }
+
+public synchronized void logPeerDisconnected(DeviceType peerType, RangingData lastData) {
+        int technology = coerceUnknownEnumValueToZero(
+                lastData.getRangingTechnology(), RangingTechnology.TECHNOLOGIES.size());
+
+        RangingStatsLog.write(
+                RangingStatsLog.RANGING_PEER_DISCONNECTED_AT_RANGE,
+                mSessionHandle.hashCode(),
+                mAttributionSource.getUid(),
+                technology,
+                peerType.toShort(),
+                (float) lastData.getDistance().getMeasurement());
+        if (lastData.hasRssi()) {
+            RangingStatsLog.write(
+                    RangingStatsLog.RANGING_PEER_DISCONNECTED_WITH_RSSI,
+                    mSessionHandle.hashCode(),
+                    mAttributionSource.getUid(),
+                    technology,
+                    peerType.toShort(),
+                    lastData.getRssi());
+        }
+        if (lastData.getDistance().hasRawConfidence()) {
+            RangingStatsLog.write(
+                    RangingStatsLog.RANGING_PEER_DISCONNECTED_WITH_CONFIDENCE_LEVEL,
+                    mSessionHandle.hashCode(),
+                    mAttributionSource.getUid(),
+                    technology,
+                    peerType.toShort(),
+                    (float) lastData.getDistance().getRawConfidence());
+        }
+        if (lastData.hasDelaySpread()) {
+            RangingStatsLog.write(
+                    RangingStatsLog.RANGING_PEER_DISCONNECTED_WITH_DELAY_SPREAD,
+                    mSessionHandle.hashCode(),
+                    mAttributionSource.getUid(),
+                    technology,
+                    peerType.toShort(),
+                    (float) lastData.getDelaySpreadMeters());
+        }
     }
 
     private int coerceUnknownEnumValueToZero(int enumValue, int numEnumValues) {

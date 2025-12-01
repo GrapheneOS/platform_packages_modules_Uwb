@@ -58,7 +58,7 @@ java_aconfig_library {
 
 java_library {
     name: "ranging_flags_lib",
-    sdk_version: "system_current",
+    sdk_version: "module_current",
     min_sdk_version: "33",
     srcs: [
         "lib/**/*.java",

@@ -22,8 +22,8 @@ package {
 android_test {
     name: "RangingServiceTests",
     srcs: ["src/**/*.java"],
-    sdk_version: "system_server_current",
-    target_sdk_version: "36",
+    sdk_version: "module_current",
+    min_sdk_version: "36",
     certificate: "platform",
     static_libs: [
         "truth",
@@ -31,6 +31,7 @@ android_test {
         "framework-bluetooth.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
         "framework-uwb.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "androidx.test.runner",

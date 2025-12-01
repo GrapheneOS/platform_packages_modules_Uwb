@@ -38,6 +38,7 @@ import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 
 import androidx.annotation.Nullable;
 
+import com.android.ranging.flags.Flags;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 
@@ -67,7 +68,8 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
     public static boolean isSupported(Context context) {
         WifiRttManager wifiRttManager = context.getSystemService(WifiRttManager.class);
         try {
-            return com.android.wifi.flags.Flags.proximityRanging()
+            return Flags.rangingStackUpdates26Q2()
+                    && com.android.wifi.flags.Flags.proximityRanging()
                     && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
                     && wifiRttManager != null
                     && wifiRttManager.getProximityDetectionCharacteristics() != null;

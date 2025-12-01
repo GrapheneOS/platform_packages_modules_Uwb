@@ -33,6 +33,7 @@ import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.StopRequest;
 import com.android.server.ranging.oob.packets.Technology;
@@ -51,10 +52,12 @@ public class OobInitiatorProtocol {
 
     private final RangingInjector mInjector;
     private final Map<RangingDevice, Version> mPeerVersions;
+    private final Map<RangingDevice, DeviceType> mPeerTypes;
 
     public OobInitiatorProtocol(RangingInjector injector) {
         mInjector = injector;
         mPeerVersions = new HashMap<>();
+        mPeerTypes = new HashMap<>();
     }
 
     public byte[] getCapabilitiesRequest(Set<RangingTechnology> technologies) {
@@ -69,7 +72,8 @@ public class OobInitiatorProtocol {
 
     public record PeerCapabilities(
             TechnologyTransitioning transitioning,
-            Map<Technology, Capabilities> byTechnology) {}
+            Map<Technology, Capabilities> byTechnology) {
+    }
 
     public PeerCapabilities getCapabilitiesFromResponse(RangingDevice peer, byte[] responseBytes) {
         OobMessage message = OobMessage.fromBytes(responseBytes);
@@ -80,10 +84,12 @@ public class OobInitiatorProtocol {
         switch (message) {
             case CapabilitiesResponseV1 v1 -> {
                 responseCapabilities = v1.getCapabilities();
+                mPeerTypes.put(peer, DeviceType.Unknown);
                 transitioning = null;
             }
             case CapabilitiesResponseV2 v2 -> {
                 responseCapabilities = v2.getCapabilities();
+                mPeerTypes.put(peer, v2.getDeviceType());
                 transitioning = v2.getSupportedTransitioning();
             }
             case OobMessage other -> throw new IllegalArgumentException(
@@ -96,7 +102,7 @@ public class OobInitiatorProtocol {
                     .getCapabilitiesProvider().getCapabilities().getTechnologyAvailability()
                     .get(Byte.toUnsignedInt(capabilities.getTechnology().toByte()));
             if (availability != RangingCapabilities.ENABLED) {
-                Log.v(TAG, "Skipping " + capabilities.getTechnology() +  " supported by " + peer
+                Log.v(TAG, "Skipping " + capabilities.getTechnology() + " supported by " + peer
                         + " because its availability is " + availability);
                 continue;
             }
@@ -117,8 +123,8 @@ public class OobInitiatorProtocol {
                         capsByTech.put(Technology.BleRssi, bleRssiCaps);
                     }
                 }
-                case UnknownCapabilities unknown ->
-                        Log.w(TAG, "Capabilities response with unknown capabilities " + unknown);
+                case UnknownCapabilities unknown -> Log.w(TAG,
+                        "Capabilities response with unknown capabilities " + unknown);
                 default -> capsByTech.put(capabilities.getTechnology(), capabilities);
             }
         }
@@ -146,5 +152,9 @@ public class OobInitiatorProtocol {
                 .setTechnologiesToStop(technologyBitset(technologies))
                 .build()
                 .toBytes();
+    }
+
+    public DeviceType getPeerType(RangingDevice peer) {
+        return mPeerTypes.get(peer);
     }
 }

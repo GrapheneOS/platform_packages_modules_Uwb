@@ -164,7 +164,7 @@ public class WifiPdAdapter implements RangingAdapter {
                 .setAdvertiserRequireRangeResult(
                         wifiPdConfig.getSessionConfig().getDataNotificationConfig()
                                 .getNotificationConfigType()
-                                != DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE)
+                                != DataNotificationConfig.NOTIFICATION_CONFIG_DISABLE)
                 .setDiscoveryChannelFrequencyMhz(
                         wifiPdRangingParams.getDiscoveryChannelFrequencyMhz())
                 .setContinuousRangingIntervalMillis(

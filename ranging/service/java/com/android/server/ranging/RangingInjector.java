@@ -29,6 +29,7 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -49,22 +50,22 @@ import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
-import com.android.server.ranging.oob.packets.DeviceType;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.oob.OobController;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.telemetry.TelemetryManager;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 import com.android.server.ranging.wifipd.WifiPdAdapter;
 import com.android.server.ranging.wifipd.WifiPdCapabilitiesAdapter;
+import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -84,6 +85,7 @@ public class RangingInjector {
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
     private final OobController mOobController;
+    private final TelemetryManager mTelemetryManager;
 
     private final CapabilitiesProvider mCapabilitiesProvider;
     private final PermissionManager mPermissionManager;
@@ -106,6 +108,7 @@ public class RangingInjector {
                 mContext.getSystemService(ActivityManager.class),
                 mLooper);
         mOobController = new OobController(this);
+        mTelemetryManager = new TelemetryManager(this);
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
@@ -143,6 +146,10 @@ public class RangingInjector {
 
     public DeviceConfigFacade getDeviceConfigFacade() {
         return mDeviceConfigFacade;
+    }
+
+    public TelemetryManager getTelemetryManager() {
+        return mTelemetryManager;
     }
 
     /**
@@ -213,7 +220,8 @@ public class RangingInjector {
                     sessionConfig, oobConfig, capabilities.getBleRssiCapabilities());
             case RangingTechnology.RTT_STATION -> new RttStationConfigSelector(
                     sessionConfig, oobConfig, capabilities.getRttStationRangingCapabilities());
-            case RangingTechnology.WIFI_PD -> /*TODO support for wifi PD*/ null;
+            case RangingTechnology.WIFI_PD -> new WifiPdConfigSelector(
+                    sessionConfig, oobConfig, capabilities.getWifiPdRangingCapabilities());
         };
     }
 

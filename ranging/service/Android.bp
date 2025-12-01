@@ -67,7 +67,7 @@ java_library {
         "com.uwb.fusion",
         "ranging_rtt_backend",
         "ranging_uwb_backend",
-        "ranging_flags_lib",
+        "ranging_aconfig_flags_lib",
         "wifi_aconfig_flags_lib",
     ],
 
@@ -152,7 +152,7 @@ genrule {
     cmd: "$(location stats-log-api-gen) " +
         "--java $(out) " +
         "--module ranging " +
-        "--javaPackage com.android.server.ranging.metrics " +
+        "--javaPackage com.android.server.ranging.telemetry " +
         "--javaClass RangingStatsLog",
     out: ["com/android/server/ranging/metrics/RangingStatsLog.java"],
 }
