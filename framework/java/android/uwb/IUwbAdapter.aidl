@@ -198,6 +198,13 @@ interface IUwbAdapter {
   void closeRanging(in SessionHandle sessionHandle);
 
   /**
+   * This client has requested to clear all ranging sessions opened by this client.
+   *
+   * @param AttributionSource
+   */
+  void clearSessions(in AttributionSource attributionSource);
+
+  /**
    * Add a new controlee to an ongoing session.
    * <p>This call may be made when the session is open.
    *

@@ -689,6 +689,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 }
                 break;
             case UWB_SESSION_STATE_DEINIT:
+                if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                    // If session was stopped explicitly, then the onStopped() is sent from
+                    // stopRanging method.
+                    mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
+                            uwbSession.mChannel);
+                }
                 mEventTask.execute(SESSION_ON_DEINIT, uwbSession);
                 break;
             default:
@@ -1217,6 +1223,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     public synchronized void stopRanging(SessionHandle sessionHandle) {
         stopRangingInternal(sessionHandle, false /* triggeredBySystemPolicy */);
+    }
+
+    /**
+     * Clears all sessions with matching attribution source.
+     */
+    public synchronized void clearSessions(AttributionSource attributionSource) {
+        List<UwbSession> sessionsToClose = mSessionTable.values()
+                .stream()
+                .filter(uwbSession -> uwbSession.getAttributionSource().equals(attributionSource))
+                .collect(Collectors.toList());
+        for (UwbSession session : sessionsToClose) {
+            deInitSession(session.getSessionHandle());
+        }
     }
 
     /**

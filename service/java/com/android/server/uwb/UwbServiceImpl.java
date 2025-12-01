@@ -355,6 +355,12 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
+    public void clearSessions(AttributionSource attributionSource) throws RemoteException {
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.clearSessions(attributionSource);
+    }
+
+    @Override
     public synchronized int sendVendorUciMessage(int mt, int gid, int oid, byte[] payload)
             throws RemoteException {
         enforceUwbPrivilegedPermission();
