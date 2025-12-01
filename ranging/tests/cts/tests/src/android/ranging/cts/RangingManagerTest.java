@@ -1249,10 +1249,10 @@ public class RangingManagerTest {
         assertThat(capabilities.getSupportedDiscoveryChannelFrequenciesMhz()).isNotNull();
         assertFalse(capabilities.getSupportedDiscoveryChannelFrequenciesMhz().isEmpty());
         if (capabilities.is80211mcSupported()) {
-            assertThat(capabilities.getMinRangingInterval80211mc().toMillis()).isGreaterThan(0);
+            assertThat(capabilities.get80211mcMinRangingInterval().toMillis()).isGreaterThan(0);
         }
         if (capabilities.is80211azNtbSupported()) {
-            assertThat(capabilities.getRangingInterval80211azNtb().toMillis()).isGreaterThan(0);
+            assertThat(capabilities.get80211azNtbMinRangingInterval().toMillis()).isGreaterThan(0);
         }
 
         WifiPdRangingParams wifiPdRangingParams = getWifiPdRangingParamsBuilder(capabilities)

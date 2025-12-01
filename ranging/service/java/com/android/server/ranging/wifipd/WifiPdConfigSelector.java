@@ -136,9 +136,9 @@ public class WifiPdConfigSelector extends ConfigSelector {
         }
 
         if (oobConfig.getRangingIntervalRange().getUpper().toMillis()
-                < capabilities.getRangingInterval80211azNtb().toMillis()
+                < capabilities.get80211azNtbMinRangingInterval().toMillis()
                 && oobConfig.getRangingIntervalRange().getUpper().toMillis()
-                < capabilities.getMinRangingInterval80211mc().toMillis()) {
+                < capabilities.get80211mcMinRangingInterval().toMillis()) {
             Log.d(TAG, "Local config does not support configured ranging intervals");
             return false;
         }
