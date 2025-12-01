@@ -138,9 +138,9 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
                 .setSupportedPasnModes(pasnModes)
                 .set80211mcSupported(characteristics.is80211mcBasedRangingSupported())
                 .set80211azNtbSupported(characteristics.isNtbIstaRoleSupported())
-                .setMinRangingInterval80211mcMillis(
+                .set80211mcMinRangingIntervalMillis(
                         characteristics.getMinAllowedRangingInterval80211mcMillis())
-                .setMinRangingInterval80211azNtbMillis(
+                .set80211azNtbMinRangingIntervalMillis(
                         characteristics.getMinAllowedRangingIntervalNtbMillis())
                 .setSupportedDiscoveryChannelFrequenciesMhz(channelSet)
                 .setMaxPreamble(characteristics.isNtbIstaRoleSupported()

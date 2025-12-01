@@ -84,9 +84,9 @@ public class WifiPdConfigSelectorTest {
     public void isCapableOfConfig_unsupportedRangingInterval_returnsFalse() {
         when(mOobInitiatorRangingConfig.getRangingIntervalRange()).thenReturn(
                 new Range<>(Duration.ofMillis(100), Duration.ofMillis(100)));
-        when(mWifiPdRangingCapabilities.getRangingInterval80211azNtb()).thenReturn(
+        when(mWifiPdRangingCapabilities.get80211azNtbMinRangingInterval()).thenReturn(
                 Duration.ofMillis(200));
-        when(mWifiPdRangingCapabilities.getMinRangingInterval80211mc()).thenReturn(
+        when(mWifiPdRangingCapabilities.get80211mcMinRangingInterval()).thenReturn(
                 Duration.ofMillis(200));
         assertThat(WifiPdConfigSelector.isCapableOfConfig(mOobInitiatorRangingConfig,
                 mWifiPdRangingCapabilities)).isFalse();
@@ -144,7 +144,7 @@ public class WifiPdConfigSelectorTest {
                 .setSupportedDiscoveryChannelFrequenciesMhz(ImmutableSet.of(2412, 5180))
                 .set80211azNtbSupported(true)
                 .setProximityDetectionMacAddress(MAC_ADDRESS)
-                .setMinRangingInterval80211azNtbMillis(100)
+                .set80211azNtbMinRangingIntervalMillis(100)
                 .setSupportedPasnModes(
                         ImmutableSet.of(WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE))
                 .build();

@@ -197,9 +197,9 @@ public class OobResponderProtocol {
                             .setFeature11mc(pdCapabilities.is80211mcSupported())
                             .setFeature11az(pdCapabilities.is80211azNtbSupported())
                             .setMinInterval11mc((short)
-                                    pdCapabilities.getMinRangingInterval80211mc().toMillis())
+                                    pdCapabilities.get80211mcMinRangingInterval().toMillis())
                             .setMinInterval11az((short)
-                                    pdCapabilities.getRangingInterval80211azNtb().toMillis())
+                                    pdCapabilities.get80211azNtbMinRangingInterval().toMillis())
                             .setMaxPreamble(
                                     PreambleType.fromByte((byte) pdCapabilities.getMaxPreamble()))
                             .setMaxChannelWidth(
