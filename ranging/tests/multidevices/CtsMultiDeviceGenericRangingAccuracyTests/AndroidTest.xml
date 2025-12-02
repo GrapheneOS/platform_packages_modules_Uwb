@@ -48,7 +48,7 @@
 
     <option name="mobly_pkg" key="file" value="CtsMultiDeviceGenericRangingAccuracyTests" />
 
-    <option name="build_apk" key="file" value="mobly_bundled_snippet.apk" />
+    <option name="build_apk" key="file" value="mobly_bundled_snippets.apk" />
     <option name="build_apk" key="file" value="bluetooth_multi_devices_snippet.apk" />
     <option name="build_apk" key="file" value="ranging_snippet.apk" />
     <option name="build_apk" key="file" value="uwb_snippet.apk" />
