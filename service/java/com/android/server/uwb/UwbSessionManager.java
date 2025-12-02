@@ -690,8 +690,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 break;
             case UWB_SESSION_STATE_DEINIT:
                 if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-                    // If session was stopped explicitly, then the onStopped() is sent from
-                    // stopRanging method.
+                    // If an active session was closed without calling stop,
+                    // update the channel usage.
                     mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
                             uwbSession.mChannel);
                 }
