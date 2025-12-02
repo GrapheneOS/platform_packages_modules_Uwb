@@ -176,6 +176,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private static final byte OPERATION_TYPE_INIT_SESSION = 0;
     private static final int UWB_HUS_CONTROLLER_PHASE_LIST_EXTENDED_MAC_ADDRESS_SIZE = 17;
     private static final int UWB_HUS_CONTROLEE_PHASE_LIST_SIZE = 4;
+    public static final int SLOT_BITMAP_DISABLED = 7;
 
     @VisibleForTesting
     public static final int SESSION_OPEN_RANGING = 1;
@@ -2076,12 +2077,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     private void handleSetDataTransferPhaseConfig(UpdateSessionInfo info) {
         SessionHandle sessionHandle = info.sessionHandle;
-        Integer sessionId = getSessionId(sessionHandle);
+        int sessionId = getSessionId(sessionHandle);
         UwbSession uwbSession = getUwbSession(sessionHandle);
 
         int sessionType = uwbSession.getSessionType();
         int deviceType = uwbSession.getDeviceType();
         int sessionState = uwbSession.getSessionState();
+
         if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != deviceType
                 || (sessionType != FiraParams.SESSION_TYPE_DATA_TRANSFER
                         && sessionType !=  FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE)
@@ -2095,49 +2097,51 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        FiraDataTransferPhaseConfig dataTransferPhaseConfig =
+        FiraDataTransferPhaseConfig phaseConfig =
                 FiraDataTransferPhaseConfig.fromBundle(info.params);
 
-        List<FiraDataTransferPhaseManagementList> mDataTransferPhaseManagementList =
-                dataTransferPhaseConfig.getDataTransferPhaseManagementList();
-        int dataTransferManagementListSize = mDataTransferPhaseManagementList.size();
-        int dataTransferControl = dataTransferPhaseConfig.getDataTransferControl();
-        int slotBitmapSizeInBytes = 1 << ((dataTransferControl & 0X0F) >> 1);
+        List<FiraDataTransferPhaseManagementList> phaseList =
+                phaseConfig.getDataTransferPhaseManagementList();
+        int phaseListSize = phaseList.size();
+
+        int dataTransferControl = phaseConfig.getDataTransferControl();
+        byte slotBitMapValue = (byte) ((dataTransferControl & 0X0F) >> 1);
+        boolean slotBitmapDisabled = (slotBitMapValue == SLOT_BITMAP_DISABLED);
+        int slotBitmapSize = slotBitmapDisabled ? 0 : (1 << slotBitMapValue);
 
         List<byte[]> macAddressList = new ArrayList<>();
-        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize
-                * slotBitmapSizeInBytes);
-        slotBitmapByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        ByteBuffer stopDataTransferByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize);
+        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(phaseListSize
+                * slotBitmapSize).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer stopDataTransferByteBuffer = ByteBuffer.allocate(phaseListSize);
 
-        int addressByteLength = ((dataTransferControl & 0x01)
-                       == UwbUciConstants.SHORT_MAC_ADDRESS)
+        int addressByteLength = ((dataTransferControl & 0x01) == UwbUciConstants.SHORT_MAC_ADDRESS)
                 ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
 
-        for (FiraDataTransferPhaseManagementList dataTransferPhaseManagementList :
-                mDataTransferPhaseManagementList) {
-            UwbAddress uwbAddress = dataTransferPhaseManagementList.getUwbAddress();
-            byte[] slotBitMap = dataTransferPhaseManagementList.getSlotBitMap();
-            byte stopDataTransfer = dataTransferPhaseManagementList.getStopDataTransfer();
+        for (FiraDataTransferPhaseManagementList item : phaseList) {
+            UwbAddress uwbAddress = item.getUwbAddress();
 
-            if (uwbAddress != null && uwbAddress.size() == addressByteLength
-                    && slotBitMap.length == slotBitmapSizeInBytes) {
-                macAddressList.add(getComputedMacAddress(uwbAddress));
-                slotBitmapByteBuffer.put(slotBitMap);
-                stopDataTransferByteBuffer.put(stopDataTransfer);
-            } else {
-                Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap size "
-                            + "or address is not matching");
+            if (uwbAddress == null && uwbAddress.size() != addressByteLength) {
+                Log.e(TAG, "handleSetDataTransferPhaseConfig: invalid mac address");
                 return;
             }
+
+            macAddressList.add(getComputedMacAddress(uwbAddress));
+
+            if (!slotBitmapDisabled) {
+                slotBitmapByteBuffer.put(item.getSlotBitMap());
+            }
+            stopDataTransferByteBuffer.put(item.getStopDataTransfer());
         }
 
         // Check for buffer size mismatches
-        if (slotBitmapByteBuffer.array().length
-                != (slotBitmapSizeInBytes * dataTransferManagementListSize)
-                || macAddressList.size() != dataTransferManagementListSize) {
-            Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap buffer size or address list"
-                    + " size mismatch");
+        if (!slotBitmapDisabled && (slotBitmapByteBuffer.array().length
+                != (slotBitmapSize * phaseListSize))) {
+            Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap buffer size mismatch");
+            return;
+        }
+
+        if (macAddressList.size() != phaseListSize) {
+            Log.e(TAG, "handleSetDataTransferPhaseConfig: address list size mismatch");
             return;
         }
 
@@ -2147,9 +2151,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     int status = UwbUciConstants.STATUS_CODE_FAILED;
                     synchronized (uwbSession.getWaitObj()) {
                         status = mNativeUwbManager.setDataTransferPhaseConfig(sessionId,
-                                (byte) dataTransferPhaseConfig.getDtpcmRepetition(),
+                                (byte) phaseConfig.getDtpcmRepetition(),
                                 (byte) dataTransferControl,
-                                (byte) dataTransferManagementListSize,
+                                (byte) phaseListSize,
                                 ArrayUtils.toPrimitive(macAddressList),
                                 slotBitmapByteBuffer.array(),
                                 stopDataTransferByteBuffer.array(),
