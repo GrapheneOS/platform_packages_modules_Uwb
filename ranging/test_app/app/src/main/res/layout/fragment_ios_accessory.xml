@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_ios_accessory"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".IosAccessoryFragment"
+    tools:ignore="HardcodedText">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <FrameLayout
+            android:id="@+id/init_ble_connection_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            app:layout_constraintBottom_toTopOf="@id/layout_device_role"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout android:id="@+id/layout_device_role"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/init_ble_connection_container"
+            app:layout_constraintBottom_toTopOf="@id/layout_configuration"
+            android:weightSum="4"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/dm_device_role_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:text= "Device Role"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_dm_device_role"
+                />
+            <Spinner
+                android:id="@+id/spinner_dm_device_role"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/dm_device_role_label"
+                app:layout_constraintEnd_toEndOf="@id/switch_filter_options"
+                />
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_filter_options"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Filter Options"
+                app:layout_constraintStart_toStartOf="@id/spinner_dm_device_role"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/layout_configuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/layout_device_role"
+            app:layout_constraintBottom_toTopOf="@id/layout_reconfiguration"
+            android:weightSum="4"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/dm_slot_duration_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:text= "Slot Duration"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_dm_device_role"
+                />
+            <Spinner
+                android:id="@+id/spinner_dm_slot_duration"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/dm_slot_duration_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+            <TextView
+                android:id="@+id/dm_ranging_interval_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text= "Ranging Interval"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_dm_slot_duration"
+                />
+            <Spinner
+                android:id="@+id/spinner_dm_ranging_interval"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/dm_ranging_interval_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/layout_reconfiguration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/layout_configuration"
+            app:layout_constraintBottom_toTopOf="@id/btn_measure"
+            android:weightSum="4"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/dm_block_stride_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:text= "Block Stride"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_dm_block_stride"
+                />
+            <Spinner
+                android:id="@+id/spinner_dm_block_stride"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/dm_block_stride_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btn_measure"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_marginTop="84dp"
+            android:padding="10dp"
+            android:text="Start Distance Measurement"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_reconfiguration" />
+        <ScrollView
+            android:id="@+id/view_report"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:fillViewport="true"
+            android:paddingTop="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btn_measure">
+
+            <LinearLayout
+                android:id="@+id/layout_distance_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+            </LinearLayout>
+        </ScrollView>
+        <TextView
+            android:id="@+id/text_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="20dp"
+            android:text="Test log: "
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/view_report"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>
