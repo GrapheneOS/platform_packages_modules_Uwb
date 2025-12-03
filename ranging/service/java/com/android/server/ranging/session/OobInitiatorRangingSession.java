@@ -34,7 +34,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.ranging.flags.Flags;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
@@ -116,7 +115,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 Map<Technology, Capabilities> capabilities
         ) {
 
-            if (Flags.rangingTechnologyTransitioning()
+            if (RangingInjector.isFlagEnabled("rangingTechnologyTransitioning")
                     && mConfig.getRangingMode() == RANGING_MODE_AUTO
                     && transitioningSupport != null
                     && capabilities.size() >= 2 && capabilities.containsKey(Technology.Uwb)

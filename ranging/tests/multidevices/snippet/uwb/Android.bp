@@ -33,7 +33,7 @@ android_test {
         "guava",
         "jsr330",
         "mobly-snippet-lib",
-        "ranging_flags_lib",
+        "ranging_aconfig_flags_lib",
         "framework-ranging.impl",
     ],
     min_sdk_version: "34",
