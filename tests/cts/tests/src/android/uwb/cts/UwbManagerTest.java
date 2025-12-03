@@ -2830,6 +2830,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 37)
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testRadarSession() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
