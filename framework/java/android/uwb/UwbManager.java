@@ -778,7 +778,7 @@ public final class UwbManager {
     }
 
     /**
-     * This client has request to clear all ranging sessions opened by this client application.
+     * Requests clearing of all ranging sessions opened by this client application
      *
      * <p>This will close all active and pending {@link RangingSession} instances associated with
      * the calling application's {@link android.content.AttributionSource}.
