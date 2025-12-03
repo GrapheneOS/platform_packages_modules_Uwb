@@ -77,6 +77,7 @@ import android.uwb.UwbManager;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
@@ -2896,6 +2897,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testClearSessions() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
