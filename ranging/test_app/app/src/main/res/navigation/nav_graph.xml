@@ -28,4 +28,10 @@
       android:name="com.android.ranging.rangingtestapp.ResponderConfigurationFragment"
       android:label="@string/responder_configuration"
       tools:layout="@layout/fragment_configuration" />
+
+  <fragment
+      android:id="@+id/navigation_ios_accessory"
+      android:name="com.android.ranging.rangingtestapp.IosAccessoryFragment"
+      android:label="iOS Accessory"
+      tools:layout="@layout/fragment_ios_accessory" />
 </navigation>

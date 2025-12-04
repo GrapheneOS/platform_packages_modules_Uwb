@@ -55,7 +55,8 @@ public class MainActivity extends AppCompatActivity {
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_initiator, R.id.navigation_initiator_configuration,
-                R.id.navigation_responder, R.id.navigation_responder_configuration)
+                R.id.navigation_responder, R.id.navigation_responder_configuration,
+                R.id.navigation_ios_accessory)
                 .setOpenableLayout(drawerLayout)
                 .build();
 
