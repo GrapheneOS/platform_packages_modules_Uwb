@@ -187,10 +187,13 @@ public class NativeUwbManager {
     /**
      * Notifies the creation status of a logical link command.
      */
-    public void onLogicalLinkCreateNotification(long connectId, int status) {
+    public void onLogicalLinkCreateNotification(long connectId, int status, int maxSduSizeLen,
+            int maxSduSizeValue) {
         Log.d(TAG, "onLogicalLinkCreateNotification connectId: " + connectId + " status: "
-                + status);
-        mSessionListener.onLogicalLinkCreateNotification(connectId, status);
+                + status + " maxSduSizeLen:" + maxSduSizeLen + " maxSduSizeValue:"
+                + maxSduSizeValue);
+        mSessionListener.onLogicalLinkCreateNotification(connectId, status, maxSduSizeLen,
+                maxSduSizeValue);
     }
 
     /**
@@ -204,9 +207,9 @@ public class NativeUwbManager {
      * Receive the create uwbs logical link notification.
      */
     public void onRemoteLogicalLinkRequested(long sessionId, long connectId,
-            int linkLayerMode, byte[] address) {
+            int linkLayerMode, byte[] address, int maxSduSizeLen, int maxSduSizeValue) {
         mSessionListener.onRemoteLogicalLinkRequested(sessionId, connectId,
-                linkLayerMode, address);
+                linkLayerMode, address, maxSduSizeLen, maxSduSizeValue);
     }
 
     /**
@@ -787,15 +790,16 @@ public class NativeUwbManager {
      * @param sessionId The ID of the UWB ranging session.
      * @param linkLayerMode The link layer mode (CL/CO).
      * @param address The MAC address of the remote device.
-     * @param logicalLinkClassLength The logical link class length.
+     * @param maxSduSizeLen The max sdu size length.
+     * @param maxSduSizeValue The max sdu size value.
      * @param chipId The UWB chip ID.
      * @return UwbLogicalLinkCreateResponse Protocol specific params.
      */
     public UwbLogicalLinkCreateResponse createLogicalLink(int sessionId, byte linkLayerMode,
-            byte[] address, byte logicalLinkClassLength, String chipId) {
+            byte[] address, byte maxSduSizeLen, byte maxSduSizeValue, String chipId) {
         synchronized (mNativeLock) {
             return nativeCreateLogicalLayer(sessionId, linkLayerMode, address,
-                    logicalLinkClassLength, chipId);
+                    maxSduSizeLen, maxSduSizeValue, chipId);
         }
     }
 
@@ -893,7 +897,8 @@ public class NativeUwbManager {
             int noOfPhases, byte[] phaseList, String chipId);
 
     private native UwbLogicalLinkCreateResponse nativeCreateLogicalLayer(int sessionId,
-            byte linkLayerMode, byte[] address, byte logicalLinkClassLength, String chipId);
+            byte linkLayerMode, byte[] address, byte maxSduSizeLen, byte maxSduSizeValue,
+            String chipId);
 
     public native int nativeCloseLogicalLink(int connectId, String chipId);
 

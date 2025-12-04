@@ -370,6 +370,8 @@ public class UwbUciConstants {
             LogicalLinkConnectionParams.CONTROL_FIELD_LINK_TIMEOUT;
     public static final int CONTROL_FIELD_PORT =
             LogicalLinkConnectionParams.CONTROL_FIELD_PORT;
+    public static final int CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE;
 
     /* Used by DATA_TRANSFER_PHASE_CONFIG and Hybrid config updates */
     public static final int SHORT_MAC_ADDRESS = 0;

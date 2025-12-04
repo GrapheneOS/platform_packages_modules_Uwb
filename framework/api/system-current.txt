@@ -48,6 +48,8 @@ package android.uwb {
     method public int getLinkTimeout();
     method public int getMaxLinkLayerPduSize();
     method public int getMaxLinkLayerSduSize();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxReceiveSduSize();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxTransmitSduSize();
     method public int getReceiveWindowSize();
     method public int getRepeatCountMax();
     method public int getSourcePort();
@@ -65,6 +67,7 @@ package android.uwb {
     field public static final int CONTROL_FIELD_LINK_TIMEOUT = 32; // 0x20
     field public static final int CONTROL_FIELD_MAX_LL_PDU_SIZE = 2; // 0x2
     field public static final int CONTROL_FIELD_MAX_LL_SDU_SIZE = 1; // 0x1
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE = 128; // 0x80
     field public static final int CONTROL_FIELD_PORT = 64; // 0x40
     field public static final int CONTROL_FIELD_RECEIVE_WINDOW_SIZE = 8; // 0x8
     field public static final int CONTROL_FIELD_REPEAT_COUNT_MAX = 16; // 0x10
@@ -79,6 +82,7 @@ package android.uwb {
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setLinkTimeout(int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setMaxLinkLayerPduSize(int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setMaxLinkLayerSduSize(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setMaxTransceiveSduSize(@IntRange(from=0) int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setReceiveWindowSize(int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setRepeatCountMax(int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setSourcePort(int);
@@ -89,6 +93,9 @@ package android.uwb {
     method public int describeContents();
     method public int getConnectId();
     method public int getLinkLayerModeSelector();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxReceiveSduSize();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxSduSizeLength();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxTransmitSduSize();
     method @NonNull public android.uwb.UwbAddress getSourceAddress();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionRequest> CREATOR;
@@ -97,6 +104,8 @@ package android.uwb {
   public static final class LogicalLinkConnectionRequest.Builder {
     ctor public LogicalLinkConnectionRequest.Builder(int, int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeLength(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeValue(@IntRange(from=0) int);
   }
 
   @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkCreationParams implements android.os.Parcelable {
@@ -104,6 +113,7 @@ package android.uwb {
     method @NonNull public byte[] getDestinationAddress();
     method public int getLinkLayerModeSelector();
     method public int getLogicalLinkClassLength();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public int getMaxSduSizeValue();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field public static final int CONNECT_ID_UNSPECIFIED = -1; // 0xffffffff
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkCreationParams> CREATOR;
@@ -119,14 +129,31 @@ package android.uwb {
     field public static final int LOGICAL_LINK_CLOSE_REASON_TIMEOUT = 1; // 0x1
     field public static final int LOGICAL_LINK_CLOSE_REASON_TRANSMISSION_ERROR = 2; // 0x2
     field public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN = 4; // 0x4
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int LOGICAL_LINK_CLOSE_RX_SDU_TOO_LARGE = 6; // 0x6
     field public static final int LOGICAL_LINK_STATUS_FAILED = 1; // 0x1
     field public static final int LOGICAL_LINK_STATUS_OK = 0; // 0x0
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_1024_BYTES = 7; // 0x7
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_128_BYTES = 1; // 0x1
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_1536_BYTES = 8; // 0x8
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_16384_BYTES = 12; // 0xc
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_192_BYTES = 2; // 0x2
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_2048_BYTES = 9; // 0x9
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_256_BYTES = 3; // 0x3
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_32768_BYTES = 13; // 0xd
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_384_BYTES = 4; // 0x4
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_4096_BYTES = 10; // 0xa
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_512_BYTES = 5; // 0x5
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_64_BYTES = 0; // 0x0
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_760_BYTES = 6; // 0x6
+    field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_8192_BYTES = 11; // 0xb
   }
 
   public static final class LogicalLinkCreationParams.Builder {
     ctor public LogicalLinkCreationParams.Builder(int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkCreationParams build();
     method @NonNull public android.uwb.LogicalLinkCreationParams.Builder setLogicalLinkClassLength(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkCreationParams.Builder setMaxSduReceiveSize(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkCreationParams.Builder setMaxSduTransmitSize(int);
   }
 
   public final class RangingMeasurement implements android.os.Parcelable {

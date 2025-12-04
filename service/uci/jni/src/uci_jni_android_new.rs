@@ -1787,7 +1787,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCr
     session_id: jint,
     link_layer_mode: jbyte,
     address: jbyteArray,
-    logical_link_class_len: jbyte,
+    max_sdu_size_len: jbyte,
+    max_sdu_size_value: jbyte,
     chip_id: JString,
 ) -> jobject {
     let func_name = function_name!();
@@ -1799,7 +1800,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCr
             session_id,
             link_layer_mode,
             address,
-            logical_link_class_len,
+            max_sdu_size_len,
+            max_sdu_size_value,
             chip_id,
         ),
         func_name,
@@ -1818,13 +1820,15 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCr
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn native_create_logical_layer(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
     link_layer_mode: jbyte,
     address: jbyteArray,
-    logical_link_class_len: jbyte,
+    max_sdu_size_len: jbyte,
+    max_sdu_size_value: jbyte,
     chip_id: JString,
 ) -> Result<CreateLogicalLinkResponse> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
@@ -1835,7 +1839,8 @@ fn native_create_logical_layer(
         session_id as u32,
         link_layer_mode as u8,
         address_bytearray,
-        logical_link_class_len as u8,
+        max_sdu_size_len as u8,
+        max_sdu_size_value as u8,
     )
 }
 

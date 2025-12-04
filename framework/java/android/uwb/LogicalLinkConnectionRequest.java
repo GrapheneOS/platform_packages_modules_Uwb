@@ -23,6 +23,9 @@ import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.uwb.LogicalLinkCreationParams.LinkLayerMode;
+import android.uwb.LogicalLinkCreationParams.SduSizeIndex;
+
+import androidx.annotation.IntRange;
 
 import com.android.uwb.flags.Flags;
 
@@ -48,11 +51,15 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
     @LogicalLinkCreationParams.LinkLayerMode
     private final int mLinkLayerModeSelector;
     private final byte[] mSourceAddress;
+    private final int mMaxSduSizeLength;
+    private final int mMaxSduSizeValue;
 
     private LogicalLinkConnectionRequest(Builder builder) {
         mConnectId = builder.mConnectId;
         mLinkLayerModeSelector = builder.mLinkLayerModeSelector;
         mSourceAddress = builder.mSourceAddress;
+        mMaxSduSizeLength = builder.mMaxSduSizeLength;
+        mMaxSduSizeValue = builder.mMaxSduSizeValue;
     }
 
     /**
@@ -88,6 +95,58 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
         return UwbAddress.fromBytes(mSourceAddress);
     }
 
+    /**
+     * Returns the length of max sdu size for the logical link created
+     *
+     * @return length of max sdu size field for logical link. If it is 0, ignore maxSduSizeValue.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public int getMaxSduSizeLength() {
+        return mMaxSduSizeLength;
+    }
+
+    /**
+     * Returns the maximum Logical Link transmit Service Data Unit(SDU) size index.
+     *
+     * <p>The value is extracted from bits <b>0–3</b> of the mMaxSduSizeValue. The returned
+     * value is an {@link SduSizeIndex} constant, which corresponds to a predefined SDU size in
+     * <b>bytes</b> (for example, {@link #SDU_SIZE_512_BYTES} = 512 bytes).
+     *
+     * @return SDU size index for the maximum transmit SDU.
+     * @throws IllegalStateException if the mMaxSduSizeValue parameter is not present.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @SduSizeIndex
+    public int getMaxTransmitSduSize() {
+
+        if (getMaxSduSizeLength() == 0) {
+            throw new IllegalStateException("mMaxSduSizeValue is not present");
+        }
+
+        return mMaxSduSizeValue & 0x0F;
+    }
+
+    /**
+     * Returns the maximum Logical Link receive Service Data Unit(SDU) size index.
+     *
+     * <p>The value is extracted from bits <b>4–7</b> of the mMaxSduSizeValue. The returned
+     * value is an {@link SduSizeIndex} constant, which corresponds to a predefined SDU size in
+     * <b>bytes</b> (for example, {@link #SDU_SIZE_512_BYTES} = 512 bytes).
+     *
+     * @return SDU size index for the maximum receive SDU.
+     * @throws IllegalStateException if the mMaxSduSizeValue parameter is not present.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @SduSizeIndex
+    public int getMaxReceiveSduSize() {
+
+        if (getMaxSduSizeLength() == 0) {
+            throw new IllegalStateException("mMaxSduSizeValue is not present");
+        }
+
+        return (mMaxSduSizeValue >> 4) & 0x0F;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -98,6 +157,8 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
         dest.writeByteArray(mSourceAddress);
         dest.writeInt(mConnectId);
         dest.writeInt(mLinkLayerModeSelector);
+        dest.writeInt(mMaxSduSizeLength);
+        dest.writeInt(mMaxSduSizeValue);
     }
 
     public static final @NonNull Creator<LogicalLinkConnectionRequest> CREATOR =
@@ -111,8 +172,10 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
                     return new Builder(
                             in.readInt(),
                             in.readInt(),
-                            UwbAddress.fromBytes(sourceAddress)
-                    ).build();
+                            UwbAddress.fromBytes(sourceAddress))
+                            .setMaxSduSizeLength(in.readInt())
+                            .setMaxSduSizeValue(in.readInt())
+                            .build();
                 }
 
                 @Override
@@ -129,6 +192,8 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
         private int mConnectId;
         @LinkLayerMode
         private int mLinkLayerModeSelector;
+        private int mMaxSduSizeLength = 0;
+        private int mMaxSduSizeValue = -1;
 
         /**
          *  Creates a new {@link Builder} for constructing a {@link LogicalLinkConnectionRequest}.
@@ -147,6 +212,43 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
         }
 
         /**
+         * Sets the length of the Max SDU Size field for the Logical Link.
+         *
+         * <p>This parameter is introduced as part of the FiRa 4.0 specification to support
+         * negotiation of the maximum SDU size for Logical Link data transfer.</p>
+         *
+         * <p>If {@code maxSduSizeLength} is set to {@code 0}, the Max SDU Size value
+         * (see {@link #setMaxSduSizeValue(int)}) will be ignored, indicating that the
+         * parameter is not used.</p>
+         *
+         * @param maxSduSizeLength the length of the Max SDU Size field as defined by FiRa 4.0.
+         * @return this {@link Builder} instance.
+         */
+        @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        @NonNull
+        public Builder setMaxSduSizeLength(int maxSduSizeLength) {
+            this.mMaxSduSizeLength = maxSduSizeLength;
+            return this;
+        }
+
+        /**
+         * Sets the Max SDU Size value for the Logical Link.
+         *
+         * <p>This configuration is valid only when used with the FiRa 4.0 specification.
+         * The value is applied only if {@code maxSduSizeLength} (see
+         * {@link #setMaxSduSizeLength(int)}) is non-zero.</p>
+         *
+         * @param maxSduSizeValue the maximum Logical Link SDU size value, applicable for FiRa 4.0.
+         * @return this {@link Builder} instance.
+         */
+        @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        @NonNull
+        public Builder setMaxSduSizeValue(@IntRange(from = 0) int maxSduSizeValue) {
+            this.mMaxSduSizeValue = maxSduSizeValue;
+            return this;
+        }
+
+        /**
          * Builds the {@link LogicalLinkConnectionRequest} instance.
          */
         @NonNull
@@ -162,12 +264,15 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
         LogicalLinkConnectionRequest other = (LogicalLinkConnectionRequest) obj;
         return mConnectId == other.mConnectId
                 && mLinkLayerModeSelector == other.mLinkLayerModeSelector
-                && Arrays.equals(mSourceAddress, other.mSourceAddress);
+                && Arrays.equals(mSourceAddress, other.mSourceAddress)
+                && mMaxSduSizeLength == other.mMaxSduSizeLength
+                && mMaxSduSizeValue == other.mMaxSduSizeValue;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(mSourceAddress), mConnectId, mLinkLayerModeSelector);
+        return Objects.hash(Arrays.hashCode(mSourceAddress), mConnectId, mLinkLayerModeSelector,
+                mMaxSduSizeLength, mMaxSduSizeValue);
     }
 
     @Override
@@ -176,6 +281,8 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
                 + "sourceAddress=" + UwbAddress.fromBytes(mSourceAddress)
                 + ", connectId=" + mConnectId
                 + ", linkLayerModeSelector=" + mLinkLayerModeSelector
+                + ", maxSduSizeLength=" + mMaxSduSizeLength
+                + ", maxSduSizeValue=" + mMaxSduSizeValue
                 + '}';
     }
 }

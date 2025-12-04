@@ -117,8 +117,11 @@ public interface INativeUwbManager {
          *
          * @param connectId : Identifier specific for the created link
          * @param status : status of Logical Link Create Notification
+         * @param maxSduSizeLen : Max SDU size Length
+         * @param maxSduSizeValue : Max SDU size value
          */
-        void onLogicalLinkCreateNotification(long connectId, int status);
+        void onLogicalLinkCreateNotification(long connectId, int status, int maxSduSizeLen,
+                int maxSduSizeValue);
 
         /**
          * Called when a UWBS logical link is closed by the remote device, host or due to an
@@ -136,9 +139,12 @@ public interface INativeUwbManager {
          * @param connectId The identifier for the newly requested logical link.
          * @param linkLayerMode The mode of the link layer.
          * @param address The UWB address (MAC address) of the remote device initiating the request.
+         * @param maxSduSizeLen : Max SDU size Length
+         * @param maxSduSizeValue : Max SDU size value
          */
         void onRemoteLogicalLinkRequested(
-                long sessionId, long connectId, int linkLayerMode, byte[] address);
+                long sessionId, long connectId, int linkLayerMode, byte[] address,
+                int maxSduSizeLen, int maxSduSizeValue);
     }
 
     interface DeviceNotification {

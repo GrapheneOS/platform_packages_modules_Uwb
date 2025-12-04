@@ -108,7 +108,8 @@ pub enum UciCommand {
         session_token: SessionToken,
         link_layer_mode: u8,
         dest_mac_address: u64,
-        logical_link_class_len: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     },
     CloseLogicalLink {
         connect_id: ConnectId,
@@ -333,15 +334,30 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 session_token,
                 link_layer_mode,
                 dest_mac_address,
-                logical_link_class_len,
-            } => uwb_uci_packets::CreateLogicalLinkCmdBuilder {
-                session_token,
-                link_layer_mode,
-                dest_mac_address,
-                logical_link_class_len,
+                max_sdu_size_len,
+                max_sdu_size_value,
+            } => {
+                if max_sdu_size_len == 0 {
+                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_0Builder {
+                        session_token,
+                        link_layer_mode,
+                        dest_mac_address,
+                        logical_link_class_len: 0,
+                    }
+                    .build()
+                    .into()
+                } else {
+                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_1Builder {
+                        session_token,
+                        link_layer_mode,
+                        dest_mac_address,
+                        max_sdu_size_len,
+                        max_sdu_size_value,
+                    }
+                    .build()
+                    .into()
+                }
             }
-            .build()
-            .into(),
             UciCommand::CloseLogicalLink { connect_id } => {
                 uwb_uci_packets::CloseLogicalLinkCmdBuilder { connect_id }.build().into()
             }

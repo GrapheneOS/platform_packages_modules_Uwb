@@ -5005,7 +5005,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
@@ -5025,7 +5025,7 @@ public class UwbSessionManagerTest {
 
         when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(null);
+                anyByte(), anyString())).thenReturn(null);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
         mTestLooper.dispatchNext();
@@ -5048,7 +5048,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
@@ -5059,7 +5059,7 @@ public class UwbSessionManagerTest {
                 uwbSession);
 
         mUwbSessionManager.onLogicalLinkCreateNotification(connectId,
-                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED);
+                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED, 0, 0);
 
         verify(mUwbSessionNotificationManager).onLogicalLinkCreated(eq(uwbSession), eq(params),
                 eq(connectId));
@@ -5075,7 +5075,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSessionByConnectionIdentifier((int) connectId))
                 .thenReturn(null);
 
-        mUwbSessionManager.onLogicalLinkCreateNotification(connectId, status);
+        mUwbSessionManager.onLogicalLinkCreateNotification(connectId, status, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreated(any(), any(),
                 anyInt());
@@ -5096,7 +5096,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(response.getLogicalLinkConnectId()).thenReturn(connectId);
 
@@ -5187,7 +5187,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(mockUwbSession);
 
         mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
-                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, new byte[] { 0x11, 0x22 });
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, new byte[] { 0x11, 0x22 }, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager).onRemoteLogicalLinkRequested(any(), any());
     }
@@ -5202,7 +5202,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(null);
 
         mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
-                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, sourceAddress);
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, sourceAddress, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager, never()).onRemoteLogicalLinkRequested(any(), any());
     }

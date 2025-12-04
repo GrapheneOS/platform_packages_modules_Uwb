@@ -504,13 +504,15 @@ impl<U: UciManager> UciManagerSync<U> {
         session_id: SessionId,
         link_layer_mode: u8,
         dest_mac_address_bytes: Vec<u8>,
-        logical_link_class_len: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<CreateLogicalLinkResponse> {
         self.runtime_handle.block_on(self.uci_manager.create_logical_link_layer(
             session_id,
             link_layer_mode,
             dest_mac_address_bytes,
-            logical_link_class_len,
+            max_sdu_size_len,
+            max_sdu_size_value,
         ))
     }
 

@@ -131,6 +131,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final int mUciVersion;
 
+    private final FiraProtocolVersion mFiraLogicalLinkVersionSupported;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -207,7 +209,12 @@ public class FiraSpecificationParams extends FiraParams {
 
     public static final String KEY_UCI_VERSION = "uci_version";
 
+    public static final String KEY_FIRA_LOGICAL_LINK_VERSION = "fira_logical_link_version";
+
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 5;
+
+    public static final FiraProtocolVersion DEFAULT_LOGICAL_LINK_VERSION =
+            new FiraProtocolVersion(1, 0);
 
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
@@ -250,7 +257,8 @@ public class FiraSpecificationParams extends FiraParams {
             int maxLogicalLinkSupported, int maxLogicalLinkSupportPerSession,
             boolean hasLogicalLinkBypassModeSupport,
             String countryCode,
-            int uciVersion) {
+            int uciVersion,
+            FiraProtocolVersion firaLogicalLinkVersionSupported) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -298,6 +306,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasLogicalLinkBypassModeSupport = hasLogicalLinkBypassModeSupport;
         mCountryCode = countryCode;
         mUciVersion = uciVersion;
+        mFiraLogicalLinkVersionSupported = firaLogicalLinkVersionSupported;
     }
 
     @Override
@@ -495,6 +504,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mUciVersion;
     }
 
+    public FiraProtocolVersion getFiraLogicalLinkVersionSupported() {
+        return mFiraLogicalLinkVersionSupported;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -562,6 +575,8 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_LOGICAL_LINK_BYPASS_MODE_SUPPORT, mHasLogicalLinkBypassModeSupport);
         bundle.putString(KEY_COUNTRY_CODE, mCountryCode);
         bundle.putInt(KEY_UCI_VERSION, mUciVersion);
+        bundle.putString(KEY_FIRA_LOGICAL_LINK_VERSION,
+                mFiraLogicalLinkVersionSupported.toString());
         return bundle;
     }
 
@@ -611,6 +626,8 @@ public class FiraSpecificationParams extends FiraParams {
                 bundle.getBoolean(KEY_LOGICAL_LINK_BYPASS_MODE_SUPPORT));
         builder.setUciVersionSupported(bundle.getInt(KEY_UCI_VERSION, 1));
         builder.setCountryCode(bundle.getString(KEY_COUNTRY_CODE));
+        builder.setFiraLogicalLinkVersionSupported(
+                FiraProtocolVersion.fromString(bundle.getString(KEY_FIRA_LOGICAL_LINK_VERSION)));
         return builder;
     }
 
@@ -751,6 +768,8 @@ public class FiraSpecificationParams extends FiraParams {
         private String mCountryCode = null;
 
         private int mUciVersion = 1;
+
+        private FiraProtocolVersion mFiraLogicalLinkVersionSupported = DEFAULT_LOGICAL_LINK_VERSION;
 
         // Unicast support is mandatory
         private EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
@@ -1102,6 +1121,12 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setFiraLogicalLinkVersionSupported(
+                FiraProtocolVersion version) {
+            mFiraLogicalLinkVersionSupported = version;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setCountryCode(String value) {
             mCountryCode = value;
             return this;
@@ -1163,6 +1188,7 @@ public class FiraSpecificationParams extends FiraParams {
             mMaxLogicalLinkSupportPerSession = params.mMaxLogicalLinkSupportPerSession;
             mHasLogicalLinkBypassModeSupport = params.mHasLogicalLinkBypassModeSupport;
             mCountryCode = params.mCountryCode;
+            mFiraLogicalLinkVersionSupported = params.mFiraLogicalLinkVersionSupported;
         }
 
         public FiraSpecificationParams build() {
@@ -1213,7 +1239,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mMaxLogicalLinkSupportPerSession,
                     mHasLogicalLinkBypassModeSupport,
                     mCountryCode,
-                    mUciVersion);
+                    mUciVersion,
+                    mFiraLogicalLinkVersionSupported);
         }
     }
 }

@@ -21,6 +21,7 @@ import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_PDU_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_PORT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_RECEIVE_WINDOW_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_REPEAT_COUNT_MAX;
@@ -177,6 +178,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private static final int UWB_HUS_CONTROLLER_PHASE_LIST_EXTENDED_MAC_ADDRESS_SIZE = 17;
     private static final int UWB_HUS_CONTROLEE_PHASE_LIST_SIZE = 4;
     public static final int SLOT_BITMAP_DISABLED = 7;
+    private static final FiraProtocolVersion DEFAULT_LOGICAL_LINK_VERSION =
+            new FiraProtocolVersion(1, 0);
 
     @VisibleForTesting
     public static final int SESSION_OPEN_RANGING = 1;
@@ -729,7 +732,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     @Override
-    public void onLogicalLinkCreateNotification(long connectId, int status) {
+    public void onLogicalLinkCreateNotification(long connectId, int status, int maxSduSizeLength,
+            int maxSduSizeValue) {
         int connectionId = (int) connectId;
         UwbSession uwbSession = getUwbSessionByConnectionIdentifier(connectionId);
 
@@ -742,7 +746,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        LogicalLinkCreationParams params = info.params;
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams
+                .Builder(info.params.getLinkLayerModeSelector(),
+                    UwbAddress.fromBytes(info.params.getDestinationAddress()))
+                .setLogicalLinkClassLength(maxSduSizeLength)
+                .setMaxSduTransmitSize(maxSduSizeValue & 0x0F)
+                .setMaxSduReceiveSize((maxSduSizeValue >> 4) & 0x0F)
+                .build();
 
         if (status == UwbUciConstants.LOGICAL_LINK_STATUS_ERROR
                 || status == UwbUciConstants.LOGICAL_LINK_STATUS_REJECTED) {
@@ -774,7 +784,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     @Override
     public void onRemoteLogicalLinkRequested(long sessionId, long connectId, int linkLayerMode,
-            byte[] address) {
+            byte[] address, int maxSduSizeLen, int maxSduSizeValue) {
         int logicalLinkId = (int) connectId;
 
         UwbSession uwbSession = getUwbSession((int) sessionId);
@@ -786,7 +796,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         UwbAddress uwbAddress = UwbAddress.fromBytes(address);
 
         LogicalLinkCreationParams params = new LogicalLinkCreationParams
-                .Builder(linkLayerMode, uwbAddress).build();
+                .Builder(linkLayerMode, uwbAddress)
+                .setLogicalLinkClassLength(maxSduSizeLen)
+                .setMaxSduTransmitSize(maxSduSizeValue & 0x0F)
+                .setMaxSduReceiveSize((maxSduSizeValue >> 4) & 0x0F)
+                .build();
+
         LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
         logicalLinkInfo.sessionHandle = uwbSession.getSessionHandle();
         logicalLinkInfo.params = params;
@@ -794,7 +809,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         uwbSession.addLogicalLinkInfo(logicalLinkId, logicalLinkInfo);
 
         LogicalLinkConnectionRequest request = new LogicalLinkConnectionRequest.Builder(
-                logicalLinkId, linkLayerMode, uwbAddress).build();
+                logicalLinkId, linkLayerMode, uwbAddress)
+                .setMaxSduSizeLength(maxSduSizeLen)
+                .setMaxSduSizeValue(maxSduSizeValue)
+                .build();
 
         mSessionNotificationManager.onRemoteLogicalLinkRequested(uwbSession, request);
     }
@@ -3186,7 +3204,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 uwbSession.getSessionId(),
                 linkLayerMode,
                 params.getDestinationAddress(),
-                (byte) (params.getLogicalLinkClassLength() & 0xFF),
+                (byte) params.getLogicalLinkClassLength(),
+                (byte) params.getMaxSduSizeValue(),
                 uwbSession.getChipId());
 
         if (response == null) {
@@ -3293,6 +3312,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             byte port = buffer.get();
             builder.setDestinationPort(port & 0x07);
             builder.setSourcePort((port >> 3) & 0x07);
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE, buffer, byteLength)) {
+            builder.setMaxTransceiveSduSize(Byte.toUnsignedInt(buffer.get()));
         }
 
         return builder.build();
