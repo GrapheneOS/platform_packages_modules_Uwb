@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.engine;
+package com.android.server.ranging.heuristic;
 
-import com.android.server.ranging.engine.heuristic.RangeHeuristic;
-import com.android.server.ranging.engine.heuristic.RangeHeuristic.HeuristicThreshold;
+import androidx.annotation.VisibleForTesting;
+
+import com.android.server.ranging.heuristic.RangeHeuristic.HeuristicThreshold;
 
 import com.google.common.collect.ObjectArrays;
 
@@ -31,29 +32,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.DoublePredicate;
 
-/** Manages asynchronous {@link EngineEvent}s for a {@link RangingEngine} */
-class EngineEventFactory {
-    private static final String TAG = EngineEventFactory.class.getSimpleName();
+/** Provides methods to construct {@link RangeHeuristicEvent}s grouped with an executor. */
+public class RangeHeuristicEventFactory {
+    private static final String TAG = RangeHeuristicEventFactory.class.getSimpleName();
 
-    /** An asynchronous {@link RangingEngine} related event. */
-    abstract static class EngineEvent {
-        private final Set<Consumer<EngineEvent>> mListeners;
+    /** An asynchronous event triggered based on the value of a {@link RangeHeuristic}. */
+    public abstract static class RangeHeuristicEvent {
+        private final Set<Consumer<RangeHeuristicEvent>> mListeners;
         private final Executor mExecutor;
 
-        EngineEvent(Executor executor) {
+        private RangeHeuristicEvent(Executor executor) {
             mExecutor = executor;
             mListeners = Collections.synchronizedSet(new HashSet<>());
         }
         /** Register a listener to be run next time this event occurs. */
-        void onNextOccurrence(Consumer<EngineEvent> listener) {
+        public void onNextOccurrence(Consumer<RangeHeuristicEvent> listener) {
             mListeners.add(listener);
         }
 
-        void cancel() {
+        public void cancel() {
             mListeners.clear();
         }
 
-        void complete(EngineEvent event) {
+        @VisibleForTesting
+        public void complete(RangeHeuristicEvent event) {
             synchronized (mListeners) {
                 mListeners.forEach(listener -> mExecutor.execute(() -> listener.accept(event)));
                 mListeners.clear();
@@ -61,10 +63,10 @@ class EngineEventFactory {
         }
     }
 
-    /** An {@link EngineEvent} based on a heuristic. */
-    static class HeuristicEvent extends EngineEvent {
-        /** Use {@link EngineEventFactory#when(HeuristicThreshold)} */
-        private HeuristicEvent(HeuristicThreshold threshold, Executor executor) {
+    /** A {@link RangeHeuristicEvent} that triggers when the provided heuristic threshold is met. */
+    public static class ThresholdEvent extends RangeHeuristicEvent {
+        /** Use {@link RangeHeuristicEventFactory#when(HeuristicThreshold)} */
+        private ThresholdEvent(HeuristicThreshold threshold, Executor executor) {
             super(executor);
             threshold.getHeuristic().registerListener(value -> {
                 if (threshold.getCondition().test(value)) complete(this);
@@ -72,14 +74,18 @@ class EngineEventFactory {
         }
     }
 
-    static class HeuristicConjunctionEvent extends EngineEvent {
+    /**
+     * A {@link RangeHeuristicEvent} that triggers when all provided heuristics meet their
+     * threshold.
+     */
+    public static class ConjunctionEvent extends RangeHeuristicEvent {
         private final AtomicInteger mNumEventsRemaining;
 
         /**
-         * Use {@link EngineEventFactory#whenAll(
+         * Use {@link RangeHeuristicEventFactory#whenAll(
          * HeuristicThreshold, HeuristicThreshold, HeuristicThreshold...)})
          */
-        private HeuristicConjunctionEvent(Executor executor, HeuristicThreshold... thresholds) {
+        private ConjunctionEvent(Executor executor, HeuristicThreshold... thresholds) {
             super(executor);
             mNumEventsRemaining = new AtomicInteger(thresholds.length);
             for (HeuristicThreshold threshold : thresholds) {
@@ -101,7 +107,7 @@ class EngineEventFactory {
                     if (mIsCondition.compareAndSet(false, true)
                             && mNumEventsRemaining.decrementAndGet() == 0
                     ) {
-                        complete(HeuristicConjunctionEvent.this);
+                        complete(ConjunctionEvent.this);
                     }
                 } else if (mIsCondition.compareAndSet(true, false)) {
                     mNumEventsRemaining.incrementAndGet();
@@ -110,10 +116,14 @@ class EngineEventFactory {
         }
     }
 
-    public static class RaceEvent extends EngineEvent {
+    /**
+     * A {@link RangeHeuristicEvent} that triggers when any of the provided heuristics meet their
+     * threshold. Listeners are notified with the event that won the race.
+     */
+    public static class RaceEvent extends RangeHeuristicEvent {
         private final AtomicBoolean mFinishLine = new AtomicBoolean();
 
-        private RaceEvent(Executor executor, EngineEvent[] events) {
+        private RaceEvent(Executor executor, RangeHeuristicEvent[] events) {
             super(executor);
             Arrays.stream(events).forEach(event -> event.onNextOccurrence(
                     unused -> {
@@ -124,34 +134,37 @@ class EngineEventFactory {
 
     private final Executor mExecutor;
 
-    EngineEventFactory(Executor executor) {
+    public RangeHeuristicEventFactory(Executor executor) {
         mExecutor = executor;
     }
 
     /**
-     * Create an {@link EngineEvent} that completes the next time the provided threshold is
+     * Create an {@link RangeHeuristicEvent} that completes the next time the provided threshold is
      * satisfied.
      */
-    HeuristicEvent when(HeuristicThreshold threshold) {
-        return new HeuristicEvent(threshold, mExecutor);
+    public ThresholdEvent when(HeuristicThreshold threshold) {
+        return new ThresholdEvent(threshold, mExecutor);
     }
 
     /**
-     * Create a {@link EngineEvent} that completes once all provided thresholds are passed in
-     * parallel.
+     * Create a {@link RangeHeuristicEvent} that completes once all provided thresholds are passed
+     * in parallel.
      */
-    HeuristicConjunctionEvent whenAll(
+    public ConjunctionEvent whenAll(
             HeuristicThreshold t1, HeuristicThreshold t2, HeuristicThreshold... rest
     ) {
-        return new HeuristicConjunctionEvent(
+        return new ConjunctionEvent(
                 mExecutor, ObjectArrays.concat(t1, ObjectArrays.concat(t2, rest)));
     }
 
 
     /**
-     * Creates a {@link EngineEvent} that completes once any of the provided events complete.
+     * Creates a {@link RangeHeuristicEvent} that completes once any of the provided events
+     * complete.
      */
-    RaceEvent whenAny(EngineEvent e1, EngineEvent e2, EngineEvent... rest) {
+    public RaceEvent whenAny(
+            RangeHeuristicEvent e1, RangeHeuristicEvent e2, RangeHeuristicEvent... rest
+    ) {
         return new RaceEvent(
                 mExecutor, ObjectArrays.concat(e1, ObjectArrays.concat(e2, rest)));
     }

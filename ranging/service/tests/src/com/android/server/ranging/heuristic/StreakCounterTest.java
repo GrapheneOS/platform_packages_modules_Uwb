@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.engine.heuristic;
+package com.android.server.ranging.heuristic;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
