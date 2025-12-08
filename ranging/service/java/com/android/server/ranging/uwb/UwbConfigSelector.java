@@ -144,12 +144,6 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
             return false;
         }
 
-        // TODO: If we add support for AoA via ARCore in the future, this will need to be changed.
-        if (sessionConfig.isAngleOfArrivalNeeded() && !capabilities.isAzimuthalAngleSupported()) {
-            Log.v(TAG, "Does not support AoA");
-            return false;
-        }
-
         return true;
     }
 
