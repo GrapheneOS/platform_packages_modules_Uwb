@@ -112,9 +112,9 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                     + INITIALIZATION_RETRY_TIMEOUT_MS + "ms");
             mUwbServiceCore.getHandler().postDelayed(() -> {
                 try {
-                    mUwbServiceCore.setEnabled(isUwbEnabled());
+                    mUwbServiceCore.restart();
                 } catch (Exception e) {
-                    Log.e(TAG, "Unable to set UWB Adapter state.", e);
+                    Log.e(TAG, "Unable to restart UWB", e);
                 }
             }, INITIALIZATION_RETRY_TIMEOUT_MS);
             // Remove initialization failure listener after first retry attempt to avoid
