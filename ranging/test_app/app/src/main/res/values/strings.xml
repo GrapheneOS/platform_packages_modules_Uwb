@@ -2,10 +2,13 @@
   <string name="app_name">RangingTestApp</string>
   <string name="initiator">Initiator</string>
   <string name="responder">Responder</string>
+  <string name="ios_accessory">iOS Accessory</string>
   <string name="initiator_fragment_label">Initiator Fragment</string>
   <string name="responder_fragment_label">Responder Fragment</string>
+  <string name="ios_accessory_fragment_label">iOS Accessory Fragment</string>
   <string name="ble_central">BLE Central</string>
   <string name="ble_peripheral">BLE Peripheral</string>
+  <string name="ble_ios_accessory">BLE iOS Accessory</string>
   <string name="stop_measurement">Stop Distance Measurement</string>
   <string name="start_measurement">Start Distance Measurement</string>
   <string name="starting_measurement">Starting...</string>

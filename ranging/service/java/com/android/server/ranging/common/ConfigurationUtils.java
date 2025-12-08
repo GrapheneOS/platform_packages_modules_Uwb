@@ -27,10 +27,9 @@ import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
 import android.ranging.raw.RawRangingDevice;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
-import android.ranging.uwb.DlTdoaRangingParams;
-import android.util.Log;
 import android.util.Range;
 
 import androidx.annotation.NonNull;
@@ -38,6 +37,7 @@ import androidx.annotation.NonNull;
 import com.android.ranging.flags.Flags;
 import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.blerssi.BleRssiConfig;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.rtt.RttConfig;
@@ -53,7 +53,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -147,7 +146,9 @@ public class ConfigurationUtils {
                         role, peer.getRttStationRangingParams(), sessionConfig,
                         peer.getRangingDevice()));
             }
-            if (Flags.rangingStackUpdates26Q2() && peer.getWifiPdRangingParams() != null) {
+            if (RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")
+                    && peer.getWifiPdRangingParams() != null
+            ) {
                 configs.add(new WifiPdConfig(role, peer.getWifiPdRangingParams(), sessionConfig,
                         peer.getRangingDevice()));
             }

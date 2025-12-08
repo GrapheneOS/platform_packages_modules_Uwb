@@ -36,9 +36,8 @@ import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.common.StateMachine;
-import com.android.server.ranging.fusion.DataFusers;
-import com.android.server.ranging.fusion.FilteringFusionEngine;
 import com.android.server.ranging.fusion.FusionEngine;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
@@ -70,6 +69,7 @@ public class BaseRangingSession {
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
     protected final SessionConfig mSessionConfig;
+    protected final RangeHeuristicEventFactory mEventFactory;
     protected final SessionListener mSessionListener;
 
     private final AlarmManager mAlarmManager;
@@ -87,8 +87,8 @@ public class BaseRangingSession {
     /**
      * Ranging adapters used for this session.
      * <ul>
-     *    <li /> Each {@link TechnologyConfig} provided to {@link start} configures a unique
-     *    adapter.
+     *    <li /> Each {@link TechnologyConfig} provided to {@link
+     *    BaseRangingSession#start(ImmutableSet)} configures a unique adapter.
      *    <li /> One adapter handles ranging for one technology.
      *    <li /> One adapter may handle ranging for multiple peers if the technology supports
      *    multicasting
@@ -103,39 +103,6 @@ public class BaseRangingSession {
     /** State of all peers in the session */
     @GuardedBy("mLock")
     private final ConcurrentMap<RangingDevice, Peer> mPeers;
-
-    /** The state of a peer that is ranging with the local device. */
-    private class Peer {
-        public final DeviceType mDeviceType;
-        /** Technologies that this peer is ranging with. */
-        public final Set<RangingTechnology> technologies;
-        /** Fusion engine to use for this device. */
-        public final FusionEngine fusionEngine;
-        public volatile RangingData mLastData;
-
-        Peer(@NonNull RangingDevice device) {
-            mDeviceType = getPeerType(device);
-            technologies = Sets.newConcurrentHashSet();
-            if (mSessionConfig.getSensorFusionParams().isSensorFusionEnabled()) {
-                fusionEngine = new FilteringFusionEngine(
-                        new DataFusers.PreferentialDataFuser(RangingTechnology.UWB),
-                        mSessionConfig.isAngleOfArrivalNeeded(), mInjector);
-            } else {
-                fusionEngine = new NoOpFusionEngine(device);
-            }
-            fusionEngine.start(new FusionEngineListener(device));
-        }
-
-        public void setUsingTechnology(@NonNull RangingTechnology technology) {
-            technologies.add(technology);
-            fusionEngine.addDataSource(technology);
-        }
-
-        public void setNotUsingTechnology(@NonNull RangingTechnology technology) {
-            technologies.remove(technology);
-            fusionEngine.removeDataSource(technology);
-        }
-    }
 
     public BaseRangingSession(
             @NonNull AttributionSource attributionSource,
@@ -156,6 +123,7 @@ public class BaseRangingSession {
         mAdapters = new ConcurrentHashMap<>();
         mStopReasonOverride = new ConcurrentHashMap<>();
         mAlarmManager = mInjector.getContext().getSystemService(AlarmManager.class);
+        mEventFactory = new RangeHeuristicEventFactory(mAdapterExecutor);
     }
 
     /** Start ranging in this session with the provided configs. */
@@ -187,8 +155,8 @@ public class BaseRangingSession {
                 }
 
                 peerDevices.forEach(device ->
-                        mPeers.computeIfAbsent(device, unused -> new Peer(device))
-                                .setUsingTechnology(config.getTechnology()));
+                        mPeers.computeIfAbsent(device, unused -> createPeer(device))
+                                .setUsingTechnology(config));
 
                 // Any calls to the corresponding technology stacks must be
                 // done with a clear calling identity.
@@ -209,12 +177,18 @@ public class BaseRangingSession {
             for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
                 if (entry.getValue().isDynamicUpdatePeersSupported()) {
                     RangingDevice peerDevice = params.getRawRangingDevice().getRangingDevice();
-                    mPeers.computeIfAbsent(peerDevice, unused -> new Peer(peerDevice))
-                            .setUsingTechnology(entry.getKey().getTechnology());
+                    mPeers.computeIfAbsent(peerDevice, unused -> createPeer(peerDevice))
+                            .setUsingTechnology(entry.getKey());
                     entry.getValue().addPeer(params);
                 }
             }
         }
+    }
+
+    private Peer createPeer(RangingDevice device) {
+        return new Peer(device, getPeerType(device), mSessionHandle, mSessionConfig,
+                new FusionEngineListener(device), mEventFactory, mAdapterExecutor,
+                mInjector);
     }
 
     public void removePeer(RangingDevice device) {
@@ -348,7 +322,7 @@ public class BaseRangingSession {
             if (peer == null) {
                 return ImmutableSet.of();
             } else {
-                return ImmutableSet.copyOf(peer.technologies);
+                return ImmutableSet.copyOf(peer.getActiveTechnologies());
             }
         }
     }
@@ -370,7 +344,6 @@ public class BaseRangingSession {
 
     /** Let subclasses override to inspect ranging data. */
     protected void onResults(@NonNull RangingDevice peer, @NonNull RangingData data) {
-        mPeers.get(peer).mLastData = data;
         mSessionListener.onResults(peer, data);
     }
 
@@ -400,7 +373,7 @@ public class BaseRangingSession {
                         continue;
                     }
                     mStateMachine.transition(State.STARTING, State.STARTED);
-                    mPeers.get(peerDevice).setUsingTechnology(mConfig.getTechnology());
+                    mPeers.get(peerDevice).setUsingTechnology(mConfig);
                 }
                 onTechnologyStarted(mConfig.getTechnology(), peerDevices);
             }
@@ -418,9 +391,8 @@ public class BaseRangingSession {
                         continue;
                     }
                     peer.setNotUsingTechnology(mConfig.getTechnology());
-                    if (peer.technologies.isEmpty()) {
-                        peer.fusionEngine.stop();
-                        mPeers.remove(peerDevice);
+                    if (peer.getActiveTechnologies().isEmpty()) {
+                        mPeers.remove(peerDevice).close();
                     }
                 }
                 onTechnologyStopped(mConfig.getTechnology(), peerDevices, maybeOverridden(reason));
@@ -433,7 +405,7 @@ public class BaseRangingSession {
                 if (mStateMachine.getState() != State.STOPPING
                         && mStateMachine.getState() != State.STOPPED
                 ) {
-                    mPeers.get(peerDevice).fusionEngine.feed(data);
+                    mPeers.get(peerDevice).feedToFusionEngine(data);
                 }
             }
         }
@@ -478,25 +450,6 @@ public class BaseRangingSession {
                     onResults(mPeer, data);
                 }
             }
-        }
-    }
-
-    private class NoOpFusionEngine extends FusionEngine {
-        private final RangingDevice mPeer;
-
-        NoOpFusionEngine(@NonNull RangingDevice peer) {
-            super(new DataFusers.PassthroughDataFuser());
-            mPeer = peer;
-        }
-
-        protected @NonNull Set<RangingTechnology> getDataSources() {
-            return mPeers.get(mPeer).technologies;
-        }
-
-        public void addDataSource(@NonNull RangingTechnology technology) {
-        }
-
-        public void removeDataSource(@NonNull RangingTechnology technology) {
         }
     }
 

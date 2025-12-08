@@ -38,9 +38,9 @@ import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 
 import androidx.annotation.Nullable;
 
-import com.android.ranging.flags.Flags;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
+import com.android.server.ranging.RangingInjector;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -68,8 +68,9 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
     public static boolean isSupported(Context context) {
         WifiRttManager wifiRttManager = context.getSystemService(WifiRttManager.class);
         try {
-            return Flags.rangingStackUpdates26Q2()
-                    && com.android.wifi.flags.Flags.proximityRanging()
+            return RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")
+                    && RangingInjector.isFlagEnabled(
+                            com.android.wifi.flags.Flags.class, "proximityRanging")
                     && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
                     && wifiRttManager != null
                     && wifiRttManager.getProximityDetectionCharacteristics() != null;
@@ -138,9 +139,9 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
                 .setSupportedPasnModes(pasnModes)
                 .set80211mcSupported(characteristics.is80211mcBasedRangingSupported())
                 .set80211azNtbSupported(characteristics.isNtbIstaRoleSupported())
-                .setMinRangingInterval80211mcMillis(
+                .set80211mcMinRangingIntervalMillis(
                         characteristics.getMinAllowedRangingInterval80211mcMillis())
-                .setMinRangingInterval80211azNtbMillis(
+                .set80211azNtbMinRangingIntervalMillis(
                         characteristics.getMinAllowedRangingIntervalNtbMillis())
                 .setSupportedDiscoveryChannelFrequenciesMhz(channelSet)
                 .setMaxPreamble(characteristics.isNtbIstaRoleSupported()

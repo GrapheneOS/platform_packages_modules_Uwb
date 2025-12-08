@@ -21,6 +21,7 @@ import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_PDU_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_PORT;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_RECEIVE_WINDOW_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_REPEAT_COUNT_MAX;
@@ -176,6 +177,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private static final byte OPERATION_TYPE_INIT_SESSION = 0;
     private static final int UWB_HUS_CONTROLLER_PHASE_LIST_EXTENDED_MAC_ADDRESS_SIZE = 17;
     private static final int UWB_HUS_CONTROLEE_PHASE_LIST_SIZE = 4;
+    public static final int SLOT_BITMAP_DISABLED = 7;
+    private static final FiraProtocolVersion DEFAULT_LOGICAL_LINK_VERSION =
+            new FiraProtocolVersion(1, 0);
 
     @VisibleForTesting
     public static final int SESSION_OPEN_RANGING = 1;
@@ -491,7 +495,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         } else {
             mSessionNotificationManager.onDataSendFailed(
                     uwbSession, sendDataInfo.remoteDeviceAddress, dataTransferStatus,
-                     sendDataInfo.params);
+                    sendDataInfo.params);
             uwbSession.removeSendDataInfo(sequenceNum);
         }
         // when transmission count equals to data repetition count, SendDataInfo will be removed for
@@ -689,6 +693,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 }
                 break;
             case UWB_SESSION_STATE_DEINIT:
+                if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                    // If an active session was closed without calling stop,
+                    // update the channel usage.
+                    mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
+                            uwbSession.mChannel);
+                }
                 mEventTask.execute(SESSION_ON_DEINIT, uwbSession);
                 break;
             default:
@@ -722,7 +732,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     @Override
-    public void onLogicalLinkCreateNotification(long connectId, int status) {
+    public void onLogicalLinkCreateNotification(long connectId, int status, int maxSduSizeLength,
+            int maxSduSizeValue) {
         int connectionId = (int) connectId;
         UwbSession uwbSession = getUwbSessionByConnectionIdentifier(connectionId);
 
@@ -735,7 +746,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        LogicalLinkCreationParams params = info.params;
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams
+                .Builder(info.params.getLinkLayerModeSelector(),
+                    UwbAddress.fromBytes(info.params.getDestinationAddress()))
+                .setLogicalLinkClassLength(maxSduSizeLength)
+                .setMaxSduTransmitSize(maxSduSizeValue & 0x0F)
+                .setMaxSduReceiveSize((maxSduSizeValue >> 4) & 0x0F)
+                .build();
 
         if (status == UwbUciConstants.LOGICAL_LINK_STATUS_ERROR
                 || status == UwbUciConstants.LOGICAL_LINK_STATUS_REJECTED) {
@@ -767,7 +784,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     @Override
     public void onRemoteLogicalLinkRequested(long sessionId, long connectId, int linkLayerMode,
-            byte[] address) {
+            byte[] address, int maxSduSizeLen, int maxSduSizeValue) {
         int logicalLinkId = (int) connectId;
 
         UwbSession uwbSession = getUwbSession((int) sessionId);
@@ -779,7 +796,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         UwbAddress uwbAddress = UwbAddress.fromBytes(address);
 
         LogicalLinkCreationParams params = new LogicalLinkCreationParams
-                .Builder(linkLayerMode, uwbAddress).build();
+                .Builder(linkLayerMode, uwbAddress)
+                .setLogicalLinkClassLength(maxSduSizeLen)
+                .setMaxSduTransmitSize(maxSduSizeValue & 0x0F)
+                .setMaxSduReceiveSize((maxSduSizeValue >> 4) & 0x0F)
+                .build();
+
         LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
         logicalLinkInfo.sessionHandle = uwbSession.getSessionHandle();
         logicalLinkInfo.params = params;
@@ -787,7 +809,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         uwbSession.addLogicalLinkInfo(logicalLinkId, logicalLinkInfo);
 
         LogicalLinkConnectionRequest request = new LogicalLinkConnectionRequest.Builder(
-                logicalLinkId, linkLayerMode, uwbAddress).build();
+                logicalLinkId, linkLayerMode, uwbAddress)
+                .setMaxSduSizeLength(maxSduSizeLen)
+                .setMaxSduSizeValue(maxSduSizeValue)
+                .build();
 
         mSessionNotificationManager.onRemoteLogicalLinkRequested(uwbSession, request);
     }
@@ -1217,6 +1242,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     public synchronized void stopRanging(SessionHandle sessionHandle) {
         stopRangingInternal(sessionHandle, false /* triggeredBySystemPolicy */);
+    }
+
+    /**
+     * Clears all sessions with matching attribution source.
+     */
+    public synchronized void clearSessions(AttributionSource attributionSource) {
+        List<UwbSession> sessionsToClose = mSessionTable.values()
+                .stream()
+                .filter(uwbSession -> uwbSession.getAttributionSource().equals(attributionSource))
+                .collect(Collectors.toList());
+        for (UwbSession session : sessionsToClose) {
+            deInitSession(session.getSessionHandle());
+        }
     }
 
     /**
@@ -2057,12 +2095,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     private void handleSetDataTransferPhaseConfig(UpdateSessionInfo info) {
         SessionHandle sessionHandle = info.sessionHandle;
-        Integer sessionId = getSessionId(sessionHandle);
+        int sessionId = getSessionId(sessionHandle);
         UwbSession uwbSession = getUwbSession(sessionHandle);
 
         int sessionType = uwbSession.getSessionType();
         int deviceType = uwbSession.getDeviceType();
         int sessionState = uwbSession.getSessionState();
+
         if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != deviceType
                 || (sessionType != FiraParams.SESSION_TYPE_DATA_TRANSFER
                         && sessionType !=  FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE)
@@ -2076,49 +2115,51 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        FiraDataTransferPhaseConfig dataTransferPhaseConfig =
+        FiraDataTransferPhaseConfig phaseConfig =
                 FiraDataTransferPhaseConfig.fromBundle(info.params);
 
-        List<FiraDataTransferPhaseManagementList> mDataTransferPhaseManagementList =
-                dataTransferPhaseConfig.getDataTransferPhaseManagementList();
-        int dataTransferManagementListSize = mDataTransferPhaseManagementList.size();
-        int dataTransferControl = dataTransferPhaseConfig.getDataTransferControl();
-        int slotBitmapSizeInBytes = 1 << ((dataTransferControl & 0X0F) >> 1);
+        List<FiraDataTransferPhaseManagementList> phaseList =
+                phaseConfig.getDataTransferPhaseManagementList();
+        int phaseListSize = phaseList.size();
+
+        int dataTransferControl = phaseConfig.getDataTransferControl();
+        byte slotBitMapValue = (byte) ((dataTransferControl & 0X0F) >> 1);
+        boolean slotBitmapDisabled = (slotBitMapValue == SLOT_BITMAP_DISABLED);
+        int slotBitmapSize = slotBitmapDisabled ? 0 : (1 << slotBitMapValue);
 
         List<byte[]> macAddressList = new ArrayList<>();
-        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize
-                * slotBitmapSizeInBytes);
-        slotBitmapByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        ByteBuffer stopDataTransferByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize);
+        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(phaseListSize
+                * slotBitmapSize).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer stopDataTransferByteBuffer = ByteBuffer.allocate(phaseListSize);
 
-        int addressByteLength = ((dataTransferControl & 0x01)
-                       == UwbUciConstants.SHORT_MAC_ADDRESS)
+        int addressByteLength = ((dataTransferControl & 0x01) == UwbUciConstants.SHORT_MAC_ADDRESS)
                 ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
 
-        for (FiraDataTransferPhaseManagementList dataTransferPhaseManagementList :
-                mDataTransferPhaseManagementList) {
-            UwbAddress uwbAddress = dataTransferPhaseManagementList.getUwbAddress();
-            byte[] slotBitMap = dataTransferPhaseManagementList.getSlotBitMap();
-            byte stopDataTransfer = dataTransferPhaseManagementList.getStopDataTransfer();
+        for (FiraDataTransferPhaseManagementList item : phaseList) {
+            UwbAddress uwbAddress = item.getUwbAddress();
 
-            if (uwbAddress != null && uwbAddress.size() == addressByteLength
-                    && slotBitMap.length == slotBitmapSizeInBytes) {
-                macAddressList.add(getComputedMacAddress(uwbAddress));
-                slotBitmapByteBuffer.put(slotBitMap);
-                stopDataTransferByteBuffer.put(stopDataTransfer);
-            } else {
-                Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap size "
-                            + "or address is not matching");
+            if (uwbAddress == null && uwbAddress.size() != addressByteLength) {
+                Log.e(TAG, "handleSetDataTransferPhaseConfig: invalid mac address");
                 return;
             }
+
+            macAddressList.add(getComputedMacAddress(uwbAddress));
+
+            if (!slotBitmapDisabled) {
+                slotBitmapByteBuffer.put(item.getSlotBitMap());
+            }
+            stopDataTransferByteBuffer.put(item.getStopDataTransfer());
         }
 
         // Check for buffer size mismatches
-        if (slotBitmapByteBuffer.array().length
-                != (slotBitmapSizeInBytes * dataTransferManagementListSize)
-                || macAddressList.size() != dataTransferManagementListSize) {
-            Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap buffer size or address list"
-                    + " size mismatch");
+        if (!slotBitmapDisabled && (slotBitmapByteBuffer.array().length
+                != (slotBitmapSize * phaseListSize))) {
+            Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap buffer size mismatch");
+            return;
+        }
+
+        if (macAddressList.size() != phaseListSize) {
+            Log.e(TAG, "handleSetDataTransferPhaseConfig: address list size mismatch");
             return;
         }
 
@@ -2128,9 +2169,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     int status = UwbUciConstants.STATUS_CODE_FAILED;
                     synchronized (uwbSession.getWaitObj()) {
                         status = mNativeUwbManager.setDataTransferPhaseConfig(sessionId,
-                                (byte) dataTransferPhaseConfig.getDtpcmRepetition(),
+                                (byte) phaseConfig.getDtpcmRepetition(),
                                 (byte) dataTransferControl,
-                                (byte) dataTransferManagementListSize,
+                                (byte) phaseListSize,
                                 ArrayUtils.toPrimitive(macAddressList),
                                 slotBitmapByteBuffer.array(),
                                 stopDataTransferByteBuffer.array(),
@@ -3163,7 +3204,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 uwbSession.getSessionId(),
                 linkLayerMode,
                 params.getDestinationAddress(),
-                (byte) (params.getLogicalLinkClassLength() & 0xFF),
+                (byte) params.getLogicalLinkClassLength(),
+                (byte) params.getMaxSduSizeValue(),
                 uwbSession.getChipId());
 
         if (response == null) {
@@ -3270,6 +3312,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             byte port = buffer.get();
             builder.setDestinationPort(port & 0x07);
             builder.setSourcePort((port >> 3) & 0x07);
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE, buffer, byteLength)) {
+            builder.setMaxTransceiveSduSize(Byte.toUnsignedInt(buffer.get()));
         }
 
         return builder.build();

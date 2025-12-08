@@ -87,8 +87,8 @@ public final class WifiPdRangingCapabilities
     private final int mMaxPreamble;
     @NonNull
     private final List<Integer> mSupportedDiscoveryChannelFrequenciesMhz;
-    private final int mMinRangingInterval80211mcMillis;
-    private final int mMinRangingInterval80211azNtbMillis;
+    private final int m80211mcMinRangingIntervalMillis;
+    private final int m80211azNtbMinRangingIntervalMillis;
 
     private WifiPdRangingCapabilities(Builder builder) {
         mSupportedPasnModes = builder.mSupportedPasnModes;
@@ -98,8 +98,8 @@ public final class WifiPdRangingCapabilities
         mMaxChannelWidth = builder.mMaxChannelWidth;
         mMaxPreamble = builder.mMaxPreamble;
         mSupportedDiscoveryChannelFrequenciesMhz = builder.mSupportedDiscoveryChannelFrequenciesMhz;
-        mMinRangingInterval80211mcMillis = builder.mMinRangingInterval80211mcMillis;
-        mMinRangingInterval80211azNtbMillis = builder.mMinRangingInterval80211azNtbMillis;
+        m80211mcMinRangingIntervalMillis = builder.m80211mcMinRangingIntervalMillis;
+        m80211azNtbMinRangingIntervalMillis = builder.m80211azNtbMinRangingIntervalMillis;
     }
 
     private WifiPdRangingCapabilities(Parcel in) {
@@ -114,8 +114,8 @@ public final class WifiPdRangingCapabilities
         mSupportedDiscoveryChannelFrequenciesMhz = new ArrayList<>();
         in.readList(mSupportedDiscoveryChannelFrequenciesMhz, Integer.class.getClassLoader(),
                 Integer.class);
-        mMinRangingInterval80211mcMillis = in.readInt();
-        mMinRangingInterval80211azNtbMillis = in.readInt();
+        m80211mcMinRangingIntervalMillis = in.readInt();
+        m80211azNtbMinRangingIntervalMillis = in.readInt();
     }
 
     /**
@@ -149,8 +149,8 @@ public final class WifiPdRangingCapabilities
         dest.writeInt(mMaxChannelWidth);
         dest.writeInt(mMaxPreamble);
         dest.writeList(mSupportedDiscoveryChannelFrequenciesMhz);
-        dest.writeInt(mMinRangingInterval80211mcMillis);
-        dest.writeInt(mMinRangingInterval80211azNtbMillis);
+        dest.writeInt(m80211mcMinRangingIntervalMillis);
+        dest.writeInt(m80211azNtbMinRangingIntervalMillis);
     }
 
     @Override
@@ -234,18 +234,18 @@ public final class WifiPdRangingCapabilities
      * @return {@link Duration} The minimum ranging interval for 802.11mc.
      */
     @NonNull
-    public Duration getMinRangingInterval80211mc() {
-        return Duration.ofMillis(mMinRangingInterval80211mcMillis);
+    public Duration get80211mcMinRangingInterval() {
+        return Duration.ofMillis(m80211mcMinRangingIntervalMillis);
     }
 
     /**
-     * Gets the ranging interval for 802.11az NTB based ranging.
+     * Gets the minimum ranging interval for 802.11az NTB based ranging.
      *
      * @return {@link Duration} The ranging interval for 802.11az NTB.
      */
     @NonNull
-    public Duration getRangingInterval80211azNtb() {
-        return Duration.ofMillis(mMinRangingInterval80211azNtbMillis);
+    public Duration get80211azNtbMinRangingInterval() {
+        return Duration.ofMillis(m80211azNtbMinRangingIntervalMillis);
     }
 
     /**
@@ -262,8 +262,8 @@ public final class WifiPdRangingCapabilities
         private int mMaxChannelWidth = 0;
         private int mMaxPreamble = 0;
         private List<Integer> mSupportedDiscoveryChannelFrequenciesMhz = new ArrayList<>();
-        private int mMinRangingInterval80211mcMillis = 0;
-        private int mMinRangingInterval80211azNtbMillis = 0;
+        private int m80211mcMinRangingIntervalMillis = 0;
+        private int m80211azNtbMinRangingIntervalMillis = 0;
 
         /**
          * Sets the supported PASN modes.
@@ -360,25 +360,24 @@ public final class WifiPdRangingCapabilities
         /**
          * Sets the minimum ranging interval for 802.11mc.
          *
-         * @param minRangingInterval80211mcMillis The minimum ranging interval in milliseconds.
+         * @param minRangingIntervalMillis The minimum ranging interval in milliseconds.
          * @return the builder to facilitate chaining.
          */
         @NonNull
-        public Builder setMinRangingInterval80211mcMillis(int minRangingInterval80211mcMillis) {
-            mMinRangingInterval80211mcMillis = minRangingInterval80211mcMillis;
+        public Builder set80211mcMinRangingIntervalMillis(int minRangingIntervalMillis) {
+            this.m80211mcMinRangingIntervalMillis = minRangingIntervalMillis;
             return this;
         }
 
         /**
          * Sets the ranging interval for 802.11az NTB.
          *
-         * @param minRangingInterval80211azNtbMillis The ranging interval in milliseconds.
+         * @param minRangingIntervalMillis The ranging interval in milliseconds.
          * @return the builder to facilitate chaining.
          */
         @NonNull
-        public Builder setMinRangingInterval80211azNtbMillis(
-                int minRangingInterval80211azNtbMillis) {
-            mMinRangingInterval80211azNtbMillis = minRangingInterval80211azNtbMillis;
+        public Builder set80211azNtbMinRangingIntervalMillis(int minRangingIntervalMillis) {
+            this.m80211azNtbMinRangingIntervalMillis = minRangingIntervalMillis;
             return this;
         }
 

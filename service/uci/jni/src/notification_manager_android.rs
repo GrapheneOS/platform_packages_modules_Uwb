@@ -1268,13 +1268,17 @@ impl NotificationManagerAndroid {
         &mut self,
         ll_connect_id: u32,
         status_code: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onLogicalLinkCreateNotification",
-            "(JI)V",
+            "(JIII)V",
             &[
                 jvalue::from(JValue::Long(ll_connect_id as i64)),
                 jvalue::from(JValue::Int(status_code as i32)),
+                jvalue::from(JValue::Int(max_sdu_size_len as i32)),
+                jvalue::from(JValue::Int(max_sdu_size_value as i32)),
             ],
         )
     }
@@ -1300,6 +1304,8 @@ impl NotificationManagerAndroid {
         connect_id: u32,
         link_layer_mode: u8,
         source_mac_address: UwbAddress,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<JObject, JNIError> {
         let source_address_jbytearray = match source_mac_address {
             UwbAddress::Short(a) => self.env.byte_array_from_slice(&a)?,
@@ -1309,12 +1315,14 @@ impl NotificationManagerAndroid {
         let source_address_jobject = unsafe { JObject::from_raw(source_address_jbytearray) };
         self.cached_jni_call(
             "onRemoteLogicalLinkRequested",
-            "(JJI[B)V",
+            "(JJI[BII)V",
             &[
                 jvalue::from(JValue::Long(session_token as i64)),
                 jvalue::from(JValue::Long(connect_id as i64)),
                 jvalue::from(JValue::Int(link_layer_mode as i32)),
                 jvalue::from(JValue::Object(source_address_jobject)),
+                jvalue::from(JValue::Int(max_sdu_size_len as i32)),
+                jvalue::from(JValue::Int(max_sdu_size_value as i32)),
             ],
         )
     }
@@ -1442,8 +1450,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 SessionNotification::DataTransferPhaseConfig { session_token, status } => {
                     self.on_data_transfer_phase_config_notification(session_token, u8::from(status))
                 }
-                SessionNotification::CreateLogicalLink { connect_id, status } => {
-                    self.on_create_logical_link_notification(connect_id, u8::from(status))
+                SessionNotification::CreateLogicalLink { connect_id, status, max_sdu_size_len,
+                    max_sdu_size_value } => {
+                    self.on_create_logical_link_notification(connect_id, u8::from(status),
+                        max_sdu_size_len, max_sdu_size_value )
                 }
                 SessionNotification::LogicalLinkUwbsClose { connect_id, status } => {
                     self.on_logical_link_closed(connect_id, u8::from(status))
@@ -1453,11 +1463,15 @@ impl NotificationManager for NotificationManagerAndroid {
                     connect_id,
                     link_layer_mode,
                     source_mac_address,
+                    max_sdu_size_len,
+                    max_sdu_size_value,
                 } => self.on_remote_logical_link_requested(
                     session_token,
                     connect_id,
                     link_layer_mode,
                     source_mac_address,
+                    max_sdu_size_len,
+                    max_sdu_size_value,
                 ),
             }
         })

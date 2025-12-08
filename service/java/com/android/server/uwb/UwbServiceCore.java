@@ -878,6 +878,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
     }
 
+    public void clearSessions(AttributionSource attributionSource) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        mSessionManager.clearSessions(attributionSource);
+    }
+
     public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");

@@ -20,4 +20,11 @@
                    android:title="@string/responder_configuration"/>
           </menu>
      </item>
+     <item android:title="iOS Accessory">
+          <menu>
+               <item android:id="@+id/navigation_ios_accessory"
+                   android:icon="@drawable/ic_ios_accessory"
+                   android:title="iOS Accessory" />
+          </menu>
+     </item>
 </menu>

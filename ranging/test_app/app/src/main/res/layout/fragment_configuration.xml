@@ -6,11 +6,9 @@
     android:fillViewport="true"
     tools:context=".ResponderConfigurationFragment"
     tools:ignore="HardcodedText"
-    android:layout_marginTop="?attr/actionBarSize"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/layout_global"
-        android:layout_marginTop="?attr/actionBarSize"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"

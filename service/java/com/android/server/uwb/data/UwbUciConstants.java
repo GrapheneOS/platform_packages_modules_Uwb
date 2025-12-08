@@ -274,7 +274,7 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_ANDROID_REGULATION_UWB_OFF = STATUS_REGULATION_UWB_OFF;
 
     /**
-     * Table 28: Status codes in the DATA_TRANSFER_STATUS_NTF.
+     * Table 36: Status codes in the DATA_TRANSFER_STATUS_NTF.
      */
     public static final int STATUS_CODE_DATA_TRANSFER_REPETITION_OK =
             FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_REPETITION_OK;
@@ -282,6 +282,22 @@ public class UwbUciConstants {
             FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_OK;
     public static final int STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER =
             FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_NO_CREDIT_AVAILABLE =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_NO_CREDIT_AVAILABLE;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_REJECTED =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_REJECTED;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_LL_CONNECT_ID =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_LL_CONNECT_ID;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_SDU_SIZE_ERROR =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_STATUS_SDU_SIZE_ERROR;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_ERROR_RANGING_ROUND_IS_SUSPENDED =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_STATUS_ERROR_RANGING_ROUND_IS_SUSPENDED;
 
     /**
      * Table TBD: Status codes in the DATA_TRANSFER_PHASE_CONFIGURATION_NTF
@@ -354,6 +370,8 @@ public class UwbUciConstants {
             LogicalLinkConnectionParams.CONTROL_FIELD_LINK_TIMEOUT;
     public static final int CONTROL_FIELD_PORT =
             LogicalLinkConnectionParams.CONTROL_FIELD_PORT;
+    public static final int CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_MAX_TRANSCEIVE_LL_SDU_SIZE;
 
     /* Used by DATA_TRANSFER_PHASE_CONFIG and Hybrid config updates */
     public static final int SHORT_MAC_ADDRESS = 0;

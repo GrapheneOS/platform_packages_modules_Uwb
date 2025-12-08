@@ -45,6 +45,7 @@ import java.util.Objects;
 public final class LogicalLinkCreationParams implements Parcelable {
     private final byte[] mDestinationAddress;
     private final int mLogicalLinkClassLength;
+    private int mMaxSduSizeValue;
 
     // Table 39: Link Layer Mode Selector values
     /**
@@ -115,6 +116,84 @@ public final class LogicalLinkCreationParams implements Parcelable {
     public static final int LOGICAL_LINK_STATUS_FAILED = 1;
 
     /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            SDU_SIZE_64_BYTES,
+            SDU_SIZE_128_BYTES,
+            SDU_SIZE_192_BYTES,
+            SDU_SIZE_256_BYTES,
+            SDU_SIZE_384_BYTES,
+            SDU_SIZE_512_BYTES,
+            SDU_SIZE_760_BYTES,
+            SDU_SIZE_1024_BYTES,
+            SDU_SIZE_1536_BYTES,
+            SDU_SIZE_2048_BYTES,
+            SDU_SIZE_4096_BYTES,
+            SDU_SIZE_8192_BYTES,
+            SDU_SIZE_16384_BYTES,
+            SDU_SIZE_32768_BYTES,
+    })
+    @interface SduSizeIndex {}
+
+    /** Encoded SDU size index representing 64 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_64_BYTES = 0;
+
+    /** Encoded SDU size index representing 128 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_128_BYTES = 1;
+
+    /** Encoded SDU size index representing 192 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_192_BYTES = 2;
+
+    /** Encoded SDU size index representing 256 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_256_BYTES = 3;
+
+    /** Encoded SDU size index representing 384 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_384_BYTES = 4;
+
+    /** Encoded SDU size index representing 512 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_512_BYTES = 5;
+
+    /** Encoded SDU size index representing 760 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_760_BYTES = 6;
+
+    /** Encoded SDU size index representing 1024 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_1024_BYTES = 7;
+
+    /** Encoded SDU size index representing 1536 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_1536_BYTES = 8;
+
+    /** Encoded SDU size index representing 2048 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_2048_BYTES = 9;
+
+    /** Encoded SDU size index representing 4096 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_4096_BYTES = 10;
+
+    /** Encoded SDU size index representing 8192 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_8192_BYTES = 11;
+
+    /** Encoded SDU size index representing 16384 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_16384_BYTES = 12;
+
+    /** Encoded SDU size index representing 32768 bytes. */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int SDU_SIZE_32768_BYTES = 13;
+
+    /**
      * Reason for a Logical Link closure as indicated in Table 47.
      *
      * @hide
@@ -127,6 +206,7 @@ public final class LogicalLinkCreationParams implements Parcelable {
         LOGICAL_LINK_CLOSE_REASON_SECURE_COMPONENT,
         LOGICAL_LINK_CLOSE_REASON_UNKNOWN,
         LOGICAL_LINK_CLOSE_REASON_HOST,
+        LOGICAL_LINK_CLOSE_RX_SDU_TOO_LARGE,
     })
     @interface LogicalLinkClosureReason {}
 
@@ -160,6 +240,14 @@ public final class LogicalLinkCreationParams implements Parcelable {
      */
     public static final int LOGICAL_LINK_CLOSE_REASON_HOST = 0x05;
 
+    /**
+     * The logical link was explicitly terminted due to received Service Data Unit exceeds max
+     * Service Data Unit capabilities.
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int LOGICAL_LINK_CLOSE_RX_SDU_TOO_LARGE = 0x06;
+
+
     /** Indicates that no specific Logical Link Connection ID is provided. */
     public static final int CONNECT_ID_UNSPECIFIED = -1;
 
@@ -167,6 +255,7 @@ public final class LogicalLinkCreationParams implements Parcelable {
         mLinkLayerModeSelector = builder.mLinkLayerModeSelector;
         mDestinationAddress = builder.mDestinationAddress;
         mLogicalLinkClassLength = builder.mLogicalLinkClassLength;
+        mMaxSduSizeValue = builder.mMaxSduSizeValue;
     }
 
     /**
@@ -192,14 +281,29 @@ public final class LogicalLinkCreationParams implements Parcelable {
     }
 
     /**
-     * Returns the logical link class length.
-     *
-     * <p>This value represents the class length (in bytes) associated with the logical link.</p>
-     *
-     * @return The class length of the logical link.
-     */
+    * Returns the logical link class length.
+    * <p> In FiRa 3.0, this value represents the class length (in bytes) associated with the logical
+    * link.</p>
+    *
+    * <p>In FiRa 4.0 and later, this value represents the length (in bytes) of the Max Service Data
+    * Unit Size field for the logical link.</p>
+    *
+    * @return The logical link class length value.
+    */
     public int getLogicalLinkClassLength() {
         return mLogicalLinkClassLength;
+    }
+
+    /**
+     * Returns the logical link max Service Data Unit size.
+     *
+     * <p>This value represents the max Service Data Unit size associated with the logical link.</p>
+     *
+     * @return Maximum Service Data Unit(SDU) transceive size
+     */
+    @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public int getMaxSduSizeValue() {
+        return mMaxSduSizeValue;
     }
 
     /**
@@ -214,7 +318,8 @@ public final class LogicalLinkCreationParams implements Parcelable {
             LogicalLinkCreationParams other = (LogicalLinkCreationParams) obj;
             return mLinkLayerModeSelector == other.mLinkLayerModeSelector
                     && Arrays.equals(mDestinationAddress, other.mDestinationAddress)
-                    && mLogicalLinkClassLength == other.mLogicalLinkClassLength;
+                    && mLogicalLinkClassLength == other.mLogicalLinkClassLength
+                    && mMaxSduSizeValue == other.mMaxSduSizeValue;
         }
         return false;
     }
@@ -225,7 +330,7 @@ public final class LogicalLinkCreationParams implements Parcelable {
     @Override
     public int hashCode() {
         return Objects.hash(mLinkLayerModeSelector, Arrays.hashCode(mDestinationAddress),
-                mLogicalLinkClassLength);
+                mLogicalLinkClassLength, mMaxSduSizeValue);
     }
 
     @Override
@@ -242,6 +347,7 @@ public final class LogicalLinkCreationParams implements Parcelable {
                 + "linkLayerModeSelector=" + mLinkLayerModeSelector
                 + ", destinationAddress=" + UwbAddress.fromBytes(mDestinationAddress)
                 + ", logicalLinkClassLength=" + mLogicalLinkClassLength
+                + ", maxSduSizeValue=" + mMaxSduSizeValue
                 + '}';
     }
 
@@ -250,14 +356,25 @@ public final class LogicalLinkCreationParams implements Parcelable {
         dest.writeInt(mLinkLayerModeSelector);
         dest.writeByteArray(mDestinationAddress);
         dest.writeInt(mLogicalLinkClassLength);
+        dest.writeInt(mMaxSduSizeValue);
     }
 
     public static final @NonNull Creator<LogicalLinkCreationParams> CREATOR =
             new Creator<LogicalLinkCreationParams>() {
                 @Override
                 public LogicalLinkCreationParams createFromParcel(Parcel in) {
-                    return new Builder(in.readInt(), UwbAddress.fromBytes(in.createByteArray()))
-                            .setLogicalLinkClassLength(in.readInt())
+                    int linkLayerModeSelector = in.readInt();
+                    UwbAddress destAddr = UwbAddress.fromBytes(in.createByteArray());
+                    int logicalLinkClassLen = in.readInt();
+                    int packedMaxSduSize = in.readInt();
+
+                    int txSduSize = packedMaxSduSize & 0x0F;
+                    int rxSduSize = (packedMaxSduSize >> 4) & 0x0F;
+
+                    return new Builder(linkLayerModeSelector, destAddr)
+                            .setLogicalLinkClassLength(logicalLinkClassLen)
+                            .setMaxSduTransmitSize(txSduSize)
+                            .setMaxSduReceiveSize(rxSduSize)
                             .build();
                 }
 
@@ -275,6 +392,7 @@ public final class LogicalLinkCreationParams implements Parcelable {
         private int mLinkLayerModeSelector;
         private byte[] mDestinationAddress = new byte[UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH];
         private int mLogicalLinkClassLength = 0;
+        private int mMaxSduSizeValue = 0;
 
         /**
          * Constructor for the {@link Builder} class.
@@ -299,15 +417,49 @@ public final class LogicalLinkCreationParams implements Parcelable {
         }
 
         /**
-         * Sets the logical link class length.
-         * The default value is 0 if not explicitly set.
+         * Sets the Logical Link Class length.
          *
-         * @param logicalLinkClassLength The logical link class length value.
+         * <p>This parameter is originally defined in FiRa 3.0 to represent the Logical Link Class
+         * field length.
+         *
+         * <p><strong>FiRa 4.0 note:</strong> Starting from FiRa 4.0, this field additionally
+         * represents the Logical Link Max Service Data Unit Size(SDU) field length.
+         *
+         * <p>Default value is 0 if not explicitly set.
+         *
+         * @param logicalLinkClassLength The length value to be applied according to the FiRa spec
+         *                               version in use.
          * @return The {@link Builder} instance for method chaining.
          */
         @NonNull
         public Builder setLogicalLinkClassLength(int logicalLinkClassLength) {
             mLogicalLinkClassLength = logicalLinkClassLength;
+            return this;
+        }
+
+        /**
+         * Sets the logical link max Service Data Unit(SDU) transmit size.
+         *
+         * @param maxSduTransmitSize The logical link max Service Data Unit(SDU) transmit size.
+         * @return The {@link Builder} instance for method chaining.
+         */
+        @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        @NonNull
+        public Builder setMaxSduTransmitSize(@SduSizeIndex int maxSduTransmitSize) {
+            mMaxSduSizeValue = (mMaxSduSizeValue & 0xF0) | (maxSduTransmitSize & 0x0F);
+            return this;
+        }
+
+        /**
+         * Sets the logical link max Service Data Unit(SDU) receive size.
+         *
+         * @param maxSduReceiveSize The logical link max Service Data Unit(SDU) receive size.
+         * @return The {@link Builder} instance for method chaining.
+         */
+        @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        @NonNull
+        public Builder setMaxSduReceiveSize(@SduSizeIndex int maxSduReceiveSize) {
+            mMaxSduSizeValue = (mMaxSduSizeValue & 0x0F) | ((maxSduReceiveSize & 0x0F) << 4);
             return this;
         }
 

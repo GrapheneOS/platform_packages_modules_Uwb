@@ -78,6 +78,18 @@ pub enum UCIMajorVersion {
     V2 = 2,
     /// Version 3.0
     V3 = 3,
+    /// Version 4.0
+    V4 = 4,
+}
+
+/// Fira Logical Link version
+#[derive(FromPrimitive, ToPrimitive, PartialEq, Clone)]
+#[repr(u8)]
+pub enum FiraLogicalLinkVersion {
+    /// Version 1.0
+    V1_0 = 0x10,
+    /// Version 1.1
+    V1_1 = 0x11,
 }
 
 impl std::fmt::Debug for AppConfigTlv {

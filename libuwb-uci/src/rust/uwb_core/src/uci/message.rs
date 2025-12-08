@@ -20,7 +20,7 @@ use crate::error::Error;
 use crate::uci::notification::UciNotification;
 use crate::uci::response::UciResponse;
 
-use crate::params::UCIMajorVersion;
+use crate::params::{FiraLogicalLinkVersion, UCIMajorVersion};
 
 #[derive(Debug)]
 pub(super) enum UciMessage {
@@ -28,22 +28,43 @@ pub(super) enum UciMessage {
     Notification(UciNotification),
 }
 
-impl TryFrom<(uwb_uci_packets::UciControlPacket, UCIMajorVersion, bool, bool)> for UciMessage {
+impl
+    TryFrom<(
+        uwb_uci_packets::UciControlPacket,
+        UCIMajorVersion,
+        bool,
+        bool,
+        FiraLogicalLinkVersion,
+    )> for UciMessage
+{
     type Error = Error;
     fn try_from(
-        pair: (uwb_uci_packets::UciControlPacket, UCIMajorVersion, bool, bool),
+        pair: (
+            uwb_uci_packets::UciControlPacket,
+            UCIMajorVersion,
+            bool,
+            bool,
+            FiraLogicalLinkVersion,
+        ),
     ) -> Result<Self, Self::Error> {
         let packet = pair.0;
         let uci_fira_major_ver = pair.1;
         let is_multicast_list_ntf_v2_supported = pair.2;
         let is_multicast_list_rsp_v2_supported = pair.3;
+        let fira_logical_link_version = pair.4;
         match packet.specialize() {
             uwb_uci_packets::UciControlPacketChild::UciResponse(evt) => Ok(UciMessage::Response(
                 (evt, uci_fira_major_ver, is_multicast_list_rsp_v2_supported).try_into()?,
             )),
             uwb_uci_packets::UciControlPacketChild::UciNotification(evt) => {
                 Ok(UciMessage::Notification(
-                    (evt, uci_fira_major_ver, is_multicast_list_ntf_v2_supported).try_into()?,
+                    (
+                        evt,
+                        uci_fira_major_ver,
+                        is_multicast_list_ntf_v2_supported,
+                        fira_logical_link_version,
+                    )
+                        .try_into()?,
                 ))
             }
             _ => {

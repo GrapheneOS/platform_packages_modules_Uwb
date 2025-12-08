@@ -107,6 +107,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DT_TAG_BLO
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_2_0;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_LOGICAL_LINK_VER_4_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE_VER_1_0;
@@ -871,6 +872,15 @@ public class FiraDecoder extends TlvDecoder {
             }
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_RSSI_REPORTING not found.");
+        }
+
+        try {
+            byte version = tlvs.getByte(SUPPORTED_FIRA_LOGICAL_LINK_VER_4_0);
+            FiraProtocolVersion firaLogicalLinkVersion = new FiraProtocolVersion(
+                    (version & 0xF0) >> 4, version & 0x0F);
+            builder.setFiraLogicalLinkVersionSupported(firaLogicalLinkVersion);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_FIRA_LOGICAL_LINK_VERSION not found.");
         }
 
         try {

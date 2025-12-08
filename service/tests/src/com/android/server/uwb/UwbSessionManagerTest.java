@@ -5005,7 +5005,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
@@ -5025,7 +5025,7 @@ public class UwbSessionManagerTest {
 
         when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(null);
+                anyByte(), anyString())).thenReturn(null);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
         mTestLooper.dispatchNext();
@@ -5048,7 +5048,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
@@ -5059,7 +5059,7 @@ public class UwbSessionManagerTest {
                 uwbSession);
 
         mUwbSessionManager.onLogicalLinkCreateNotification(connectId,
-                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED);
+                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED, 0, 0);
 
         verify(mUwbSessionNotificationManager).onLogicalLinkCreated(eq(uwbSession), eq(params),
                 eq(connectId));
@@ -5075,7 +5075,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSessionByConnectionIdentifier((int) connectId))
                 .thenReturn(null);
 
-        mUwbSessionManager.onLogicalLinkCreateNotification(connectId, status);
+        mUwbSessionManager.onLogicalLinkCreateNotification(connectId, status, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreated(any(), any(),
                 anyInt());
@@ -5096,7 +5096,7 @@ public class UwbSessionManagerTest {
         when(uwbSession.getSessionType()).thenReturn(
                 UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
         when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
-                anyString())).thenReturn(response);
+                anyByte(), anyString())).thenReturn(response);
         when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(response.getLogicalLinkConnectId()).thenReturn(connectId);
 
@@ -5187,7 +5187,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(mockUwbSession);
 
         mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
-                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, new byte[] { 0x11, 0x22 });
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, new byte[] { 0x11, 0x22 }, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager).onRemoteLogicalLinkRequested(any(), any());
     }
@@ -5202,7 +5202,7 @@ public class UwbSessionManagerTest {
         when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(null);
 
         mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
-                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, sourceAddress);
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, sourceAddress, 0x00, 0x00);
 
         verify(mUwbSessionNotificationManager, never()).onRemoteLogicalLinkRequested(any(), any());
     }
@@ -6094,6 +6094,44 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.onRadarDataMessageReceived(uwbRadarData);
         verify(mUwbSessionNotificationManager)
                 .onRadarDataMessageReceived(uwbSession, uwbRadarData);
+    }
+
+    @Test
+    public void clearSessions_success() {
+        // Setup a session for the first attribution source.
+        UwbSession uwbSession1 = mock(UwbSession.class);
+        SessionHandle sessionHandle1 = new SessionHandle(1, ATTRIBUTION_SOURCE, 1);
+        when(uwbSession1.getSessionHandle()).thenReturn(sessionHandle1);
+        when(uwbSession1.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
+        mUwbSessionManager.mSessionTable.put(sessionHandle1, uwbSession1);
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE))
+                .when(uwbSession1).getApiState();
+
+        // Setup a session for the second attribution source (should not be removed).
+        UwbSession uwbSession2 = mock(UwbSession.class);
+        SessionHandle sessionHandle2 = new SessionHandle(2, ATTRIBUTION_SOURCE_2, 2);
+        when(uwbSession2.getSessionHandle()).thenReturn(sessionHandle2);
+        when(uwbSession2.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE_2);
+        mUwbSessionManager.mSessionTable.put(sessionHandle2, uwbSession2);
+
+        // Setup a third session for the same attribution source as the first (should be removed).
+        UwbSession uwbSession3 = mock(UwbSession.class);
+        SessionHandle sessionHandle3 = new SessionHandle(3, ATTRIBUTION_SOURCE, 3);
+        when(uwbSession3.getSessionHandle()).thenReturn(sessionHandle3);
+        when(uwbSession3.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
+        mUwbSessionManager.mSessionTable.put(sessionHandle3, uwbSession3);
+        doReturn(new AtomicReference<>(UwbSession.State.ACTIVE))
+                .when(uwbSession3).getApiState();
+
+        // Clear sessions for the first attribution source.
+        mUwbSessionManager.clearSessions(ATTRIBUTION_SOURCE);
+
+        // Verify that deInitSession is called for the first and third sessions.
+        verify(mUwbSessionManager).deInitSession(eq(sessionHandle1));
+        verify(mUwbSessionManager).deInitSession(eq(sessionHandle3));
+
+        // Verify that deInitSession is not called for the second session.
+        verify(mUwbSessionManager, never()).deInitSession(eq(sessionHandle2));
     }
 
     private UwbSessionManager.ReceivedDataInfo buildReceivedDataInfo(long macAddress) {

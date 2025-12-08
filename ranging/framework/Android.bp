@@ -76,10 +76,9 @@ java_defaults {
     ],
 }
 
-// ranging-service needs pre-jarjared version of framework-ranging so it can reference copied utility
-// classes before they are renamed.
+// Framework library to be statically included in the service.
 java_library {
-    name: "framework-ranging-pre-jarjar",
+    name: "framework-ranging-lib",
     defaults: ["framework-ranging-defaults"],
     sdk_version: "module_current",
     min_sdk_version: "33",
@@ -91,6 +90,9 @@ java_library {
     lint: {
         baseline_filename: "lint-baseline.xml",
     },
+    visibility: [
+        "//packages/modules/Uwb/ranging:__subpackages__",
+    ],
 }
 
 // post-jarjar version of framework-ranging

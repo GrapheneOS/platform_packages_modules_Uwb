@@ -602,11 +602,11 @@ package android.ranging.wifi.pd {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class WifiPdRangingCapabilities implements android.os.Parcelable {
     method public int describeContents();
+    method @NonNull public java.time.Duration get80211azNtbMinRangingInterval();
+    method @NonNull public java.time.Duration get80211mcMinRangingInterval();
     method public int getMaxChannelWidth();
     method public int getMaxPreamble();
-    method @NonNull public java.time.Duration getMinRangingInterval80211mc();
     method @NonNull public android.net.MacAddress getProximityDetectionMacAddress();
-    method @NonNull public java.time.Duration getRangingInterval80211azNtb();
     method @IntRange(from=2400, to=7125) @NonNull public java.util.Set<java.lang.Integer> getSupportedDiscoveryChannelFrequenciesMhz();
     method @NonNull public java.util.Set<java.lang.Integer> getSupportedPasnModes();
     method public int getTechnology();

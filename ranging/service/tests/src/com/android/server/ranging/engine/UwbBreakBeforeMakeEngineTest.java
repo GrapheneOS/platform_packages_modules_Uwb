@@ -34,6 +34,7 @@ import com.android.modules.utils.HandlerExecutor;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeuristicEvent;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import org.junit.After;
@@ -48,7 +49,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Set;
 
 /**
- * Unit tests for {@link BreakBeforeMakeEngine}.
+ * Unit tests for {@link UwbBreakBeforeMakeEngine}.
  */
 @SmallTest
 @RunWith(JUnit4.class)
@@ -131,7 +132,7 @@ public class UwbBreakBeforeMakeEngineTest {
         // By default, ALT is started.
         mListenerInOrder.verify(mListener).startTechnologies(Set.of(ALT_TECH));
         // Simulate error on ALT_TECH. This should result in the stopTechnologies on the ALT_TECH
-        EngineEventFactory.EngineEvent event = mEngine.getAltFailure();
+        RangeHeuristicEvent event = mEngine.getAltFailure();
         event.complete(event);
         mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(Set.of(ALT_TECH));
     }
@@ -142,7 +143,7 @@ public class UwbBreakBeforeMakeEngineTest {
         altToUwbTransition();
 
         // Simulate error on UWB. This should result in the stopTechnologies on the UWB
-        EngineEventFactory.EngineEvent event = mEngine.getUwbFailure();
+        RangeHeuristicEvent event = mEngine.getUwbFailure();
         event.complete(event);
         mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(
                 Set.of(RangingTechnology.UWB));
@@ -159,7 +160,7 @@ public class UwbBreakBeforeMakeEngineTest {
         mListenerInOrder.verify(mListener).startTechnologies(Set.of(ALT_TECH));
 
         // A switch event should result in the ALT tech being stopped.
-        EngineEventFactory.EngineEvent event = mEngine.getNextEvent();
+        RangeHeuristicEvent event = mEngine.getNextEvent();
         event.complete(event);
         mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(Set.of(ALT_TECH));
 
@@ -174,7 +175,7 @@ public class UwbBreakBeforeMakeEngineTest {
         // By default, ALT is started. Switch to Uwb first.
         altToUwbTransition();
 
-        EngineEventFactory.EngineEvent event = mEngine.getNextEvent();
+        RangeHeuristicEvent event = mEngine.getNextEvent();
         event.complete(event);
         mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(
                 Set.of(RangingTechnology.UWB));

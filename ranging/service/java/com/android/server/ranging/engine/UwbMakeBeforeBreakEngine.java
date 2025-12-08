@@ -26,10 +26,11 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.StateMachine;
-import com.android.server.ranging.engine.EngineEventFactory.EngineEvent;
-import com.android.server.ranging.engine.heuristic.DerivativeEstimator;
-import com.android.server.ranging.engine.heuristic.RawRangeMeters;
-import com.android.server.ranging.engine.heuristic.StreakCounter;
+import com.android.server.ranging.heuristic.DerivativeEstimator;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory;
+import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeuristicEvent;
+import com.android.server.ranging.heuristic.RawRangeMeters;
+import com.android.server.ranging.heuristic.StreakCounter;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.Range;
@@ -60,21 +61,21 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
     private final RangingInjector mInjector;
 
     private final StateMachine<State> mStateStateMachine;
-    private final EngineEventFactory mEventFactory;
+    private final RangeHeuristicEventFactory mEventFactory;
     private final RawRangeMeters mRangeM;
     private final DerivativeEstimator mDerivative;
 
     private StreakCounter mUwbStreakCounter;
     private StreakCounter mAltStreakCounter;
 
-    private EngineEvent mStartUwb;
-    private EngineEvent mOkToStopAlt;
-    private EngineEvent mStartAlt;
-    private EngineEvent mOkToStopUwb;
+    private RangeHeuristicEvent mStartUwb;
+    private RangeHeuristicEvent mOkToStopAlt;
+    private RangeHeuristicEvent mStartAlt;
+    private RangeHeuristicEvent mOkToStopUwb;
 
-    private EngineEvent mAltFailure;
-    private EngineEvent mUwbFailure;
-    private EngineEvent mNextEvent;
+    private RangeHeuristicEvent mAltFailure;
+    private RangeHeuristicEvent mUwbFailure;
+    private RangeHeuristicEvent mNextEvent;
 
     private enum State {
         UWB_ONLY,
@@ -91,7 +92,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         mExecutor = executor;
         mInjector = injector;
         mStateStateMachine = new StateMachine<>(State.SWAPPING);
-        mEventFactory = new EngineEventFactory(executor);
+        mEventFactory = new RangeHeuristicEventFactory(executor);
         mRangeM = new RawRangeMeters(mExecutor);
         mDerivative = new DerivativeEstimator(0.4, mExecutor);
     }
@@ -238,7 +239,7 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         }
     }
 
-    private synchronized void handleFailureEvent(EngineEvent event) {
+    private synchronized void handleFailureEvent(RangeHeuristicEvent event) {
         if (event == mUwbFailure) {
             Log.i(TAG, "Detected UWB failure");
             handleUwbFailure();

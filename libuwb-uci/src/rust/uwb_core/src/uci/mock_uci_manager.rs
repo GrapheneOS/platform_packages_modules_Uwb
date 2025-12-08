@@ -648,14 +648,16 @@ impl MockUciManager {
         expected_session_id: SessionId,
         expected_link_layer_mode: u8,
         expected_dest_address: Vec<u8>,
-        expected_logical_link_class_len: u8,
+        expected_max_sdu_size_len: u8,
+        expected_max_sdu_size_value: u8,
         out: Result<CreateLogicalLinkResponse>,
     ) {
         self.expected_calls.lock().unwrap().push_back(ExpectedCall::CreateLogicalLink {
             expected_session_id,
             expected_link_layer_mode,
             expected_dest_address,
-            expected_logical_link_class_len,
+            expected_max_sdu_size_len,
+            expected_max_sdu_size_value,
             out,
         });
     }
@@ -1394,7 +1396,8 @@ impl UciManager for MockUciManager {
         session_id: u32,
         link_layer_mode: u8,
         dest_address: Vec<u8>,
-        logical_link_class_len: u8,
+        max_sdu_size_len: u8,
+        max_sdu_size_value: u8,
     ) -> Result<CreateLogicalLinkResponse> {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
@@ -1402,12 +1405,14 @@ impl UciManager for MockUciManager {
                 expected_session_id,
                 expected_link_layer_mode,
                 expected_dest_address,
-                expected_logical_link_class_len,
+                expected_max_sdu_size_len,
+                expected_max_sdu_size_value,
                 out,
             }) if expected_session_id == session_id
                 && expected_dest_address == dest_address
                 && expected_link_layer_mode == link_layer_mode
-                && expected_logical_link_class_len == logical_link_class_len =>
+                && expected_max_sdu_size_len == max_sdu_size_len
+                && expected_max_sdu_size_value == max_sdu_size_value =>
             {
                 self.expect_call_consumed.notify_one();
                 out
@@ -1766,7 +1771,8 @@ enum ExpectedCall {
         expected_session_id: u32,
         expected_link_layer_mode: u8,
         expected_dest_address: Vec<u8>,
-        expected_logical_link_class_len: u8,
+        expected_max_sdu_size_len: u8,
+        expected_max_sdu_size_value: u8,
         out: Result<CreateLogicalLinkResponse>,
     },
     CloseLogicalLink {

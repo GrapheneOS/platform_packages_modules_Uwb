@@ -35,6 +35,7 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
     private static final int SHORT_MAC_ADDRESS = 0;
+    private static final byte SLOT_BITMAP_DISABLED = 7;
 
     private final byte mDtpcmRepetition;
     private final byte mDataTransferControl;
@@ -78,28 +79,36 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
         bundle.putInt(KEY_DTPCM_REPETITION, mDtpcmRepetition);
         bundle.putInt(KEY_DATA_TRANSFER_CONTROL, mDataTransferControl);
 
-        int dataTransferPhaseManagementListSize = mDataTransferPhaseManagementList.size();
-        long[] macAddressList = new long[dataTransferPhaseManagementListSize];
-        int i = 0;
-        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(dataTransferPhaseManagementListSize
-                * (1 << ((mDataTransferControl & 0x0F) >> 1)));
+        int listSize = mDataTransferPhaseManagementList.size();
+        long[] macAddressList = new long[listSize];
 
-        slotBitmapByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        ByteBuffer stopDataTransferBuffer =
-                ByteBuffer.allocate(dataTransferPhaseManagementListSize);
+        byte slotBitMapValue = (byte) ((mDataTransferControl & 0X0F) >> 1);
+        boolean slotBitmapDisabled = isSlotBitmapDisabled(slotBitMapValue);
+        int slotBitmapSize = slotBitmapDisabled ? 0 : (1 << slotBitMapValue);
 
-        for (FiraDataTransferPhaseManagementList dataTransferPhaseManagementList :
+        ByteBuffer slotBitmapBuffer = ByteBuffer.allocate(listSize
+                * slotBitmapSize).order(ByteOrder.LITTLE_ENDIAN);
+
+        ByteBuffer stopDataTransferBuffer = ByteBuffer.allocate(listSize);
+
+        int index = 0;
+        for (FiraDataTransferPhaseManagementList item :
                 mDataTransferPhaseManagementList) {
-            macAddressList[i++] = uwbAddressToLong(
-                dataTransferPhaseManagementList.getUwbAddress());
-            slotBitmapByteBuffer.put(dataTransferPhaseManagementList.getSlotBitMap());
-            stopDataTransferBuffer.put(dataTransferPhaseManagementList.getStopDataTransfer());
+            macAddressList[index++] = uwbAddressToLong(
+                    item.getUwbAddress());
+            if (!slotBitmapDisabled) {
+                slotBitmapBuffer.put(item.getSlotBitMap());
+            }
+            stopDataTransferBuffer.put(item.getStopDataTransfer());
         }
 
         bundle.putLongArray(KEY_MAC_ADDRESS_LIST, macAddressList);
-        bundle.putIntArray(KEY_SLOT_BITMAP, byteArrayToIntArray(slotBitmapByteBuffer.array()));
-        bundle.putIntArray(KEY_STOP_DATA_TRANSFER, byteArrayToIntArray(
-                stopDataTransferBuffer.array()));
+
+        if (!isSlotBitmapDisabled(slotBitMapValue)) {
+            bundle.putIntArray(KEY_SLOT_BITMAP, byteArrayToIntArray(slotBitmapBuffer.array()));
+        }
+        bundle.putIntArray(KEY_STOP_DATA_TRANSFER,
+                byteArrayToIntArray(stopDataTransferBuffer.array()));
 
         return bundle;
     }
@@ -129,6 +138,10 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
         return bytes;
     }
 
+    private static boolean isSlotBitmapDisabled(byte value) {
+        return value == SLOT_BITMAP_DISABLED;
+    }
+
     public static FiraDataTransferPhaseConfig fromBundle(PersistableBundle bundle) {
         switch (bundle.getInt(KEY_BUNDLE_VERSION)) {
             case BUNDLE_VERSION_1:
@@ -143,42 +156,50 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
 
         builder.setDtpcmRepetition((byte) bundle.getInt(KEY_DTPCM_REPETITION));
         byte dataTransferControl = (byte) bundle.getInt(KEY_DATA_TRANSFER_CONTROL);
-        builder.setMacAddressMode((byte) (dataTransferControl & 0x01));
-        builder.setSlotBitmapSize((byte) ((dataTransferControl & 0x0F) >> 1));
+
+        byte macAddressMode = (byte) (dataTransferControl & 0x01);
+        builder.setMacAddressMode(macAddressMode);
+
+        byte slotBitMapValue = (byte) ((dataTransferControl & 0x0F) >> 1);
+        builder.setSlotBitmapSize(slotBitMapValue);
+        int slotBitMapSize = 1 << slotBitMapValue;
+
+        boolean slotBitmapDisabled = isSlotBitmapDisabled(slotBitMapValue);
+
+        long[] macAddress = bundle.getLongArray(KEY_MAC_ADDRESS_LIST);
+        if (macAddress == null) macAddress = new long[0];
+
+        byte[] stopBuffer = intArrayToByteArray(bundle.getIntArray(KEY_STOP_DATA_TRANSFER));
+        if (stopBuffer.length < macAddress.length) {
+            throw new IllegalArgumentException("stop data transfer and macAddress array length"
+                    + "mismatch");
+        }
 
         List<FiraDataTransferPhaseManagementList> mDataTransferPhaseManagementList =
                 new ArrayList<>();
-        List<UwbAddress> macAddressList = new ArrayList<>();
         List<byte[]> slotBitmapList = new ArrayList<>();
-        List<Byte> stopDataTransferList = new ArrayList<>();
-        long[] macAddress = bundle.getLongArray(KEY_MAC_ADDRESS_LIST);
+
+        if (!slotBitmapDisabled) {
+            byte[] buffer = intArrayToByteArray(bundle.getIntArray(KEY_SLOT_BITMAP));
+            ByteBuffer slotBitmapBuffer = ByteBuffer.wrap(buffer);
+
+            while (slotBitmapBuffer.hasRemaining()) {
+                byte[] data = new byte[slotBitMapSize];
+                int bytesToRead = Math.min(slotBitMapSize, slotBitmapBuffer.remaining());
+                slotBitmapBuffer.get(data, 0, bytesToRead);
+                slotBitmapList.add(data);
+            }
+        }
+
+        int addressByteLength = (macAddressMode == SHORT_MAC_ADDRESS)
+                ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
+                : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
+
         for (int i = 0; i < macAddress.length; i++) {
-            macAddressList.add(longToUwbAddress(macAddress[i],
-                    ((dataTransferControl & 0x01) == SHORT_MAC_ADDRESS)
-                    ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
-                        : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH));
-        }
-
-        byte[] buffer = intArrayToByteArray(bundle.getIntArray(KEY_SLOT_BITMAP));
-        ByteBuffer slotBitmapByteBuffer = ByteBuffer.wrap(buffer);
-        int chunkBufferSize = 1 << (dataTransferControl >> 1);
-
-        while (slotBitmapByteBuffer.hasRemaining()) {
-            byte[] data = new byte[chunkBufferSize];
-            int bytesToRead = Math.min(chunkBufferSize, slotBitmapByteBuffer.remaining());
-            slotBitmapByteBuffer.get(data, 0, bytesToRead);
-            slotBitmapList.add(data);
-        }
-
-        byte[] stopBuffer = intArrayToByteArray(bundle.getIntArray(KEY_STOP_DATA_TRANSFER));
-        for (int i = 0; i < stopBuffer.length; i++) {
-            stopDataTransferList.add(stopBuffer[i]);
-        }
-
-
-        for (int i = 0; i < macAddressList.size(); i++) {
             mDataTransferPhaseManagementList.add(new FiraDataTransferPhaseManagementList(
-                    macAddressList.get(i), slotBitmapList.get(i), stopDataTransferList.get(i)));
+                    longToUwbAddress(macAddress[i], addressByteLength),
+                    slotBitmapDisabled ? new byte[] {} : slotBitmapList.get(i),
+                    stopBuffer[i]));
         }
 
         builder.setDataTransferPhaseManagementList(mDataTransferPhaseManagementList);
@@ -263,7 +284,9 @@ public class FiraDataTransferPhaseConfig extends FiraParams {
         }
 
         public FiraDataTransferPhaseConfig build() {
-            checkSlotBitMap(mSlotBitMapSize, mDataTransferPhaseManagementList);
+            if (!isSlotBitmapDisabled(mSlotBitMapSize)) {
+                checkSlotBitMap(mSlotBitMapSize, mDataTransferPhaseManagementList);
+            }
             return new FiraDataTransferPhaseConfig(
                 mDtpcmRepetition,
                 (byte) ((mSlotBitMapSize << 1) | (mMacAddressMode & 0x01)),
