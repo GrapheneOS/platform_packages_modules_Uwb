@@ -26,6 +26,10 @@ import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
 
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
 /** Utility class to hold ranging params shared across peer devices */
 public class ConfigurationParameters {
     private static String PREF_CONFIG = "PrefConfig";
@@ -239,21 +243,43 @@ public class ConfigurationParameters {
     public static class Oob extends BaseTechConfig {
         public int securityLevel = OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
         public int mode = OobInitiatorRangingConfig.RANGING_MODE_AUTO;
+        public Set<Integer> techFilter = new HashSet<>();
 
         public Oob() {
             super(RangingParameters.Technology.OOB);
         }
 
-        public void toPref(SharedPreferences.Editor prefEditor) {
-            prefEditor.putInt("securitylevel", securityLevel);
-            prefEditor.putInt("mode", mode);
-        }
-
+        /**
+         * From pref
+         * @param pref
+         * @param isResponder
+         * @return
+         */
         public static Oob fromPref(SharedPreferences pref, boolean isResponder) {
             Oob oob = new Oob();
             oob.securityLevel = pref.getInt("securityLevel", oob.securityLevel);
             oob.mode = pref.getInt("mode", oob.mode);
+            Set<Integer> techFilter = new HashSet<>();
+            for (String strTechId : Objects.requireNonNull(
+                    pref.getStringSet("techFilter", new HashSet<>()))) {
+                techFilter.add(Integer.parseInt(strTechId));
+            }
+            oob.techFilter = techFilter;
             return oob;
+        }
+
+        /**
+         * To pref
+         * @param prefEditor
+         */
+        public void toPref(SharedPreferences.Editor prefEditor) {
+            prefEditor.putInt("securitylevel", securityLevel);
+            prefEditor.putInt("mode", mode);
+            Set<String> strTechFilter = new HashSet<>();
+            for (Integer techId : techFilter) {
+                strTechFilter.add(String.valueOf(techId));
+            }
+            prefEditor.putStringSet("techFilter", new HashSet<>(strTechFilter));
         }
     }
 }

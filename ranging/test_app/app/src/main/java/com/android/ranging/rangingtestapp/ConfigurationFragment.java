@@ -16,6 +16,10 @@
 
 package com.android.ranging.rangingtestapp;
 
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
 import static android.view.View.INVISIBLE;
 
 import android.os.Bundle;
@@ -30,16 +34,23 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableMap;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** The fragment holds the responder configuration of channel sounding. */
 @SuppressWarnings("SetTextI18n")
-public class ConfigurationFragment extends Fragment {
+public class ConfigurationFragment extends Fragment implements
+        MultiSelectDialogFragment.MultiSelectDialogListener {
     private ArrayAdapter<Boolean> mGlobalSensorFusionAdapter;
     private Spinner mGlobalSensorFusionSpinner;
     private ArrayAdapter<Integer> mUwbChannelAdapter;
@@ -54,12 +65,20 @@ public class ConfigurationFragment extends Fragment {
     private Spinner mWifiNanRttPeriodicRangingSpinner;
     private ArrayAdapter<Integer> mOobSecurityLevelAdapter;
     private Spinner mOobSecurityLevelSpinner;
-    private ArrayAdapter<Integer> mOobModeAdapter;
+    private ArrayAdapter<String> mOobModeAdapter;
     private Spinner mOobModeSpinner;
+    private TextView mTechFilterSelection;
+    private ArrayList<Integer> mSelectedTechs = new ArrayList<>();
     private Button mButtonSave;
     private Button mButtonReset;
     private AtomicReference<ConfigurationParameters> mConfigurationParameters = new AtomicReference<>(null);
     private boolean mIsResponder;
+    private static final HashBiMap<String, Integer> RANGING_MODE_STRING_TO_INT = HashBiMap.create(
+            ImmutableMap.of(
+                    "AUTO", RANGING_MODE_AUTO,
+                    "HIGH_ACCURACY", RANGING_MODE_HIGH_ACCURACY,
+                    "HIGH_ACCURACY_PREFERRED", RANGING_MODE_HIGH_ACCURACY_PREFERRED,
+                    "FUSED", RANGING_MODE_FUSED));
 
     public void setIsResponder(boolean isResponder) {
         mIsResponder = isResponder;
@@ -82,6 +101,7 @@ public class ConfigurationFragment extends Fragment {
                 (Spinner) root.findViewById(R.id.wifi_nan_rtt_periodic_ranging_spinner);
         mOobSecurityLevelSpinner = (Spinner) root.findViewById(R.id.oob_security_level_spinner);
         mOobModeSpinner = (Spinner) root.findViewById(R.id.oob_mode_spinner);
+        mTechFilterSelection = (TextView) root.findViewById(R.id.oob_tech_filter_selection);
         mButtonSave = (Button) root.findViewById(R.id.btn_save);
         mButtonReset = (Button) root.findViewById(R.id.btn_reset);
         return root;
@@ -102,8 +122,11 @@ public class ConfigurationFragment extends Fragment {
                 mConfigurationParameters.get().wifiNanRtt.isPeriodicRangingEnabled));
         mOobSecurityLevelSpinner.setSelection(mOobSecurityLevelAdapter.getPosition(
                 mConfigurationParameters.get().oob.securityLevel));
-        mOobModeSpinner.setSelection(mOobModeAdapter.getPosition(
-                mConfigurationParameters.get().oob.mode));
+        mOobModeSpinner.setSelection(
+                mOobModeAdapter.getPosition(RANGING_MODE_STRING_TO_INT.inverse().get(
+                        mConfigurationParameters.get().oob.mode)));
+        mSelectedTechs = new ArrayList<>(mConfigurationParameters.get().oob.techFilter);
+        updateTechFilterSelectionText();
     }
 
     @Override
@@ -118,50 +141,50 @@ public class ConfigurationFragment extends Fragment {
         mUwbChannelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                            UwbComplexChannel.UWB_CHANNEL_5,
-                            UwbComplexChannel.UWB_CHANNEL_9
-                ));
+                                UwbComplexChannel.UWB_CHANNEL_5,
+                                UwbComplexChannel.UWB_CHANNEL_9
+                        ));
         mUwbChannelAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mUwbChannelSpinner.setAdapter(mUwbChannelAdapter);
         mUwbPreambleAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_9,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_10,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_12,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_25,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_26,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_27,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_28,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_29,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_30,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_31,
-                        UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_32
-                ));
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_9,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_10,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_12,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_25,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_26,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_27,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_28,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_29,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_30,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_31,
+                                UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_32
+                        ));
         mUwbPreambleAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mUwbPreambleSpinner.setAdapter(mUwbPreambleAdapter);
         mUwbConfigIdAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                        UwbRangingParams.CONFIG_UNICAST_DS_TWR,
-                        UwbRangingParams.CONFIG_MULTICAST_DS_TWR,
-                        UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR,
-                        UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR,
-                        UwbRangingParams.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
-                        UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST
-                ));
+                                UwbRangingParams.CONFIG_UNICAST_DS_TWR,
+                                UwbRangingParams.CONFIG_MULTICAST_DS_TWR,
+                                UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR,
+                                UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR,
+                                UwbRangingParams.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
+                                UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST
+                        ));
         mUwbConfigIdAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mUwbConfigIdSpinner.setAdapter(mUwbConfigIdAdapter);
         mBleCsSecurityLevelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                        BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE,
-                        BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR
-                ));
+                                BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE,
+                                BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR
+                        ));
         mBleCsSecurityLevelAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mBleCsSecurityLevelSpinner.setAdapter(mBleCsSecurityLevelAdapter);
@@ -174,26 +197,29 @@ public class ConfigurationFragment extends Fragment {
         mOobSecurityLevelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                        OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC,
-                        OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE
-                ));
+                                OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC,
+                                OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE
+                        ));
         mOobSecurityLevelAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mOobSecurityLevelSpinner.setAdapter(mOobSecurityLevelAdapter);
         mOobModeAdapter =
                 new ArrayAdapter<>(
-                        getContext(), android.R.layout.simple_spinner_item, List.of(
-                        OobInitiatorRangingConfig.RANGING_MODE_AUTO,
-                        OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY,
-                        OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED,
-                        OobInitiatorRangingConfig.RANGING_MODE_FUSED
-                ));
+                        getContext(), android.R.layout.simple_spinner_item,
+                        RANGING_MODE_STRING_TO_INT.keySet().stream().toList());
         mOobModeAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mOobModeSpinner.setAdapter(mOobModeAdapter);
 
+        mTechFilterSelection.setOnClickListener(v -> {
+            MultiSelectDialogFragment dialog = MultiSelectDialogFragment.newInstance(
+                    mSelectedTechs);
+            dialog.setTargetFragment(ConfigurationFragment.this, 0);
+            dialog.show(getParentFragmentManager(), "MultiSelectDialogFragment");
+        });
+
         mConfigurationParameters.set(
-            ConfigurationParameters.restoreInstance(getContext(), mIsResponder));
+                ConfigurationParameters.restoreInstance(getContext(), mIsResponder));
         populateEditFields();
 
         mGlobalSensorFusionSpinner.setOnItemSelectedListener(
@@ -203,6 +229,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().global.sensorFusionEnabled =
                                 (boolean) mGlobalSensorFusionSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -214,6 +241,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().uwb.channel =
                                 (int) mUwbChannelSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -225,6 +253,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().uwb.preamble =
                                 (int) mUwbPreambleSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -236,6 +265,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().uwb.configId =
                                 (int) mUwbConfigIdSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -247,6 +277,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().bleCs.securityLevel =
                                 (int) mBleCsSecurityLevelSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -258,6 +289,7 @@ public class ConfigurationFragment extends Fragment {
                         mConfigurationParameters.get().wifiNanRtt.isPeriodicRangingEnabled =
                                 (boolean) mWifiNanRttPeriodicRangingSpinner.getItemAtPosition(position);
                     }
+
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
@@ -265,8 +297,10 @@ public class ConfigurationFragment extends Fragment {
         mOobModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                mConfigurationParameters.get().oob.mode = (int) mOobModeSpinner.getItemAtPosition(
-                        position);
+                Integer mode = RANGING_MODE_STRING_TO_INT.get(
+                        (String) mOobModeSpinner.getItemAtPosition(position));
+                mConfigurationParameters.get().oob.mode = (mode != null)
+                        ? mode : RANGING_MODE_AUTO;
             }
 
             @Override
@@ -280,7 +314,7 @@ public class ConfigurationFragment extends Fragment {
         mButtonReset.setOnClickListener(
                 v -> {
                     mConfigurationParameters.set(
-                        ConfigurationParameters.resetInstance(getContext(), mIsResponder));
+                            ConfigurationParameters.resetInstance(getContext(), mIsResponder));
                     populateEditFields();
                 });
     }
@@ -288,5 +322,21 @@ public class ConfigurationFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+    }
+
+    @Override
+    public void onOk(List<Integer> selectedItems) {
+        mSelectedTechs.clear();
+        mSelectedTechs.addAll(selectedItems);
+        mConfigurationParameters.get().oob.techFilter = new HashSet<>(selectedItems);
+        updateTechFilterSelectionText();
+    }
+
+    private void updateTechFilterSelectionText() {
+        if (mSelectedTechs.isEmpty()) {
+            mTechFilterSelection.setText("Not set");
+        } else {
+            mTechFilterSelection.setText("Set (" + mSelectedTechs.size() + ")");
+        }
     }
 }
