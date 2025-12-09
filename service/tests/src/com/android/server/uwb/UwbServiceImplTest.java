@@ -630,10 +630,30 @@ public class UwbServiceImplTest {
         mInitializationFailureListener.getValue().onFailure();
         // Move time forward.
         mTestLooper.moveTimeForward(UwbServiceImpl.INITIALIZATION_RETRY_TIMEOUT_MS);
-        // Verify UWB is re-enabled.
-        verify(mUwbServiceCore).setEnabled(true);
+        mTestLooper.dispatchAll();
+        // Verify UWB is restarted.
+        verify(mUwbServiceCore).restart();
         verify(mUwbServiceCore).removeInitializationFailureListener(
                 mInitializationFailureListener.getValue());
+    }
+
+    @Test
+    public void testHandleInitializationFailure_restartThrowsException() throws Exception {
+        // Mock UwbServiceCore to throw an exception on restart.
+        doThrow(new IllegalStateException("Failed to restart")).when(mUwbServiceCore).restart();
+
+        // Trigger failure callback.
+        mInitializationFailureListener.getValue().onFailure();
+        // Move time forward to trigger the delayed restart.
+        mTestLooper.moveTimeForward(UwbServiceImpl.INITIALIZATION_RETRY_TIMEOUT_MS);
+        mTestLooper.dispatchAll();
+
+        // Verify that restart was attempted.
+        verify(mUwbServiceCore).restart();
+        // Verify the listener is still removed to prevent continuous retries.
+        verify(mUwbServiceCore).removeInitializationFailureListener(
+                mInitializationFailureListener.getValue());
+        // The test passes if no uncaught exception is thrown, which means it was handled.
     }
 
     @Test
