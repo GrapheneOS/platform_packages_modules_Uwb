@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.os.Build;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
@@ -179,20 +180,29 @@ public class RangingParameters {
             oobBleClient.close();
             return null;
         }
-        return new OobInitiatorRangingConfig.Builder()
-            .addDeviceHandle(
-                new DeviceHandle.Builder(
-                        new RangingDevice.Builder()
-                                .setUuid(UUID.nameUUIDFromBytes(
-                                        targetBtDevice.getAddress().getBytes()))
-                                .build(),
-                        oobBleClient)
-                    .build())
-            .setSecurityLevel(configParams.oob.securityLevel)
-            .setRangingMode(configParams.oob.mode)
-            .setSlowestRangingInterval(Freq.fromName(freqName).getSlowestIntervalDuration())
-            .setFastestRangingInterval(Freq.fromName(freqName).getFastestIntervalDuration())
-            .build();
+
+        OobInitiatorRangingConfig.Builder oobInitiatorConfigBuilder =
+                new OobInitiatorRangingConfig.Builder()
+                        .addDeviceHandle(
+                                new DeviceHandle.Builder(
+                                        new RangingDevice.Builder()
+                                                .setUuid(UUID.nameUUIDFromBytes(
+                                                        targetBtDevice.getAddress().getBytes()))
+                                                .build(),
+                                        oobBleClient)
+                                        .build())
+                        .setSecurityLevel(configParams.oob.securityLevel)
+                        .setRangingMode(configParams.oob.mode)
+                        .setSlowestRangingInterval(
+                                Freq.fromName(freqName).getSlowestIntervalDuration())
+                        .setFastestRangingInterval(
+                                Freq.fromName(freqName).getFastestIntervalDuration());
+
+        if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) {
+            oobInitiatorConfigBuilder.setRangingTechnologyFilter(configParams.oob.techFilter);
+        }
+
+        return oobInitiatorConfigBuilder.build();
     }
 
     public static RangingPreference createInitiatorRangingPreference(
