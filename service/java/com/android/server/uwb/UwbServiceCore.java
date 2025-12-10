@@ -1247,7 +1247,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     break;
 
                 case TASK_DISABLE:
-                    handleDisable();
+                    handleDisable(false);
                     break;
 
                 case TASK_HW_ENABLE:
@@ -1259,7 +1259,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     break;
 
                 case TASK_RESTART:
-                    handleDisable();
+                    handleDisable(true);
                     handleEnable();
                     break;
 
@@ -1439,9 +1439,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
         }
 
-        private void handleDisable() {
+        private void handleDisable(boolean forceDisable) {
             mSetEnabled = false;
-            if (!isUwbEnabledInternal()) {
+            if (!forceDisable && !isUwbEnabledInternal()) {
                 Log.i(TAG, "UWB chip is already disabled, adapter state = "
                         + getAdapterState());
                 if (mLastAdapterStateNotification != getAdapterState()) {
