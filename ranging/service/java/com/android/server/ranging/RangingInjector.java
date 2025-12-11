@@ -24,6 +24,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -399,6 +400,16 @@ public class RangingInjector {
         } finally {
             Binder.restoreCallingIdentity(identity);
         }
+    }
+
+    /**
+     * Check whether the given {@link BluetoothDevice} is bonded or not.
+     * @param device to check
+     * @return true if bonded, false otherwise
+     */
+    public boolean isRemoteDeviceBluetoothBonded(@Nullable BluetoothDevice device) {
+        if (device == null) return false;
+        return device.getBondState() == BOND_BONDED;
     }
 
     public boolean isRangingTechnologyEnabled(RangingTechnology rangingTechnology) {

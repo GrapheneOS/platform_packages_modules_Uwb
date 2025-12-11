@@ -68,7 +68,7 @@ public class BleRssiAdapter implements RangingAdapter {
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
     private Callback mCallbacks;
-    private BluetoothDevice mDeviceFromPeerBluetoothAddress;
+    private BluetoothDevice mPeerBluetoothDevice;
     private RangingDevice mRangingDevice;
     private DistanceMeasurementSession mSession;
     private BleRssiConfig mConfig;
@@ -158,13 +158,21 @@ public class BleRssiAdapter implements RangingAdapter {
 
         mConfig = bleRssiConfig;
         mRangingDevice = bleRssiConfig.getPeerDevice();
-        mDeviceFromPeerBluetoothAddress =
-                mBluetoothAdapter.getRemoteDevice(bleRssiRangingParams.getPeerBluetoothAddress());
+        if (bleRssiConfig.getPeerBluetoothDevice() != null) {
+            mPeerBluetoothDevice = bleRssiConfig.getPeerBluetoothDevice();
+            Log.v(TAG,
+                    "BluetoothDevice is provided. Using it instead of the address.");
+        } else {
+            mPeerBluetoothDevice =
+                    mBluetoothAdapter.getRemoteDevice(
+                            bleRssiRangingParams.getPeerBluetoothAddress());
+            Log.v(TAG, "BluetoothDevice not provided, using provided BLE address");
+        }
         DistanceMeasurementManager distanceMeasurementManager =
                 mBluetoothAdapter.getDistanceMeasurementManager();
 
         DistanceMeasurementParams params =
-                new DistanceMeasurementParams.Builder(mDeviceFromPeerBluetoothAddress)
+                new DistanceMeasurementParams.Builder(mPeerBluetoothDevice)
                         .setDurationSeconds(DistanceMeasurementParams.getDefaultDurationSeconds())
                         .setFrequency(getBleRssiFrequency(
                                 bleRssiConfig.getRangingParams().getRangingUpdateRate()))

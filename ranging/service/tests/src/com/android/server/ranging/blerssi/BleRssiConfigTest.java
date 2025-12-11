@@ -20,6 +20,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 
 import static junit.framework.Assert.assertEquals;
 
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingParams;
@@ -29,10 +30,14 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.Mock;
 
 @RunWith(JUnit4.class)
 @SmallTest
 public class BleRssiConfigTest {
+
+    @Mock
+    private BluetoothDevice mMockBluetoothDevice;
 
     @Test
     public void testBleRssiConfig() {
@@ -45,11 +50,14 @@ public class BleRssiConfigTest {
                 DEVICE_ROLE_RESPONDER,
                 bleRssiRangingParams,
                 sessionConfig,
-                rangingDevice);
+                rangingDevice,
+                mMockBluetoothDevice);
 
         assertEquals(config.getDeviceRole(), DEVICE_ROLE_RESPONDER);
         assertEquals(config.getRangingParams(), bleRssiRangingParams);
         assertEquals(config.getSessionConfig(), sessionConfig);
         assertEquals(config.getPeerDevice(), rangingDevice);
+        assertEquals(config.getPeerBluetoothDevice(), mMockBluetoothDevice);
+
     }
 }

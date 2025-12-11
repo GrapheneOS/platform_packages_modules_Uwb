@@ -133,12 +133,12 @@ public class ConfigurationUtils {
             if (peer.getBleRssiRangingParams() != null) {
                 configs.add(new BleRssiConfig(
                         role, peer.getBleRssiRangingParams(), sessionConfig,
-                        peer.getRangingDevice()));
+                        peer.getRangingDevice(), null));
             }
             // Only CS initiator needs to be configured.
             if (peer.getCsRangingParams() != null && role == DEVICE_ROLE_INITIATOR) {
                 configs.add(new CsConfig(
-                        peer.getCsRangingParams(), sessionConfig, peer.getRangingDevice()));
+                        peer.getCsRangingParams(), sessionConfig, peer.getRangingDevice(), null));
             }
 
             if (Flags.rangingStackUpdates25q4() && peer.getRttStationRangingParams() != null) {
