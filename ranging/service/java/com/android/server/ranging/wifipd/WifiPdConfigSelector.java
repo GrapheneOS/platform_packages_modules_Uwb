@@ -147,7 +147,8 @@ public class WifiPdConfigSelector extends ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull Capabilities capabilities)
+            @NonNull RangingDevice peer, @NonNull Capabilities capabilities,
+            @NonNull com.android.server.ranging.oob.packets.DeviceType deviceType)
             throws ConfigurationManager.ConfigSelectionException {
         if (!(capabilities instanceof WifiPdCapabilities pdCapabilities)) {
             throw new ConfigurationManager.ConfigSelectionException(

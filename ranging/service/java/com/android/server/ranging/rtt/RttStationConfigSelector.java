@@ -106,7 +106,8 @@ public class RttStationConfigSelector extends ConfigurationManager.ConfigSelecto
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities,
+            @NonNull com.android.server.ranging.oob.packets.DeviceType deviceType
     ) throws ConfigSelectionException {
         //do nothing
     }

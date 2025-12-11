@@ -305,7 +305,9 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             PeerCapabilities capabilities =
                     mProtocol.getCapabilitiesFromResponse(peer, responses.get(peer));
             capabilities = filterPeerBtCapabilities(peer, capabilities);
-            mConfigManager.addPeerCapabilities(peer, capabilities.byTechnology());
+            mConfigManager
+                    .addPeerCapabilities(peer, capabilities.byTechnology(),
+                            mProtocol.getPeerType(peer));
             mPeers.get(peer)
                     .createRangingEngine(capabilities.transitioning(), capabilities.byTechnology());
         }
