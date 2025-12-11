@@ -104,7 +104,7 @@ package android.uwb {
   public static final class LogicalLinkConnectionRequest.Builder {
     ctor public LogicalLinkConnectionRequest.Builder(int, int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
-    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeLength(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeLength(@IntRange(from=0) int);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeValue(@IntRange(from=0) int);
   }
 

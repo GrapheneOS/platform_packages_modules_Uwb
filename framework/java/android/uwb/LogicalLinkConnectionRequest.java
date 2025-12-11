@@ -226,7 +226,7 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
          */
         @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
         @NonNull
-        public Builder setMaxSduSizeLength(int maxSduSizeLength) {
+        public Builder setMaxSduSizeLength(@IntRange(from = 0) int maxSduSizeLength) {
             this.mMaxSduSizeLength = maxSduSizeLength;
             return this;
         }
