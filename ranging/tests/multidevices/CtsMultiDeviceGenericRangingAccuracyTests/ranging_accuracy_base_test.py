@@ -53,7 +53,11 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     ad.load_snippet('mbs', android_device.MBS_PACKAGE)
 
     ad.load_snippet('uwb', _UWB_SNIPPET_PACKAGE)
-    ad.adb.shell('cmd uwb force-country-code enabled US')
+    try:
+      ad.adb.shell('cmd uwb force-country-code enabled US')
+    except adb.AdbError:
+      ad.log.warning("Unable to force UWB country code. Continuing execution.")
+
     if not ad.uwb.isUwbEnabled():
       ad.uwb.setUwbEnabled(True)
     ad.unload_snippet('uwb')
