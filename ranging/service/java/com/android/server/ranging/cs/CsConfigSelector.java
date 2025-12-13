@@ -24,17 +24,20 @@ import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
+import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
-
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleCsConfiguration;
@@ -142,6 +145,16 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
             return peers.stream()
                     .filter(mPeerAddresses::containsKey)
                     .map((peer) -> {
+
+                        BluetoothDevice peerBluetoothDevice = null;
+                        if (RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")) {
+                            peerBluetoothDevice = mOobConfig.getDeviceHandles().stream().filter(
+                                    dh -> {
+                                        return dh.getRangingDevice().equals(peer);
+                                    }).findFirst().map(DeviceHandle::getBluetoothDevice).orElse(
+                                    null);
+                        }
+
                         return new CsConfig(
                                 new BleCsRangingParams.Builder(
                                         Objects.requireNonNull(mPeerAddresses.get(peer)))
@@ -152,7 +165,8 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
                                                 BleCsRangingParams.SIGHT_TYPE_NON_LINE_OF_SIGHT)
                                         .build(),
                                 mSessionConfig,
-                                peer);
+                                peer,
+                                peerBluetoothDevice);
                     })
                     .collect(ImmutableSet.toImmutableSet());
         }

@@ -19,6 +19,9 @@ package com.android.server.ranging.session;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
 
+import static com.android.server.ranging.common.RangingUtils.macAddressToString;
+
+import android.bluetooth.BluetoothDevice;
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingConfig;
@@ -48,6 +51,7 @@ import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobController.OobConnection;
 import com.android.server.ranging.oob.OobInitiatorProtocol;
 import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.ConfigurationRequest;
@@ -300,6 +304,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
         for (RangingDevice peer : responses.keySet()) {
             PeerCapabilities capabilities =
                     mProtocol.getCapabilitiesFromResponse(peer, responses.get(peer));
+            capabilities = filterPeerBtCapabilities(peer, capabilities);
             mConfigManager.addPeerCapabilities(peer, capabilities.byTechnology());
             mPeers.get(peer)
                     .createRangingEngine(capabilities.transitioning(), capabilities.byTechnology());
@@ -334,6 +339,38 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                             handleFailedFutures(pendingSends);
                             return mConfigManager.getLocalConfigs(peersByTechnology);
                         }, mOobExecutor));
+    }
+
+    // Remove BleCsCapabilities for devices that are not bonded.
+    private PeerCapabilities filterPeerBtCapabilities(
+            RangingDevice peer, PeerCapabilities capabilities) {
+        Map<Technology, Capabilities> filteredCapabilities = new HashMap<>(
+                capabilities.byTechnology());
+        if (filteredCapabilities.containsKey(Technology.BleCs)) {
+
+            BluetoothDevice peerBluetoothDevice = null;
+            if (RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")) {
+                peerBluetoothDevice = mConfig.getDeviceHandles().stream().filter(dh -> {
+                    return dh.getRangingDevice().equals(peer);
+                }).findFirst().map(DeviceHandle::getBluetoothDevice).orElse(null);
+            }
+            if (peerBluetoothDevice != null) {
+                Log.v(TAG, "Checking BLE bond based on the provided BluetoothDevice");
+            }
+            BleCsCapabilities bleCsCapabilities = (BleCsCapabilities) filteredCapabilities.get(
+                    Technology.BleCs);
+
+            if (!mInjector.isRemoteDeviceBluetoothBonded(
+                    macAddressToString(bleCsCapabilities.getAddress()))
+                    && !mInjector.isRemoteDeviceBluetoothBonded(peerBluetoothDevice)) {
+                Log.v(TAG, "Skipping " + Technology.BleCs
+                        + " because no Bluetooth bond exists with peer " + peer);
+                filteredCapabilities.remove(Technology.BleCs);
+            }
+            // If BleCs is present, remove BleRssi
+            filteredCapabilities.remove(Technology.BleRssi);
+        }
+        return new PeerCapabilities(capabilities.transitioning(), filteredCapabilities);
     }
 
     private FluentFuture<Void> sendStopRangingMessage(

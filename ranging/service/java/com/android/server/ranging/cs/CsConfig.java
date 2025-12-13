@@ -22,6 +22,8 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
@@ -53,16 +55,18 @@ public class CsConfig implements UnicastTechnologyConfig {
 
     private final SessionConfig mSessionConfig;
     private final BleCsRangingParams mRangingParams;
-
     private final RangingDevice mPeerDevice;
+    private final BluetoothDevice mPeerBluetoothDevice;
 
     public CsConfig(
             BleCsRangingParams bleCsRangingParams,
             SessionConfig sessionConfig,
-            @NonNull RangingDevice peerDevice) {
+            @NonNull RangingDevice peerDevice,
+            @Nullable BluetoothDevice peerBluetoothDevice) {
         mRangingParams = bleCsRangingParams;
         mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
+        mPeerBluetoothDevice = peerBluetoothDevice;
     }
 
     @Override
@@ -98,6 +102,10 @@ public class CsConfig implements UnicastTechnologyConfig {
         return mPeerDevice;
     }
 
+    public @Nullable BluetoothDevice getPeerBluetoothDevice() {
+        return mPeerBluetoothDevice;
+    }
+
     @Override
     public String toString() {
         return "CsConfig{ "
@@ -107,6 +115,8 @@ public class CsConfig implements UnicastTechnologyConfig {
                 + mRangingParams
                 + ", mPeerDevice="
                 + mPeerDevice
+                + ", mPeerBluetoothDevice="
+                + mPeerBluetoothDevice
                 + " }";
     }
 

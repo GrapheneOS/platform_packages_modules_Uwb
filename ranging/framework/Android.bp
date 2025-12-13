@@ -67,6 +67,7 @@ java_defaults {
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
     ],
     stub_only_libs: [
+        "framework-bluetooth.stubs.module_lib",
         "framework-connectivity.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
     ],

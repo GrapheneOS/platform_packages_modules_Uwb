@@ -16,7 +16,6 @@
 
 package com.android.server.ranging.oob;
 
-import static com.android.server.ranging.common.RangingUtils.macAddressToString;
 import static com.android.server.ranging.common.RangingUtils.technologyBitset;
 
 import android.ranging.RangingCapabilities;
@@ -25,8 +24,6 @@ import android.util.Log;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.oob.packets.BleCsCapabilities;
-import com.android.server.ranging.oob.packets.BleRssiCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
@@ -107,25 +104,10 @@ public class OobInitiatorProtocol {
                 continue;
             }
 
-            switch (capabilities) {
-                case BleCsCapabilities csCaps -> {
-                    if (mInjector.isRemoteDeviceBluetoothBonded(
-                            macAddressToString(csCaps.getAddress()))) {
-                        capsByTech.remove(Technology.BleRssi);
-                        capsByTech.put(Technology.BleCs, csCaps);
-                    } else {
-                        Log.v(TAG, "Skipping " + Technology.BleCs
-                                + " because no Bluetooth bond exists with peer");
-                    }
-                }
-                case BleRssiCapabilities bleRssiCaps -> {
-                    if (!capsByTech.containsKey(Technology.BleCs)) {
-                        capsByTech.put(Technology.BleRssi, bleRssiCaps);
-                    }
-                }
-                case UnknownCapabilities unknown -> Log.w(TAG,
-                        "Capabilities response with unknown capabilities " + unknown);
-                default -> capsByTech.put(capabilities.getTechnology(), capabilities);
+            if (capabilities instanceof UnknownCapabilities) {
+                Log.w(TAG, "Capabilities response with unknown capabilities " + capabilities);
+            } else {
+                capsByTech.put(capabilities.getTechnology(), capabilities);
             }
         }
 

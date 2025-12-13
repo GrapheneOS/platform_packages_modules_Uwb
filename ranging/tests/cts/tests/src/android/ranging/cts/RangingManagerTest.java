@@ -28,6 +28,7 @@ import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
@@ -52,6 +53,7 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.SuppressLint;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -1377,6 +1379,56 @@ public class RangingManagerTest {
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testWifiPdResponderSession() throws InterruptedException {
         testWifiPdSessionInternal(DEVICE_ROLE_RESPONDER);
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
+    public void testBluetoothDeviceSetAndUsedInOobFlow() throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS)
+                || mSupportedTechnologies.contains(RangingManager.BLE_RSSI));
+
+        enableBluetooth();
+
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSession session = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), new RangingSessionCallback());
+        assertThat(session).isNotNull();
+
+        OobTransport oobTransport = new OobTransport();
+
+        BluetoothAdapter adapter = BlockingBluetoothAdapter.getAdapter();
+        assertThat(adapter).isNotNull();
+
+        BluetoothDevice remoteBluetoothDevice = adapter.getRemoteDevice("F2:A3:45:BC:78:90");
+        assertThat(remoteBluetoothDevice).isNotNull();
+
+        DeviceHandle device =
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder().build(), oobTransport).setBluetoothDevice(
+                                remoteBluetoothDevice)
+                        .build();
+        OobInitiatorRangingConfig config = new OobInitiatorRangingConfig.Builder()
+                .setFastestRangingInterval(Duration.ofMillis(100))
+                .setSlowestRangingInterval(Duration.ofMillis(5000))
+                .setRangingMode(RANGING_MODE_HIGH_ACCURACY_PREFERRED)
+                .setSecurityLevel(SECURITY_LEVEL_BASIC)
+                .addDeviceHandle(device)
+                .setRangingTechnologyFilter(Set.of(RangingManager.BLE_CS, RangingManager.BLE_RSSI))
+                .build();
+
+        assertThat(config.getDeviceHandles().getFirst().getBluetoothDevice()).isEqualTo(
+                remoteBluetoothDevice);
+
+        RangingPreference preference =
+                new RangingPreference.Builder(DEVICE_ROLE_INITIATOR, config).build();
+        session.start(preference);
+        assertThat(oobTransport.mSendDataCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        session.stop();
+        uiAutomation.dropShellPermissionIdentity();
     }
 
     @Test

@@ -22,19 +22,21 @@ import static com.android.server.ranging.blerssi.BleRssiConfig.BLE_RSSI_UPDATE_R
 import static com.android.server.ranging.common.ConfigurationUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.common.RangingUtils.macAddressToString;
-import static com.android.server.ranging.common.RangingUtils.privateAddressIfUserBuild;
 
+import android.bluetooth.BluetoothDevice;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
-
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.BleRssiCapabilities;
 import com.android.server.ranging.oob.packets.BleRssiConfiguration;
@@ -48,6 +50,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class BleRssiConfigSelector extends ConfigurationManager.ConfigSelector {
@@ -128,15 +131,28 @@ public class BleRssiConfigSelector extends ConfigurationManager.ConfigSelector {
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
             return peers.stream()
+                    .filter(mPeerAddresses::containsKey)
                     .map((peer) -> {
                         String address = mPeerAddresses.get(peer);
+                        BluetoothDevice peerBluetoothDevice = null;
+
+                        if (RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")) {
+                            peerBluetoothDevice = mOobConfig.getDeviceHandles().stream().filter(
+                                    dh -> {
+                                        return dh.getRangingDevice().equals(peer);
+                                    }).findFirst().map(DeviceHandle::getBluetoothDevice).orElse(
+                                    null);
+                        }
+
                         return new BleRssiConfig(
                                 DEVICE_ROLE_INITIATOR,
-                                new BleRssiRangingParams.Builder(privateAddressIfUserBuild(address))
+                                new BleRssiRangingParams.Builder(
+                                        Objects.requireNonNull(mPeerAddresses.get(peer)))
                                         .setRangingUpdateRate(mRangingUpdateRate)
                                         .build(),
                                 mSessionConfig,
-                                peer);
+                                peer,
+                                peerBluetoothDevice);
                     })
                     .collect(ImmutableSet.toImmutableSet());
         }
