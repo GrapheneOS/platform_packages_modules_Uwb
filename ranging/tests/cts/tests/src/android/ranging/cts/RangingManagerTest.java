@@ -175,8 +175,8 @@ public class RangingManagerTest {
                 RangingManager.WIFI_STA_RTT) != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.WIFI_STA_RTT);
         }
-        if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.WIFI_PD)
-                != NOT_SUPPORTED) {
+        if (Flags.rangingStackUpdates26Q2() && callback.mRangingCapabilities
+                .getTechnologyAvailability().get(RangingManager.WIFI_PD) != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.WIFI_PD);
         }
         assumeTrue(!mSupportedTechnologies.isEmpty());
@@ -1780,8 +1780,8 @@ public class RangingManagerTest {
 
         UwbAddress deviceAddress = UwbAddress.createRandomShortAddress();
         DlTdoaRangingParams dlTdoaParams = new DlTdoaRangingParams.Builder(1)
-                .setComplexChannel(new UwbComplexChannel.Builder().
-                setChannel(9).setPreambleIndex(10).build())
+                .setComplexChannel(new UwbComplexChannel.Builder()
+                        .setChannel(9).setPreambleIndex(10).build())
                 .setDeviceAddress(deviceAddress)
                 .setSessionKeyInfo(new byte[]{0x01, 0x02, 0x03, 0x04})
                 .setRangingIntervalMillis(240)
