@@ -25,6 +25,7 @@ import static com.android.ranging.uwb.backend.internal.Utils.STATUS_OK;
 import static com.android.ranging.uwb.backend.internal.Utils.TAG;
 import static com.android.ranging.uwb.backend.internal.Utils.UWB_RECONFIGURATION_FAILURE;
 import static com.android.ranging.uwb.backend.internal.Utils.UWB_SYSTEM_CALLBACK_FAILURE;
+
 import static java.util.Objects.requireNonNull;
 
 import android.os.Build.VERSION;
@@ -35,13 +36,16 @@ import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.UwbManager;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
+
 import com.google.common.hash.Hashing;
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -328,7 +332,7 @@ public abstract class RangingDevice {
             public void onStarted(PersistableBundle sessionInfo) {
                 callback.onRangingInitialized(getUwbDevice());
                 mIsRanging.set(true);
-                mOpAsyncCallbackRunner.complete(true);
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
@@ -346,7 +350,7 @@ public abstract class RangingDevice {
                     mRangingSession.close();
                 }
                 mRangingSession = null;
-                mOpAsyncCallbackRunner.complete(false);
+                mOpAsyncCallbackRunner.completeIfActive(false);
             }
 
             @WorkerThread
