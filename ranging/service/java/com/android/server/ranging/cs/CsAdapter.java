@@ -20,9 +20,11 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.bluetooth.flags.Flags.includePowerAndRssiInDistanceMeasurementResult;
 import static com.android.server.ranging.common.RangingUtils.InternalReason;
 import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.common.RangingUtils.convertBluetoothReasonCode;
+
 
 import android.annotation.Nullable;
 import android.app.AlarmManager;
@@ -43,9 +45,9 @@ import android.ranging.RangingData;
 import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
+import android.ranging.ble.BleSpecificData;
 import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
-import android.ranging.ble.cs.BleCsSpecificData;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -348,11 +350,17 @@ public class CsAdapter implements RangingAdapter {
                                 .setError(result.getErrorAltitudeAngle())
                                 .build());
                     }
+                    BleSpecificData.Builder bleCsSpecificDataBuilder =
+                            new BleSpecificData.Builder()
+                                    .setDelaySpreadMeters(result.getDelaySpreadMeters());
+                    if (includePowerAndRssiInDistanceMeasurementResult()) {
+                        dataBuilder.setRssi(result.getRssiDbm());
+                        bleCsSpecificDataBuilder
+                                .setRemoteTxPowerDbm(result.getRemoteTxPowerDbm());
+                    }
                     dataBuilder.setRangingDataExtras(
                             new RangingDataExtras.Builder()
-                                    .setBleCsSpecificData(new BleCsSpecificData.Builder()
-                                            .setDelaySpreadMeters(result.getDelaySpreadMeters())
-                                            .build())
+                                    .setBleSpecificData(bleCsSpecificDataBuilder.build())
                                     .build());
                     synchronized (mStateMachine) {
                         if (mStateMachine.getState() == State.STARTED) {
