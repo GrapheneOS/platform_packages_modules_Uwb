@@ -2734,13 +2734,20 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
             assertThat(rangingSessionCallback.rangingSession).isNotNull();
 
-            LogicalLinkCreationParams logicalLinkCreationParams =
-                    new LogicalLinkCreationParams.Builder(
+            LogicalLinkCreationParams.Builder builder = new LogicalLinkCreationParams.Builder(
                     LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
-                    UwbAddress.fromBytes(new byte[] {0x33, 0x22}))
-                    .setLogicalLinkClassLength(0).build();
+                    UwbAddress.fromBytes(new byte[] { (byte) 0x33, (byte) 0x22 }));
 
-            rangingSessionCallback.rangingSession.createLogicalLink(logicalLinkCreationParams);
+            if (params.getFiraLogicalLinkVersionSupported()
+                    .equals(FiraSpecificationParams.DEFAULT_LOGICAL_LINK_VERSION)) {
+                builder.setLogicalLinkClassLength(0);
+            } else {
+                builder.setLogicalLinkClassLength(1)
+                    .setMaxSduTransmitSize(LogicalLinkCreationParams.SDU_SIZE_64_BYTES)
+                        .setMaxSduReceiveSize(LogicalLinkCreationParams.SDU_SIZE_128_BYTES);
+            }
+
+            rangingSessionCallback.rangingSession.createLogicalLink(builder.build());
             assertThat(rangingSessionCallback.onLogicalLinkCreationFailedCalled).isFalse();
 
             countDownLatch = new CountDownLatch(2);

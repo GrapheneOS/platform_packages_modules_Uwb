@@ -111,6 +111,22 @@ class FiraParamEnums:
   LINK_LAYER_MODE_BYPASS = 0x00
   LINK_LAYER_MODE_LOGICAL_LINK = 0x01
 
+  # Max Sdu size value
+  SDU_SIZE_64_BYTES = 0
+  SDU_SIZE_128_BYTES = 1
+  SDU_SIZE_192_BYTES = 2
+  SDU_SIZE_256_BYTES = 3
+  SDU_SIZE_384_BYTES = 4
+  SDU_SIZE_512_BYTES = 5
+  SDU_SIZE_760_BYTES = 6
+  SDU_SIZE_1024_BYTES = 7
+  SDU_SIZE_1536_BYTES = 8
+  SDU_SIZE_2048_BYTES = 9
+  SDU_SIZE_4096_BYTES = 10
+  SDU_SIZE_8192_BYTES = 11
+  SDU_SIZE_16384_BYTES = 12
+  SDU_SIZE_32768_BYTES = 13
+
 @dataclasses.dataclass
 class UwbRangingReconfigureParams():
   """Class for UWB ranging reconfigure parameters.
