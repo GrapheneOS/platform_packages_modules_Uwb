@@ -14,7 +14,7 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use log::{debug, error};
+use log::{debug, error, info};
 use pdl_runtime::Packet;
 use uwb_uci_packets::{
     parse_diagnostics_ntf, radar_bytes_per_sample_value, CreateLogicalLinkNtf_V_1_0_Payload,
@@ -621,6 +621,7 @@ impl TryFrom<uwb_uci_packets::CoreNotification> for CoreNotification {
     }
 }
 
+// TODO: cleanup the bool flag after enough soak time.
 impl TryFrom<(uwb_uci_packets::SessionConfigNotification, UCIMajorVersion, bool)>
     for SessionNotification
 {
@@ -631,7 +632,7 @@ impl TryFrom<(uwb_uci_packets::SessionConfigNotification, UCIMajorVersion, bool)
         use uwb_uci_packets::SessionConfigNotificationChild;
         let evt = pair.0;
         let uci_fira_major_ver = pair.1;
-        let is_multicast_list_ntf_v2_supported = pair.2;
+        let _is_multicast_list_ntf_v2_supported = pair.2;
         match evt.specialize() {
             SessionConfigNotificationChild::SessionStatusNtf(evt) => Ok(Self::Status {
                 //no sessionId recieved, assign from sessionIdToToken map in uci_manager
@@ -640,48 +641,38 @@ impl TryFrom<(uwb_uci_packets::SessionConfigNotification, UCIMajorVersion, bool)
                 session_state: evt.get_session_state(),
                 reason_code: evt.get_reason_code(),
             }),
-            SessionConfigNotificationChild::SessionUpdateControllerMulticastListNtf(evt)
-                if uci_fira_major_ver == UCIMajorVersion::V1
-                    || !is_multicast_list_ntf_v2_supported =>
-            {
+            SessionConfigNotificationChild::SessionUpdateControllerMulticastListNtf(evt) => {
                 let payload = evt.get_payload();
-                let multicast_update_list_payload_v1 =
-                    SessionUpdateControllerMulticastListNtfV1Payload::parse(payload).map_err(
-                        |e| {
-                            error!(
-                                "Failed to parse Multicast list ntf v1 {:?}, payload: {:?}",
-                                e, &payload
-                            );
-                            Error::BadParameters
-                        },
-                    )?;
+                let session_token = evt.get_session_token();
+
+                // If FiRa V2+, try parsing V2 first.
+                if uci_fira_major_ver >= UCIMajorVersion::V2 {
+                    if let Ok(v2_payload) =
+                        SessionUpdateControllerMulticastListNtfV2Payload::parse(payload)
+                    {
+                        info!("Multicast list ntf V2 found!");
+                        return Ok(Self::UpdateControllerMulticastListV2 {
+                            session_token,
+                            status_list: v2_payload.controlee_status,
+                        });
+                    }
+                }
+                // Fallback to V1
+                let v1_payload = SessionUpdateControllerMulticastListNtfV1Payload::parse(payload)
+                                .map_err(|e| {
+                                    error!("Failed to parse Multicast list ntf as V1 or V2. Error: {:?}, Payload: {:?}", e, &payload);
+                                    Error::BadParameters
+                                })?;
+
+                info!("Multicast list ntf V1 found!");
                 Ok(Self::UpdateControllerMulticastListV1 {
-                    session_token: evt.get_session_token(),
-                    remaining_multicast_list_size: multicast_update_list_payload_v1
-                        .remaining_multicast_list_size
+                    session_token,
+                    remaining_multicast_list_size: v1_payload.remaining_multicast_list_size
                         as usize,
-                    status_list: multicast_update_list_payload_v1.controlee_status,
+                    status_list: v1_payload.controlee_status,
                 })
             }
-            SessionConfigNotificationChild::SessionUpdateControllerMulticastListNtf(evt)
-                if uci_fira_major_ver >= UCIMajorVersion::V2 =>
-            {
-                let payload = evt.get_payload();
-                let multicast_update_list_payload_v2 =
-                    SessionUpdateControllerMulticastListNtfV2Payload::parse(payload).map_err(
-                        |e| {
-                            error!(
-                                "Failed to parse Multicast list ntf v2 {:?}, payload: {:?}",
-                                e, &payload
-                            );
-                            Error::BadParameters
-                        },
-                    )?;
-                Ok(Self::UpdateControllerMulticastListV2 {
-                    session_token: evt.get_session_token(),
-                    status_list: multicast_update_list_payload_v2.controlee_status,
-                })
-            }
+
             SessionConfigNotificationChild::SessionDataTransferPhaseConfigNtf(evt) => {
                 Ok(Self::DataTransferPhaseConfig {
                     session_token: evt.get_session_token(),
@@ -1472,38 +1463,6 @@ mod tests {
             session_notification_packet,
             uci_fira_major_version,
             false,
-        ));
-        assert_eq!(session_notification, Err(Error::BadParameters));
-    }
-
-    #[test]
-    fn test_cast_failed_from_session_update_controller_multicast_list_ntf_v2_packet_v1_payload() {
-        let controlee_status_v1 = uwb_uci_packets::ControleeStatusV1 {
-            mac_address: [0x0c, 0xa8],
-            subsession_id: 0x30,
-            status: uwb_uci_packets::MulticastUpdateStatusCode::StatusOkMulticastListUpdate,
-        };
-        let payload = uwb_uci_packets::SessionUpdateControllerMulticastListNtfV1Payload {
-            remaining_multicast_list_size: 0x4,
-            controlee_status: vec![controlee_status_v1],
-        };
-        let mut buf = BytesMut::new();
-        write_multicast_ntf_v1_payload(&payload, &mut buf);
-        let session_update_controller_multicast_list_ntf_v1 =
-            uwb_uci_packets::SessionUpdateControllerMulticastListNtfBuilder {
-                session_token: 0x32,
-                payload: Some(buf.freeze()),
-            }
-            .build();
-        let session_notification_packet = uwb_uci_packets::SessionConfigNotification::try_from(
-            session_update_controller_multicast_list_ntf_v1,
-        )
-        .unwrap();
-        let uci_fira_major_version = UCIMajorVersion::V2;
-        let session_notification = SessionNotification::try_from((
-            session_notification_packet,
-            uci_fira_major_version,
-            true,
         ));
         assert_eq!(session_notification, Err(Error::BadParameters));
     }
