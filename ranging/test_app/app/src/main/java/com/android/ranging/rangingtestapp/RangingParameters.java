@@ -181,16 +181,17 @@ public class RangingParameters {
             return null;
         }
 
+        DeviceHandle.Builder deviceHandleBuilder = new DeviceHandle.Builder(
+                new RangingDevice.Builder()
+                        .setUuid(UUID.nameUUIDFromBytes(
+                                targetBtDevice.getAddress().getBytes())).build(), oobBleClient);
+        if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.CINNAMON_BUN) {
+            deviceHandleBuilder.setBluetoothDevice(targetBtDevice);
+        }
+
         OobInitiatorRangingConfig.Builder oobInitiatorConfigBuilder =
                 new OobInitiatorRangingConfig.Builder()
-                        .addDeviceHandle(
-                                new DeviceHandle.Builder(
-                                        new RangingDevice.Builder()
-                                                .setUuid(UUID.nameUUIDFromBytes(
-                                                        targetBtDevice.getAddress().getBytes()))
-                                                .build(),
-                                        oobBleClient)
-                                        .build())
+                        .addDeviceHandle(deviceHandleBuilder.build())
                         .setSecurityLevel(configParams.oob.securityLevel)
                         .setRangingMode(configParams.oob.mode)
                         .setSlowestRangingInterval(
