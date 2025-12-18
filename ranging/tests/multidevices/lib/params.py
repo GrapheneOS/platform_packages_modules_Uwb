@@ -1,11 +1,29 @@
 from abc import ABC, abstractmethod
 import dataclasses
 import enum
-from typing import Tuple, List, Optional
+from types import MappingProxyType
+from typing import Tuple, List
+
 from lib.cs import CsRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
 from lib.rssi import BleRssiRangingParams
+
+ADVERTISE_SETTINGS = MappingProxyType(
+    {
+        "AdvertiseMode": "ADVERTISE_MODE_LOW_LATENCY",
+        "TxPowerLevel": "ADVERTISE_TX_POWER_HIGH",
+        "Connectable": True,
+        "Timeout": 0,
+    }
+)
+
+ADVERTISE_DATA = MappingProxyType(
+    {"IncludeDeviceName": True, "IncludeTxPowerLevel": False}
+)
+
+SCAN_SETTINGS = MappingProxyType({"ScanMode": "SCAN_MODE_LOW_LATENCY", "Legacy": False})
+
 
 @enum.unique
 class DeviceRole(enum.IntEnum):
@@ -18,6 +36,7 @@ class RangingSessionType(enum.IntEnum):
   RAW = 0
   OOB = 1
 
+
 @enum.unique
 class RangingTechnology(enum.IntEnum):
   UWB = 0
@@ -25,10 +44,12 @@ class RangingTechnology(enum.IntEnum):
   WIFI_RTT = 2
   BLE_RSSI = 3
 
+
 @enum.unique
 class SecurityLevel(enum.IntEnum):
   BASIC = 0
   SECURE = 1
+
 
 @enum.unique
 class RangingMode(enum.IntEnum):
@@ -41,15 +62,16 @@ class RangingMode(enum.IntEnum):
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class DeviceParams:
   peer_id: str
-  uwb_params: Optional[UwbRangingParams] = None
-  cs_params: Optional[CsRangingParams] = None
-  rtt_params: Optional[RttRangingParams] = None
-  rssi_params: Optional[BleRssiRangingParams] = None
+  uwb_params: UwbRangingParams | None = None
+  cs_params: CsRangingParams | None = None
+  rtt_params: RttRangingParams | None = None
+  rssi_params: BleRssiRangingParams | None = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class RangingParams(ABC):
   session_type: RangingSessionType
+
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class OobInitiatorRangingParams(RangingParams):
@@ -59,10 +81,12 @@ class OobInitiatorRangingParams(RangingParams):
   ranging_mode: RangingMode = RangingMode.AUTO
   peer_ids: List[str]
 
+
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class OobResponderRangingParams(RangingParams):
   session_type: RangingSessionType = RangingSessionType.OOB
   peer_id: str
+
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class RawInitiatorRangingParams(RangingParams):
