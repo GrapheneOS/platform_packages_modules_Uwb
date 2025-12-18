@@ -13,9 +13,9 @@ from mobly.controllers.android_device_lib import adb
 
 import lib.params as ranging_params
 
-_BLUETOOTH_SNIPPET_PACKAGE = 'com.google.snippet.bluetooth'
-_RANGING_SNIPPET_PACKAGE = 'com.google.snippet.ranging'
-_UWB_SNIPPET_PACKAGE = 'com.google.snippet.uwb'
+_BLUETOOTH_SNIPPET_PACKAGE = "com.google.snippet.bluetooth"
+_RANGING_SNIPPET_PACKAGE = "com.google.snippet.ranging"
+_UWB_SNIPPET_PACKAGE = "com.google.snippet.uwb"
 
 _DELAY_AFTER_CHANGE_BLUETOOTH_STATUS = datetime.timedelta(seconds=5)
 _DELAY_BETWEEN_ACTIONS = datetime.timedelta(seconds=1)
@@ -32,52 +32,50 @@ class RangingBaseTestClass(base_test.BaseTestClass):
   def _setup_android_device(self, ad: android_device.AndroidDevice) -> None:
     """Sets up an Android device for ranging test."""
     ad.id = str(uuid.uuid4())
-
+    ad.adb.shell("input keyevent KEYCODE_WAKEUP")
+    ad.adb.shell("wm dismiss-keyguard")
     # Enable Bluetooth HCI snoop log.
     # NOTE: These setprop commands might not be effective on all OEM devices,
     # especially on user builds.
     try:
-      ad.adb.shell('setprop persist.bluetooth.btsnooplogmode full')
-      ad.adb.shell('setprop persist.bluetooth.btsnoopsize 0xfffffffffffffff')
+      ad.adb.shell("setprop persist.bluetooth.btsnooplogmode full")
+      ad.adb.shell("setprop persist.bluetooth.btsnoopsize 0xfffffffffffffff")
     except adb.AdbError:
       ad.log.exception(
           "Failed to set btsnoop props. "
           "This is expected on user builds or if 'adb root' was not run."
       )
 
-    ad.adb.shell('svc bluetooth disable')
+    ad.adb.shell("svc bluetooth disable")
     time.sleep(_DELAY_AFTER_CHANGE_BLUETOOTH_STATUS.total_seconds())
-    ad.adb.shell('svc bluetooth enable')
+    ad.adb.shell("svc bluetooth enable")
     time.sleep(_DELAY_AFTER_CHANGE_BLUETOOTH_STATUS.total_seconds())
 
-    ad.load_snippet('mbs', android_device.MBS_PACKAGE)
+    ad.load_snippet("mbs", android_device.MBS_PACKAGE)
 
-    ad.load_snippet('uwb', _UWB_SNIPPET_PACKAGE)
+    ad.load_snippet("uwb", _UWB_SNIPPET_PACKAGE)
     try:
-      ad.adb.shell('cmd uwb force-country-code enabled US')
+      ad.adb.shell("cmd uwb force-country-code enabled US")
     except adb.AdbError:
-      ad.log.warning("Unable to force UWB country code. Continuing execution.")
+      ad.log.exception("Unable to force UWB country code. Continuing execution.")
 
     if not ad.uwb.isUwbEnabled():
       ad.uwb.setUwbEnabled(True)
-    ad.unload_snippet('uwb')
+    ad.unload_snippet("uwb")
 
-    ad.load_snippet('ranging', _RANGING_SNIPPET_PACKAGE)
+    ad.load_snippet("ranging", _RANGING_SNIPPET_PACKAGE)
     ad.adb.shell(
-        f'cmd uwb simulate-app-state-change {_RANGING_SNIPPET_PACKAGE}'
-        ' foreground'
+        f"cmd uwb simulate-app-state-change {_RANGING_SNIPPET_PACKAGE}" " foreground"
     )
 
-    ad.load_snippet('bluetooth', _BLUETOOTH_SNIPPET_PACKAGE)
+    ad.load_snippet("bluetooth", _BLUETOOTH_SNIPPET_PACKAGE)
     end_time = time.monotonic() + _WAIT_FOR_BLE_RSSI_TIMEOUT.total_seconds()
     while time.monotonic() < end_time:
-      if ad.ranging.isTechnologyEnabled(
-          ranging_params.RangingTechnology.BLE_RSSI
-      ):
+      if ad.ranging.isTechnologyEnabled(ranging_params.RangingTechnology.BLE_RSSI):
         break
       time.sleep(_DELAY_BETWEEN_ACTIONS.total_seconds())
     else:
-      asserts.fail(f'{ad} BLE RSSI is not enabled on the device.')
+      asserts.fail(f"{ad} BLE RSSI is not enabled on the device.")
     ad.bluetooth.reset()
 
   def setup_class(self) -> None:
@@ -90,8 +88,8 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     )
     self.initiator, self.responder = self.ads
     self.initiator.debug_tag, self.responder.debug_tag = (
-        'Initiator',
-        'Responder',
+        "Initiator",
+        "Responder",
     )
     self.initiator.uwb_address = [1, 2]
     self.responder.uwb_address = [3, 4]
