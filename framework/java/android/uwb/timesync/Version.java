@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package org.carconnectivity.android.digitalkey.timesync;
+package android.uwb.timesync;
 
+import android.annotation.FlaggedApi;
+import android.annotation.Hide;
+import android.annotation.NonNull;
 import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -25,21 +28,22 @@ import android.os.Parcelable;
  *
  * @hide
  */
-@SystemApi
-public class Version implements Parcelable {
-    private byte mMajor;
-    private byte mMinor;
+@Hide
+@FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+public final class Version implements Parcelable {
+    private int mMajor;
+    private int mMinor;
 
-    public Version(byte major, byte minor) {
+    public Version(int major, int minor) {
         mMajor = major;
         mMinor = minor;
     }
 
-    public byte getMajor() {
+    public int getMajor() {
         return mMajor;
     }
 
-    public byte getMinor() {
+    public int getMinor() {
         return mMinor;
     }
 
@@ -50,7 +54,7 @@ public class Version implements Parcelable {
      * @return -1 if other is less than this version, 0 if other is equal to this version, 1 if
      *     other is greater than this version.
      */
-    public int compare(Version other) {
+    public int compare(@NonNull Version other) {
         if (other.getMajor() > getMajor()) {
             return 1;
         }
@@ -72,7 +76,7 @@ public class Version implements Parcelable {
      * @param other Version object to be compared against.
      * @return true if this version is equal-to other, otherwise false.
      */
-    public boolean isEqualTo(Version other) {
+    public boolean isEqualTo(@NonNull Version other) {
         return compare(other) == 0;
     }
 
@@ -82,7 +86,7 @@ public class Version implements Parcelable {
      * @param other Version object to be compared against.
      * @return true if this version is less-than other, otherwise false.
      */
-    public boolean isLessThan(Version other) {
+    public boolean isLessThan(@NonNull Version other) {
         return compare(other) > 0;
     }
 
@@ -92,15 +96,16 @@ public class Version implements Parcelable {
      * @param other Version object to be compared against.
      * @return true if this version is greater-than other, otherwise false.
      */
-    public boolean isGreaterThan(Version other) {
+    public boolean isGreaterThan(@NonNull Version other) {
         return compare(other) < 0;
     }
-
+    //TODO (b/467707737) check if readByte is still correct
+    @NonNull
     public static final Creator<Version> CREATOR =
             new Creator<Version>() {
                 @Override
                 public Version createFromParcel(Parcel in) {
-                    return new Version(in.readByte(), in.readByte());
+                    return new Version(in.readInt(), in.readInt());
                 }
 
                 @Override
@@ -110,9 +115,9 @@ public class Version implements Parcelable {
             };
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeByte(mMajor);
-        dest.writeByte(mMinor);
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeInt(mMajor);
+        dest.writeInt(mMinor);
     }
 
     @Override
