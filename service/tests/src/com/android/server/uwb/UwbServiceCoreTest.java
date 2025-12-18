@@ -1009,6 +1009,48 @@ public class UwbServiceCoreTest {
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
     }
 
+    /**
+     * Verifies that restarting the UWB stack when it's already disabled still triggers
+     * deinitialization due to the forceDisable flag.
+     */
+    @Test
+    public void testRestartWhenDisabled_forceDeinit() throws Exception {
+        // UWB is initially disabled.
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+
+        when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE_MAP);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                mUwbServiceCore.onCountryCodeChanged(STATUS_CODE_OK, VALID_COUNTRY_CODE);
+                return Pair.create(STATUS_CODE_OK, VALID_COUNTRY_CODE);
+            }
+        }).when(mUwbCountryCode).setCountryCode(anyBoolean());
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
+
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        // Initial state notification
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        // Call restart
+        mUwbServiceCore.restart();
+        mTestLooper.dispatchAll();
+
+        // Verify that deinitialize is called even though UWB was disabled, due to forceDisable.
+        verify(mNativeUwbManager).doDeinitialize();
+        verify(mUwbSessionManager).deInitAllSession();
+
+        // Verify that initialize is called and the final state is enabled.
+        verify(mNativeUwbManager).doInitialize();
+        assertThat(mUwbServiceCore.getAdapterState())
+                .isEqualTo(AdapterState.STATE_ENABLED_INACTIVE);
+    }
+
     @Test
     public void testToggleMultipleEnableDisable() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE_MAP);

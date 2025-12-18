@@ -1416,7 +1416,6 @@ public class RangingManagerTest {
                 .setRangingMode(RANGING_MODE_HIGH_ACCURACY_PREFERRED)
                 .setSecurityLevel(SECURITY_LEVEL_BASIC)
                 .addDeviceHandle(device)
-                .setRangingTechnologyFilter(Set.of(RangingManager.BLE_CS, RangingManager.BLE_RSSI))
                 .build();
 
         assertThat(config.getDeviceHandles().getFirst().getBluetoothDevice()).isEqualTo(
