@@ -22,6 +22,7 @@ import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
 import android.annotation.NonNull;
+import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
@@ -53,6 +54,7 @@ import android.uwb.StateChangeReason;
 import android.uwb.UwbActivityEnergyInfo;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager.AdapterStateCallback;
+import android.uwb.timesync.ITimesyncCallbackListener;
 
 import androidx.annotation.Nullable;
 
@@ -195,7 +197,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         public void unlinkToDeath() {
             try {
                 mBinder.unlinkToDeath(this, 0);
-            } catch (NoSuchElementException e) { }
+            } catch (NoSuchElementException e) {
+            }
         }
 
         @Override
@@ -204,11 +207,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             if (o == null || getClass() != o.getClass()) return false;
             AttributionSourceHolder that = (AttributionSourceHolder) o;
             return mAttributionSource.getUid() == that.mAttributionSource.getUid()
-                && Objects.equals(mAttributionSource.getPackageName(),
-                that.mAttributionSource.getPackageName())
-                && Objects.equals(mAttributionSource.getAttributionTag(),
-                that.mAttributionSource.getAttributionTag())
-                && Objects.equals(mAttributionSource.getNext(), that.mAttributionSource.getNext());
+                    && Objects.equals(mAttributionSource.getPackageName(),
+                    that.mAttributionSource.getPackageName())
+                    && Objects.equals(mAttributionSource.getAttributionTag(),
+                    that.mAttributionSource.getAttributionTag())
+                    && Objects.equals(mAttributionSource.getNext(),
+                    that.mAttributionSource.getNext());
         }
 
         @Override
@@ -274,12 +278,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         /**
          * Check all the client states to figure out if we should enable the hardware.
          *
-         *  <li> If feature {@link DeviceConfigFacade#isHwIdleTurnOffEnabled()} is disabled -> true
-         *  </li>
-         *  <li> If there is at least 1 client vote to enable -> true </li>
-         *  <li> Else -> false </li>
-         *
-         * @return
+         * <li> If feature {@link DeviceConfigFacade#isHwIdleTurnOffEnabled()} is disabled -> true
+         * </li>
+         * <li> If there is at least 1 client vote to enable -> true </li>
+         * <li> Else -> false </li>
          */
         public boolean shouldHwBeEnabled() {
             // If the feature is disabled, always return true.
@@ -342,6 +344,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public void addInitializationFailureListener(@NonNull InitializationFailureListener listener) {
         mListeners.add(listener);
     }
+
     public void removeInitializationFailureListener(
             @NonNull InitializationFailureListener listener) {
         mListeners.remove(listener);
@@ -609,6 +612,19 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return channelUsageList;
     }
 
+    public synchronized void registerTimesyncCallback(ITimesyncCallbackListener callback,
+            BluetoothAddress address)
+            throws RemoteException {
+        mUwbInjector.getTimesyncManager().registerEventCallback(callback, address);
+
+    }
+
+    public synchronized void unregisterTimesyncCallback(ITimesyncCallbackListener callback,
+            BluetoothAddress address)
+            throws RemoteException {
+        mUwbInjector.getTimesyncManager().unregisterEventCallback(callback, address);
+    }
+
     public void updateChannelStateIfNeeded() {
         if (mLastChannelUsageList.equals(getChannelUsageState())) {
             return;
@@ -681,7 +697,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         mSessionManager.getUwbsFiraProtocolVersion(chipId));
         Trace.endSection();
         if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK
-                || specificationParams.second == null)  {
+                || specificationParams.second == null) {
             Log.e(TAG, "Failed to retrieve specification params");
             return new PersistableBundle();
         }
@@ -765,7 +781,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
             if (mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()
                     && cccOpenRangingParams.getHoppingConfigMode()
-                            != CccParams.HOPPING_CONFIG_MODE_NONE
+                    != CccParams.HOPPING_CONFIG_MODE_NONE
                     && cccOpenRangingParams.getHopModeKey() == CccParams.HOP_MODE_KEY_UNSET) {
                 CccOpenRangingParams.Builder builder =
                         new CccOpenRangingParams.Builder(cccOpenRangingParams);
@@ -782,7 +798,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     AliroOpenRangingParams.fromBundle(params);
             if (mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()
                     && aliroOpenRangingParams.getHoppingConfigMode()
-                            != CccParams.HOPPING_CONFIG_MODE_NONE
+                    != CccParams.HOPPING_CONFIG_MODE_NONE
                     && aliroOpenRangingParams.getHopModeKey() == CccParams.HOP_MODE_KEY_UNSET) {
                 AliroOpenRangingParams.Builder builder =
                         new AliroOpenRangingParams.Builder(aliroOpenRangingParams);
@@ -815,7 +831,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             try {
                 rangingCallbacks.onRangingOpenFailed(sessionHandle,
                         RangingChangeReason.BAD_PARAMETERS, new PersistableBundle());
-            } catch (RemoteException e) { }
+            } catch (RemoteException e) {
+            }
         }
     }
 
@@ -889,7 +906,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        Params  reconfigureRangingParams = null;
+        Params reconfigureRangingParams = null;
         if (FiraParams.isCorrectProtocol(params)) {
             FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
             reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
@@ -929,8 +946,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (suspendRangingParams.getSuspendRangingRounds() != expectedSuspendRangingRoundsValue) {
             throw new IllegalStateException(
                     "Incorrect SuspendRangingRound value "
-                    + suspendRangingParams.getSuspendRangingRounds()
-                    + ", expected value = " + expectedSuspendRangingRoundsValue);
+                            + suspendRangingParams.getSuspendRangingRounds()
+                            + ", expected value = " + expectedSuspendRangingRoundsValue);
         }
     }
 
@@ -1128,7 +1145,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 .getMaxMacVersionSupported()
                 .getMajor() < FIRA_VERSION_MAJOR_2) {
             Log.e(TAG, "Message Type  " + mt + " not supported in this FiRa version");
-            return  UwbUciConstants.STATUS_CODE_FAILED;
+            return UwbUciConstants.STATUS_CODE_FAILED;
         }
         // TODO(b/211445008): Consolidate to a single uwb thread.
         FutureTask<Integer> sendVendorCmdTask = new FutureTask<>(
@@ -1278,6 +1295,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             msg.what = task;
             this.sendMessage(msg);
         }
+
         public void execute(int task, int arg1, int arg2) {
             Message msg = mUwbTask.obtainMessage();
             msg.what = task;
@@ -1486,8 +1504,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             // STATUS_CODE_ANDROID_REGULATION_UWB_OFF, notify with the reason SYSTEM_REGULATION.
             if (!UwbCountryCode.isValid(countryCode)
                     || (setCountryCodeStatus.isPresent()
-                        && setCountryCodeStatus.get()
-                        == UwbUciConstants.STATUS_CODE_ANDROID_REGULATION_UWB_OFF)) {
+                    && setCountryCodeStatus.get()
+                    == UwbUciConstants.STATUS_CODE_ANDROID_REGULATION_UWB_OFF)) {
                 reason = StateChangeReason.SYSTEM_REGULATION;
             }
 

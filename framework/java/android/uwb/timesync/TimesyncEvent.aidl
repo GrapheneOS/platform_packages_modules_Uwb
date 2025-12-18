@@ -16,5 +16,4 @@
 
 package android.uwb.timesync;
 
-/** @hide */
-parcelable BleTimestamp;
+parcelable TimesyncEvent;

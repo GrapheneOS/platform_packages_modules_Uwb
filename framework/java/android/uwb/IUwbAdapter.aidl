@@ -30,6 +30,7 @@ import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.LogicalLinkCreationParams;
 import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.timesync.ITimesyncCallbackListener;
 
 /**
  * @hide
@@ -88,6 +89,18 @@ interface IUwbAdapter {
   void registerOemExtensionCallback(in IUwbOemExtensionCallback callbacks);
 
   void unregisterOemExtensionCallback(in IUwbOemExtensionCallback callbacks);
+
+  /**
+   * Register the callback used for notification for timesync events.
+   */
+  void registerTimesyncCallback(in ITimesyncCallbackListener callback,
+                                in String address, in int type);
+
+  /**
+   * Unregister the callback used for notification for timesync events.
+   */
+  void unregisterTimesyncCallback(in ITimesyncCallbackListener callback,
+                                  in String address, in int type);
 
   /**
    * Get the accuracy of the ranging timestamps
