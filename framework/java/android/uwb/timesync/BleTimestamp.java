@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package android.uwb.timesync;
+package org.carconnectivity.android.digitalkey.timesync;
 
-import android.annotation.FlaggedApi;
-import android.annotation.Hide;
-import android.annotation.NonNull;
 import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -28,9 +25,8 @@ import android.os.Parcelable;
  *
  * @hide
  */
-@Hide
-@FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
-public final class BleTimestamp implements Parcelable {
+@SystemApi
+public class BleTimestamp implements Parcelable {
     private long mSystemTimeMicroseconds;
     private long mBluetoothTimeMicroseconds;
     private int mDeviceTimeUncertainty;
@@ -48,14 +44,6 @@ public final class BleTimestamp implements Parcelable {
         mDeviceTimeUncertainty = deviceTimeUncertainty;
         mMaxClockSkewPpm = maxClockSkewPpm;
         mIsClockSkewMeasurementAvailable = isClockSkewMeasurementAvailable;
-    }
-
-    private BleTimestamp(@NonNull Parcel in) {
-        mSystemTimeMicroseconds = in.readLong();
-        mBluetoothTimeMicroseconds = in.readLong();
-        mDeviceTimeUncertainty = in.readInt();
-        mMaxClockSkewPpm = in.readInt();
-        mIsClockSkewMeasurementAvailable = in.readBoolean();
     }
 
     public long getSystemTimeMicroseconds() {
@@ -78,12 +66,12 @@ public final class BleTimestamp implements Parcelable {
         return mIsClockSkewMeasurementAvailable;
     }
 
-    @NonNull
     public static final Creator<BleTimestamp> CREATOR =
             new Creator<BleTimestamp>() {
                 @Override
                 public BleTimestamp createFromParcel(Parcel in) {
-                    return new BleTimestamp(in);
+                    return new BleTimestamp(
+                            in.readLong(), in.readLong(), in.readInt(), in.readInt(), in.readBoolean());
                 }
 
                 @Override
@@ -92,7 +80,8 @@ public final class BleTimestamp implements Parcelable {
                 }
             };
 
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
         dest.writeLong(mSystemTimeMicroseconds);
         dest.writeLong(mBluetoothTimeMicroseconds);
         dest.writeInt(mDeviceTimeUncertainty);
@@ -100,6 +89,7 @@ public final class BleTimestamp implements Parcelable {
         dest.writeBoolean(mIsClockSkewMeasurementAvailable);
     }
 
+    @Override
     public int describeContents() {
         return 0;
     }

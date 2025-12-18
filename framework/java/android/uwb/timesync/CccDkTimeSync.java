@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,27 @@
  * limitations under the License.
  */
 
-package android.uwb.timesync;
+package org.carconnectivity.android.digitalkey.timesync;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
-import static android.permission.PermissionManager.PERMISSION_GRANTED;
+import static android.content.PermissionChecker.PERMISSION_GRANTED;
 
-import android.Manifest;
 import android.annotation.CallbackExecutor;
-import android.annotation.FlaggedApi;
-import android.annotation.Hide;
 import android.annotation.NonNull;
-import android.annotation.PermissionManuallyEnforced;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.content.AttributionSource;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.PermissionChecker;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.permission.PermissionManager;
 import android.util.Log;
-
-import com.android.ranging.flags.Flags;
 
 import java.util.concurrent.Executor;
 
@@ -49,19 +43,14 @@ import java.util.concurrent.Executor;
  *
  * @hide
  */
-@Hide
-@FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+@SystemApi
 public final class CccDkTimeSync {
     private static final String TAG = "CccDkTimeSync";
-    //TODO (b/467707737) maybe use int instead of byte?
-    @NonNull
     public static final Version VERSION = new Version((byte) 1, (byte) 1);
-    @NonNull
     public static final Version VERSION_UNSUPPORTED = new Version((byte) 0, (byte) 0);
 
     private final Context mContext;
     private ICccDkTimeSync mService;
-    private final PermissionManager mPermissionManager;
 
     public interface ConnectionCallback {
         void onConnected();
@@ -77,7 +66,6 @@ public final class CccDkTimeSync {
         if (executor == null || callback == null) {
             throw new NullPointerException("Arguments must not be null");
         }
-        mPermissionManager = context.getSystemService(PermissionManager.class);
         mContext = context;
         Log.i(TAG, "Constructor CccDkTimeSync");
 
@@ -121,15 +109,10 @@ public final class CccDkTimeSync {
         }
     }
 
+    /** @hide */
     public CccDkTimeSync(@NonNull Context context, @NonNull ICccDkTimeSync service) {
         mContext = context;
         mService = service;
-        mPermissionManager = context.getSystemService(PermissionManager.class);
-    }
-
-    private static void enforceUwbPrivilegedPermission(Context context) {
-        context.enforceCallingOrSelfPermission(android.Manifest.permission.UWB_PRIVILEGED,
-                "UwbService");
     }
 
     public interface VersionListener {
@@ -140,22 +123,18 @@ public final class CccDkTimeSync {
          * {@link VERSION_UNSUPPORTED} denotes no supported version between supported version range
          * of the framework.
          */
-        void onVersion(@NonNull Version version);
+        void onVersion(Version version);
     }
 
     private static class VersionListenerWrapper extends IVersionListener.Stub {
-        private final Context mContext;
         private final VersionListener mListener;
 
-        VersionListenerWrapper(Context context, VersionListener listener) {
-            mContext = context;
+        VersionListenerWrapper(VersionListener listener) {
             mListener = listener;
         }
 
         @Override
-        @PermissionManuallyEnforced
         public void onVersion(Version version) {
-            enforceUwbPrivilegedPermission(mContext);
             mListener.onVersion(version);
         }
     }
@@ -170,23 +149,16 @@ public final class CccDkTimeSync {
      * @param versionMin Minimum version supported by Framework.
      * @param versionMax Maximum version supported by Framework.
      * @param listener An instance of the VersionListener.
-     *
      */
     public void getApiVersion(
             @NonNull Version versionMin,
             @NonNull Version versionMax,
-            @NonNull VersionListener listener)
+            VersionListener listener)
             throws RemoteException {
         if (mService == null) {
             throw new IllegalStateException("service not connected to system");
         }
-        try {
-            mService.getApiVersion(versionMin,
-                    versionMax,
-                    new VersionListenerWrapper(mContext, listener));
-        } catch (RemoteException e) {
-            throw e.rethrowFromSystemServer();
-        }
+        mService.getApiVersion(versionMin, versionMax, new VersionListenerWrapper(listener));
     }
 
     /** Direction of the LMP event */
@@ -215,10 +187,10 @@ public final class CccDkTimeSync {
          * @param eventCounter counter incremented by one for each new connection event
          */
         void onTimestamp(
-                @NonNull byte[] address,
-                @NonNull BleTimestamp timestamp,
-                @NonNull Direction direction,
-                @NonNull BleLmpEvent event,
+                byte[] address,
+                BleTimestamp timestamp,
+                Direction direction,
+                BleLmpEvent event,
                 int eventCounter);
     }
 
@@ -234,25 +206,20 @@ public final class CccDkTimeSync {
         private final Context mContext;
         private final BleLmpEventListener mListener;
 
-        private final PermissionManager mPermissionManager;
-
         BleLmpEventListenerWrapper(Context context, BleLmpEventListener listener) {
             mContext = context;
             mListener = listener;
-            mPermissionManager = context.getSystemService(PermissionManager.class);
         }
 
         @Override
-        @PermissionManuallyEnforced
         public void onTimestamp(
                 byte[] address,
                 BleTimestamp timestamp,
                 int direction,
                 int event,
                 int eventCounter) {
-            enforceUwbPrivilegedPermission(mContext);
-            int permissionCheckResult = mPermissionManager.checkPermissionForStartDataDelivery(
-                    BLUETOOTH_CONNECT, mContext.getAttributionSource(), "BLE Timestamp");
+            int permissionCheckResult = PermissionChecker.checkPermissionForDataDelivery(
+                    mContext, BLUETOOTH_CONNECT, -1, mContext.getAttributionSource(), "BLE Timestamp");
             if (permissionCheckResult != PERMISSION_GRANTED) {
                 Log.e(TAG, "Not delivering BLE timestamp because of permission denial");
                 return;
@@ -270,37 +237,29 @@ public final class CccDkTimeSync {
     private static class EventCallbackWrapper extends IEventCallback.Stub {
         private final BleLmpEventListenerWrapper mListenerWrapper;
         private final EventCallback mCallback;
-        private final Context mContext;
 
         EventCallbackWrapper(Context context, EventCallback callback) {
             mCallback = callback;
-            mContext = context;
             mListenerWrapper = new BleLmpEventListenerWrapper(context, callback);
         }
 
         @Override
-        @PermissionManuallyEnforced
         public void onRegisterSuccess() {
-            enforceUwbPrivilegedPermission(mContext);
             mCallback.onRegisterSuccess();
         }
 
         @Override
-        @PermissionManuallyEnforced
         public void onRegisterFailure() {
-            enforceUwbPrivilegedPermission(mContext);
             mCallback.onRegisterFailure();
         }
 
         @Override
-        @PermissionManuallyEnforced
         public void onTimestamp(
                 byte[] address,
                 BleTimestamp timestamp,
                 int direction,
                 int event,
                 int eventCounter) {
-            enforceUwbPrivilegedPermission(mContext);
             mListenerWrapper.onTimestamp(address, timestamp, direction, event, eventCounter);
         }
     }
@@ -312,8 +271,8 @@ public final class CccDkTimeSync {
             throw new SecurityException("Invalid attribution source " + attributionSource);
         }
 
-        int permissionCheckResult = mPermissionManager.checkPermissionForPreflight(
-                BLUETOOTH_CONNECT, attributionSource);
+        int permissionCheckResult = PermissionChecker.checkPermissionForPreflight(
+                mContext, BLUETOOTH_CONNECT, attributionSource);
         if (permissionCheckResult != PERMISSION_GRANTED) {
             throw new SecurityException("Caller does not hold BLUETOOTH_CONNECT permission");
         }
@@ -326,9 +285,10 @@ public final class CccDkTimeSync {
      * @param address Bluetooth address to use for monitoring timestamp.
      * @param listener An instance of the BleLmpEventListener
      */
+    @RequiresPermission(BLUETOOTH_CONNECT)
     public void registerBleLmpEventListener(
-            @NonNull byte[] address,
-            @NonNull BleLmpEventListener listener)
+            byte[] address,
+            BleLmpEventListener listener)
             throws RemoteException {
         checkBluetoothConnectPermissionForPreFlight();
 
@@ -349,7 +309,7 @@ public final class CccDkTimeSync {
      * @param callback An instance of the {@link EventCallback}
      */
     @RequiresPermission(BLUETOOTH_CONNECT)
-    public void registerEventCallback(@NonNull byte[] address, @NonNull EventCallback callback)
+    public void registerEventCallback(byte[] address, EventCallback callback)
             throws RemoteException {
         checkBluetoothConnectPermissionForPreFlight();
 
@@ -365,7 +325,7 @@ public final class CccDkTimeSync {
      * @param address Bluetooth device to stop monitoring.
      */
     @RequiresPermission(BLUETOOTH_CONNECT)
-    public void unregisterBleLmpEventListener(@NonNull byte[] address) throws RemoteException {
+    public void unregisterBleLmpEventListener(byte[] address) throws RemoteException {
         unregisterEventCallback(address);
     }
 
@@ -377,7 +337,7 @@ public final class CccDkTimeSync {
      * @param address Bluetooth device to stop monitoring.
      */
     @RequiresPermission(BLUETOOTH_CONNECT)
-    public void unregisterEventCallback(@NonNull byte[] address) throws RemoteException {
+    public void unregisterEventCallback(byte[] address) throws RemoteException {
         checkBluetoothConnectPermissionForPreFlight();
 
         if (mService == null) {
