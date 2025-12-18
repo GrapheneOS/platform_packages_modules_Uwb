@@ -122,7 +122,7 @@ package android.ranging {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class RangingDataExtras implements android.os.Parcelable {
     method public int describeContents();
-    method @Nullable public android.ranging.ble.BleSpecificData getBleSpecificData();
+    method @Nullable public android.ranging.ble.cs.BleCsSpecificData getBleCsSpecificData();
     method @Nullable public android.ranging.uwb.UwbSpecificData getUwbSpecificData();
     method @Nullable public android.ranging.wifi.rtt.WifiRttSpecificData getWifiRttSpecificData();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -246,19 +246,6 @@ package android.ranging {
 
 }
 
-package android.ranging.ble {
-
-  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class BleSpecificData implements android.os.Parcelable {
-    method public int describeContents();
-    method @IntRange(from=0) public double getDelaySpreadMeters();
-    method @IntRange(from=0xffffff81, to=127) public int getRemoteTxPowerDbm();
-    method public void writeToParcel(@NonNull android.os.Parcel, int);
-    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.ble.BleSpecificData> CREATOR;
-    field public static final int INVALID_TX_POWER_DBM = 127; // 0x7f
-  }
-
-}
-
 package android.ranging.ble.cs {
 
   @FlaggedApi("com.android.ranging.flags.ranging_cs_enabled") public final class BleCsRangingCapabilities implements android.os.Parcelable {
@@ -294,6 +281,13 @@ package android.ranging.ble.cs {
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setRangingUpdateRate(int);
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setSecurityLevel(int);
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setSightType(int);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class BleCsSpecificData implements android.os.Parcelable {
+    method public int describeContents();
+    method public double getDelaySpreadMeters();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.ble.cs.BleCsSpecificData> CREATOR;
   }
 
 }

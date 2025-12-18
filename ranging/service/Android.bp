@@ -69,7 +69,6 @@ java_library {
         "ranging_uwb_backend",
         "ranging_aconfig_flags_lib",
         "wifi_aconfig_flags_lib",
-        "bluetooth_exported_flags_java_lib",
     ],
 
     apex_available: [
