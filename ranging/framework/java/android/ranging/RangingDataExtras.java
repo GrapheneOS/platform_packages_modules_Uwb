@@ -21,7 +21,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.ble.cs.BleCsSpecificData;
+import android.ranging.ble.BleSpecificData;
 import android.ranging.uwb.UwbSpecificData;
 import android.ranging.wifi.rtt.WifiRttSpecificData;
 
@@ -36,19 +36,19 @@ import java.util.Objects;
 @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
 public final class RangingDataExtras implements Parcelable {
 
-    private final BleCsSpecificData mBleCsSpecificData;
+    private final BleSpecificData mBleSpecificData;
     private final WifiRttSpecificData mWifiRttSpecificData;
     private final UwbSpecificData mUwbSpecificData;
 
     private RangingDataExtras(Builder builder) {
-        mBleCsSpecificData = builder.mBleCsSpecificData;
+        mBleSpecificData = builder.mBleSpecificData;
         mWifiRttSpecificData = builder.mRttSpecificData;
         mUwbSpecificData = builder.mUwbSpecificData;
     }
 
     private RangingDataExtras(Parcel in) {
-        mBleCsSpecificData = in.readParcelable(
-                BleCsSpecificData.class.getClassLoader(), BleCsSpecificData.class);
+        mBleSpecificData = in.readParcelable(
+                BleSpecificData.class.getClassLoader(), BleSpecificData.class);
         mWifiRttSpecificData = in.readParcelable(
                 WifiRttSpecificData.class.getClassLoader(), WifiRttSpecificData.class);
         mUwbSpecificData = in.readParcelable(
@@ -68,11 +68,11 @@ public final class RangingDataExtras implements Parcelable {
     };
 
     /**
-     * Returns the {@link BleCsSpecificData} ranging data extras, or {@code null} if not available.
+     * Returns the {@link BleSpecificData} ranging data extras, or {@code null} if not available.
      */
     @Nullable
-    public BleCsSpecificData getBleCsSpecificData() {
-        return mBleCsSpecificData;
+    public BleSpecificData getBleSpecificData() {
+        return mBleSpecificData;
     }
 
     /**
@@ -99,7 +99,7 @@ public final class RangingDataExtras implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeParcelable(mBleCsSpecificData, flags);
+        dest.writeParcelable(mBleSpecificData, flags);
         dest.writeParcelable(mWifiRttSpecificData, flags);
         dest.writeParcelable(mUwbSpecificData, flags);
     }
@@ -109,14 +109,14 @@ public final class RangingDataExtras implements Parcelable {
         if (this == o) return true;
         if (!(o instanceof RangingDataExtras)) return false;
         RangingDataExtras that = (RangingDataExtras) o;
-        return Objects.equals(mBleCsSpecificData, that.mBleCsSpecificData)
+        return Objects.equals(mBleSpecificData, that.mBleSpecificData)
                 && Objects.equals(mWifiRttSpecificData, that.mWifiRttSpecificData)
                 && Objects.equals(mUwbSpecificData, that.mUwbSpecificData);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mBleCsSpecificData, mWifiRttSpecificData, mUwbSpecificData);
+        return Objects.hash(mBleSpecificData, mWifiRttSpecificData, mUwbSpecificData);
     }
 
     /**
@@ -125,7 +125,7 @@ public final class RangingDataExtras implements Parcelable {
      * @hide
      */
     public static final class Builder {
-        private BleCsSpecificData mBleCsSpecificData;
+        private BleSpecificData mBleSpecificData;
         private WifiRttSpecificData mRttSpecificData;
         private UwbSpecificData mUwbSpecificData;
 
@@ -136,9 +136,9 @@ public final class RangingDataExtras implements Parcelable {
          * @return This {@link Builder} instance.
          */
         @NonNull
-        public Builder setBleCsSpecificData(
-                @NonNull BleCsSpecificData bleCsSpecificData) {
-            mBleCsSpecificData = bleCsSpecificData;
+        public Builder setBleSpecificData(
+                @NonNull BleSpecificData bleCsSpecificData) {
+            mBleSpecificData = bleCsSpecificData;
             return this;
         }
 
@@ -182,7 +182,7 @@ public final class RangingDataExtras implements Parcelable {
     @Override
     public String toString() {
         return "RangingDataExtras{"
-                + "mBleCsSpecificData=" + mBleCsSpecificData
+                + "mBleSpecificData=" + mBleSpecificData
                 + ", mWifiRttSpecificData=" + mWifiRttSpecificData
                 + ", mUwbSpecificData=" + mUwbSpecificData
                 + '}';
