@@ -110,12 +110,12 @@ public final class BleRssiRangingParams implements Parcelable {
          *
          * <p>Valid Bluetooth hardware addresses must be upper case, in big endian byte order, and
          * in a format such as "00:11:22:33:AA:BB". The helper
-         * {@see android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
+         * {@link android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
          * a Bluetooth address.
          *
          * @param peerBluetoothAddress The address of the peer device must be non-null
          *                             Bluetooth address.
-         *  {@see android.bluetooth.BluetoothDevice#getAddress()}
+         * @see android.bluetooth.BluetoothDevice#getAddress()
          * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null or does not
          * conform to "00:11:22:33:AA:BB" format.
          */
