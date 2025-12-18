@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import dataclasses
 import enum
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 from lib.cs import CsRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
@@ -37,14 +37,13 @@ class RangingMode(enum.IntEnum):
   HIGH_ACCURACY_PREFERRED = 2
   FUSED = 3
 
-
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class DeviceParams:
   peer_id: str
-  uwb_params: Optional[UwbRangingParams] = None
-  cs_params: Optional[CsRangingParams] = None
-  rtt_params: Optional[RttRangingParams] = None
-  rssi_params: Optional[BleRssiRangingParams] = None
+  uwb_params: UwbRangingParams | None = None
+  cs_params: CsRangingParams | None = None
+  rtt_params: RttRangingParams | None = None
+  rssi_params: BleRssiRangingParams | None = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

@@ -6,6 +6,7 @@ The tests in this file are designed to be run with devices placed 1 meter apart.
 from android.platform.test.annotations import CddTest
 from mobly import test_runner
 from mobly import utils
+from mobly.snippet import callback_event
 
 from . import bluetooth_utils
 from . import ranging_accuracy_base_test
@@ -18,12 +19,16 @@ _DISTANCE_IN_METERS = 1
 _NUMBER_OF_BLE_CS_TEST_SAMPLES = 100
 _NUMBER_OF_UWB_TEST_SAMPLES = 1000
 _NUMBER_OF_WIFI_RTT_TEST_SAMPLES = 100
+_NUMBER_OF_BLE_RSSI_TEST_SAMPLES = 1000
+_TARGET_MEDIAN_DBM = -55
+_MAX_BLE_RSSI_RANGE_DBM = 18
+_MAX_BLE_RSSI_DBM = 10
 
 
 class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
   """Tests ranging accuracy for different technologies between two devices."""
 
-  @CddTest(requirements = ["7.4.9/C-1-3", "7.4.9/C-1-4"])
+  @CddTest(requirements=["7.4.9/C-1-6", "7.4.9/C-1-7"])
   def test_uwb_ranging(self) -> None:
     """Test UWB ranging at 1 meter between the devices.
 
@@ -108,7 +113,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
   # TODO(b/454692647): Keep @retry commented out. It reports retry_# cases
   # to CTS-V, which blocks overriding failures.
   # @retry(max_count=2)
-  @CddTest(requirements = "7.4.3/C-4-2")
+  @CddTest(requirements="7.4.3/C-11-2")
   def test_channel_sounding_ranging(self) -> None:
     """Test Channel Sounding ranging at 1 meter between the devices.
 
@@ -138,9 +143,13 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     ranging_utils.skip_if_technology_not_supported(
         [self.initiator, self.responder], technology
     )
+    # The bluetooth_utils.ble_bond requires shell permissions while shell permissions
+    # can be delegated to only one instrumentation. So we need to drop MBS's shell permissions.
+    self.initiator.mbs.utilityDropShellPermission()
+    self.responder.mbs.utilityDropShellPermission()
 
-    self.initiator.bt_address, self.responder.bt_address = (
-        bluetooth_utils.ble_bond(self.initiator, self.responder)
+    self.initiator.bt_address, self.responder.bt_address = bluetooth_utils.ble_bond(
+        self.initiator, self.responder
     )
     try:
       ranging_measure_count = _NUMBER_OF_BLE_CS_TEST_SAMPLES
@@ -161,15 +170,13 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           ),
       )
 
-      initiator_distances, _ = (
-          ranging_utils.start_ranging_and_get_distance_data(
-              self.initiator,
-              self.responder,
-              technology,
-              initiator_preference,
-              None,
-              ranging_measure_count,
-          )
+      initiator_distances, _ = ranging_utils.start_ranging_and_get_distance_data(
+          self.initiator,
+          self.responder,
+          technology,
+          initiator_preference,
+          None,
+          ranging_measure_count,
       )
       ranging_utils.verify_ble_cs_distance_within_tolerance(
           _DISTANCE_IN_METERS,
@@ -183,8 +190,11 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           self.initiator.bt_address,
           self.responder.bt_address,
       )
+      # Restore permissions if needed for subsequent steps
+      self.initiator.mbs.utilityAdoptShellPermission(None)
+      self.responder.mbs.utilityAdoptShellPermission(None)
 
-  @CddTest(requirements = ["7.4.2.5/H-1-1"])
+  @CddTest(requirements=["7.4.2.5/H-1-1"])
   def test_wifi_rtt_ranging(self) -> None:
     """Test Wi-Fi RTT ranging at 1 meter between the devices.
 
@@ -269,8 +279,106 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
         log_path=self.current_test_info.output_path,
     )
 
+  @CddTest(requirements=["7.4.3/C-10-1"])
+  def test_ble_rssi_ranging(self) -> None:
+    """Test BLE RSSI measurement precision at 1 meter.
 
-if __name__ == '__main__':
+    Test Preconditions:
+      * Two Android devices supporting BLE.
+      * Devices are placed 1 meter apart in Line of Sight.
+
+    Test Steps:
+      1. Set Responder to Advertise with TX_POWER_HIGH (Crucial for C-10-1).
+      2. Set Initiator to Scan with LOW_LATENCY.
+      3. Collect 1000 RSSI samples.
+      4. Calculate the spread of the middle 95% of the data.
+
+    Expected Results:
+      * The RSSI samples can be collected successfully without any error.
+    """
+    technology = ranging_params.RangingTechnology.BLE_RSSI
+
+    ranging_utils.skip_if_technology_not_supported(
+        [self.initiator, self.responder], technology
+    )
+
+    utils.concurrent_exec(
+        lambda d: d.mbs.btEnable(),
+        [[self.initiator], [self.responder]],
+    )
+
+    self.initiator.bt_address = self.initiator.mbs.btGetAddress()
+    self.responder.bt_address = self.responder.mbs.btGetAddress()
+
+    rssi_data = ranging_utils.start_ble_rssi_test_and_get_data_pure_scan(
+        scanner=self.initiator,
+        advertiser=self.responder,
+        sample_count=_NUMBER_OF_BLE_RSSI_TEST_SAMPLES,
+    )
+
+    ranging_utils.verify_ble_rssi_precision_within_tolerance(
+        acceptable_spread_dbm=_MAX_BLE_RSSI_RANGE_DBM,
+        rssi_data=rssi_data,
+        log_path=self.current_test_info.output_path,
+    )
+
+  @CddTest(requirements=["7.4.3/C-SR-2", "7.4.3/C-SR-3"])
+  def test_ble_rx_tx_offset_precision(self) -> None:
+    """Tests BLE Rx and Tx offset precision (Calibration) at 1 meter.
+
+    This test verifies that the device can measure RSSI accurately (Rx) and
+    transmit at a power level that allows others to measure it accurately (Tx).
+
+    Test Preconditions:
+      * Two Android devices supporting BLE.
+      * Devices are placed 1 meter apart in Line of Sight.
+      * Reference device is assumed to be calibrated (e.g., Pixel).
+
+    Test Steps:
+      1. [Rx Test] DUT scans, Reference Device advertises (High Power).
+      2. Verify DUT's measured RSSI median is -55dBm +/- 10dBm.
+      3. [Tx Test] Reference Device scans, DUT advertises (High Power).
+      4. Verify Reference Device's measured RSSI median is -55dBm +/- 10dBm.
+
+    Expected Results:
+      * The RSSI samples can be collected successfully without any error.
+    """
+    technology = ranging_params.RangingTechnology.BLE_RSSI
+
+    ranging_utils.skip_if_technology_not_supported(
+        [self.initiator, self.responder], technology
+    )
+
+    utils.concurrent_exec(
+        lambda d: d.mbs.btEnable(),
+        [[self.initiator], [self.responder]],
+    )
+
+    self.initiator.bt_address = self.initiator.mbs.btGetAddress()
+    self.responder.bt_address = self.responder.mbs.btGetAddress()
+
+    results = utils.concurrent_exec(
+        ranging_utils.start_ble_rssi_test_and_get_data_pure_scan,
+        [
+            (self.initiator, self.responder, _NUMBER_OF_BLE_RSSI_TEST_SAMPLES),
+            (self.responder, self.initiator, _NUMBER_OF_BLE_RSSI_TEST_SAMPLES),
+        ],
+        raise_on_exception=True,
+    )
+
+    dut_measured_rssi_data = results[0]
+    ref_measured_rssi_data = results[1]
+
+    ranging_utils.verify_ble_rssi_median_at_target(
+        tx_rssi_data=ref_measured_rssi_data,
+        rx_rssi_data=dut_measured_rssi_data,
+        target_dbm=_TARGET_MEDIAN_DBM,
+        tolerance=_MAX_BLE_RSSI_DBM,
+        log_path=self.current_test_info.output_path,
+    )
+
+
+if __name__ == "__main__":
   # This replicates the behavior of the original test suite file,
   # which defined which test classes to run.
   test_runner.main()
