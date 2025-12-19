@@ -65,9 +65,7 @@ java_library {
     ],
 
     static_libs: [
-        "android.hardware.bluetooth.lmp_event-V1-java",
         "android.hardware.uwb.fira_android-V3-java",
-        "androidx.annotation_annotation",
         "com.uwb.support.aliro",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
@@ -134,6 +132,7 @@ java_library {
         "com.android.uwb",
     ],
 }
+
 
 // Statsd auto-generated code
 // ============================================================
