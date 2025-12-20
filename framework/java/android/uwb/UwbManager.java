@@ -569,14 +569,15 @@ public final class UwbManager {
     }
 
     /**
-     * Register {@link Consumer} of {@link Set<UwbChannel>} to listen for UWB channel usage.
+     * Register {@link Consumer} of {@link Set} or {@link UwbChannel} to listen for UWB channel
+     * usage.
      * The callback is invoked when there is a change in UWB channel usage. The set will contains
      * {@link UwbChannel} currently in use.
      *
      * <p>The provided callback will be invoked by the given {@link Executor}.
      *
      * @param executor an {@link Executor} to execute given callback
-     * @param callback an implementation of {@link Consumer} of {@link Set<UwbChannel>}
+     * @param callback an implementation of {@link Consumer} of {@link Set} of {@link UwbChannel}
      */
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
     @RequiresPermission(permission.UWB_PRIVILEGED)
@@ -586,14 +587,14 @@ public final class UwbManager {
     }
 
     /**
-     * Unregister the specified {@link Consumer} of {@link Set<UwbChannel>}
+     * Unregister the specified {@link Consumer} of {@link Set} of {@link UwbChannel}
      *
-     * <p>The same {@link Consumer} of {@link Set<UwbChannel>} object used when calling
+     * <p>The same {@link Consumer} of {@link Set} of {@link UwbChannel} object used when calling
      * {@link #registerChannelUsageCallback(Executor, Consumer)} must be used.
      *
      * <p>Callbacks are automatically unregistered when an application process goes away
      *
-     * @param callback an implementation of {@link Consumer} of {@link Set<UwbChannel>}
+     * @param callback an implementation of {@link Consumer} of {@link Set} of {@link UwbChannel}
      */
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
     @RequiresPermission(permission.UWB_PRIVILEGED)

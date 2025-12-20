@@ -76,13 +76,13 @@ public interface TransportHandle extends AutoCloseable {
 
         /**
          * Notifies the receiver that the TransportHandle instance can't be used to receive or send
-         * data until {@see onReconnect()} is called.
+         * data until {@link onReconnect()} is called.
          */
         void onDisconnect();
 
         /**
          * Notifies the receiver the TransportHandle instance can be used again to send and receive
-         * data. Should only be called if {@see onDisconnect()} preceded it.
+         * data. Should only be called if {@link onDisconnect()} preceded it.
          */
         void onReconnect();
 
