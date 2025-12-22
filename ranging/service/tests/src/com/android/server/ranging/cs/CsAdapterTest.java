@@ -136,7 +136,7 @@ public class CsAdapterTest {
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
-        mCsAdapter = new CsAdapter(mMockContext, mMockRangingInjector);
+        mCsAdapter = new CsAdapter(mMockContext, mMockRangingInjector, new Object());
     }
 
     @Test

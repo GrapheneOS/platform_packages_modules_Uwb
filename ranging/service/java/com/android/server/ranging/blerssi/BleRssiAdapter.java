@@ -67,6 +67,7 @@ public class BleRssiAdapter implements RangingAdapter {
     private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
+    private final Object mLock;
     private Callback mCallbacks;
     private BluetoothDevice mPeerBluetoothDevice;
     private RangingDevice mRangingDevice;
@@ -81,14 +82,15 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
-    public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector) {
+    public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector, Object lock) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
             throw new IllegalArgumentException("BT_RSSI system feature not found.");
         }
         mContext = context;
         mRangingInjector = rangingInjector;
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, lock);
+        mLock = lock;
         mCallbacks = null;
         mSession = null;
         mConfig = null;
@@ -321,7 +323,7 @@ public class BleRssiAdapter implements RangingAdapter {
                                 .build());
                     }
 
-                    synchronized (mStateMachine) {
+                    synchronized (mLock) {
                         if (mStateMachine.getState() == State.STARTED) {
                             mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());
                         }

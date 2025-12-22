@@ -96,7 +96,7 @@ public class BaseRangingSessionTest {
             RangingAdapter adapter = mock(RangingAdapter.class);
             when(adapter.isDynamicUpdatePeersSupported()).thenReturn(true);
             mMockAdapters.put(config, adapter);
-            when(mMockInjector.createAdapter(any(), eq(config), any())).thenReturn(adapter);
+            when(mMockInjector.createAdapter(any(), eq(config), any(), any())).thenReturn(adapter);
         }
     }
 

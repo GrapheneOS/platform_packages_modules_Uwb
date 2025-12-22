@@ -74,6 +74,7 @@ public class CsAdapter implements RangingAdapter {
     private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
+    private final Object mLock;
     private Callback mCallbacks;
 
     /** Invariant: non-null while a ranging session is active */
@@ -93,13 +94,14 @@ public class CsAdapter implements RangingAdapter {
     private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
     /** Injectable constructor for testing. */
-    public CsAdapter(@NonNull Context context, RangingInjector rangingInjector) {
+    public CsAdapter(@NonNull Context context, RangingInjector rangingInjector, Object lock) {
         if (!RangingTechnology.CS.isSupported(context)) {
             throw new IllegalArgumentException("BT_CS system feature not found.");
         }
         mContext = context;
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, lock);
+        mLock = lock;
         mCallbacks = null;
         mSession = null;
         mRangingInjector = rangingInjector;
@@ -354,7 +356,7 @@ public class CsAdapter implements RangingAdapter {
                                             .setDelaySpreadMeters(result.getDelaySpreadMeters())
                                             .build())
                                     .build());
-                    synchronized (mStateMachine) {
+                    synchronized (mLock) {
                         if (mStateMachine.getState() == State.STARTED) {
                             mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());
                         }

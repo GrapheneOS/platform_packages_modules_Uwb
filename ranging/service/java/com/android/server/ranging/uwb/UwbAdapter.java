@@ -82,6 +82,7 @@ public class UwbAdapter implements RangingAdapter {
     private final ExecutorResultHandlers mUwbClientResultHandlers = new ExecutorResultHandlers();
     private final RangingSessionCallback mUwbListener = new UwbListener();
     private final StateMachine<State> mStateMachine;
+    private final Object mLock;
     private final BiMap<RangingDevice, UwbAddress> mPeers;
     private boolean mIsDlTdoaSession = false;
 
@@ -100,9 +101,10 @@ public class UwbAdapter implements RangingAdapter {
             RangingInjector injector,
             AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
+            @NonNull Object lock,
             @RangingPreference.DeviceRole int role
     ) {
-        this(context, injector, attributionSource, executor,
+        this(context, injector, attributionSource, executor, lock,
                 getBackendDevice(context, executor, role));
     }
 
@@ -129,6 +131,7 @@ public class UwbAdapter implements RangingAdapter {
             RangingInjector injector,
             AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
+            @NonNull Object lock,
             @NonNull com.android.ranging.uwb.backend.internal.RangingDevice uwbClient
     ) {
         if (!RangingTechnology.UWB.isSupported(context)) {
@@ -136,7 +139,8 @@ public class UwbAdapter implements RangingAdapter {
         }
         mContext = context;
         mRangingInjector = injector;
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, lock);
+        mLock = lock;
         mUwbClient = uwbClient;
         mExecutorService = executor;
         mCallbacks = null;
@@ -328,8 +332,8 @@ public class UwbAdapter implements RangingAdapter {
 
         @Override
         public void onRangingInitialized(UwbDevice localDevice) {
-            Log.i(TAG, "onRangingInitialized");
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
+                Log.i(TAG, "onRangingInitialized");
                 if (mStateMachine.getState() == State.STARTED) {
                     if (mIsDlTdoaSession) {
                         mCallbacks.onStarted(ImmutableSet.of());
@@ -365,7 +369,7 @@ public class UwbAdapter implements RangingAdapter {
                     ).build()
             );
 
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STARTED) {
                     RangingDevice device = convertPeerDevice(peer);
                     if (device != null) {
@@ -386,9 +390,8 @@ public class UwbAdapter implements RangingAdapter {
 
         @Override
         public void onPeerDisconnected(UwbDevice peer, @PeerDisconnectedReason int reason) {
-            Log.i(TAG, "onPeerDisconnected: " + peer.getAddress() + ", " + reason);
-
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
+                Log.i(TAG, "onPeerDisconnected: " + peer.getAddress() + ", " + reason);
                 RangingDevice device = convertPeerDevice(peer);
                 if (device != null) {
                     mPeers.remove(device);
@@ -428,7 +431,7 @@ public class UwbAdapter implements RangingAdapter {
                                     RangingUtils.byteArrayToIntegerList(
                                             measurement.getActiveRangingRounds()));
 
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STARTED) {
                     RangingDevice device = convertPeerDevice(peer);
                     if (device != null) {
@@ -498,7 +501,7 @@ public class UwbAdapter implements RangingAdapter {
      * state.
      */
     private void closeForReason(@InternalReason int reason) {
-        synchronized (mStateMachine) {
+        synchronized (mLock) {
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks == null) {
                 Log.i(TAG, "Callback is empty.");

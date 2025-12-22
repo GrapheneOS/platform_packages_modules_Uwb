@@ -129,7 +129,7 @@ public class UwbAdapterTest {
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
-                MoreExecutors.newDirectExecutorService(), mMockUwbClient);
+                MoreExecutors.newDirectExecutorService(), new Object(), mMockUwbClient);
     }
 
     @Test
@@ -266,7 +266,7 @@ public class UwbAdapterTest {
     public void start_startsDlTdoaSession() {
         RangingTag mockRangingTag = mock(RangingTag.class);
         mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
-                MoreExecutors.newDirectExecutorService(), mockRangingTag);
+                MoreExecutors.newDirectExecutorService(), new Object(), mockRangingTag);
         UwbAddress deviceAddress = UwbAddress.fromBytes(new byte[]{1, 2});
         UwbComplexChannel complexChannel = new UwbComplexChannel.Builder()
                 .setChannel(9).setPreambleIndex(10).build();
