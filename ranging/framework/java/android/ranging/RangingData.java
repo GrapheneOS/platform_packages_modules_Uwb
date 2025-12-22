@@ -16,7 +16,7 @@
 
 package android.ranging;
 
-import android.annotation.CurrentTimeMillisLong;
+import android.annotation.ElapsedRealtimeLong;
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -261,7 +261,7 @@ public final class RangingData implements Parcelable {
      *
      * @return The timestamp in milliseconds.
      */
-    @CurrentTimeMillisLong
+    @ElapsedRealtimeLong
     public long getTimestampMillis() {
         return mTimestamp;
     }
