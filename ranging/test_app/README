@@ -1,7 +1,7 @@
 1. Build the app
 make RangingTestApp
 2. Load the app
-adb install -r -g ${ANDROID_PRODUCT_OUT}/system/app/RangingTestApp.apk
+adb install -r -g ${ANDROID_PRODUCT_OUT}/system/app/RangingTestApp/RangingTestApp.apk
 3. Launch APK and Run tests
 
 There is a prebuilt APK under "prebuilt/" folder for you to use.
