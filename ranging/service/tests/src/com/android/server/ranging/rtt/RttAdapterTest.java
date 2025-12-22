@@ -134,7 +134,7 @@ public class RttAdapterTest {
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mRttAdapter = new RttAdapter(mMockContext, mMockRangingInjector,
-                MoreExecutors.newDirectExecutorService(),
+                MoreExecutors.newDirectExecutorService(), new Object(),
                 mMockRttService, DEVICE_ROLE_INITIATOR, RangingTechnology.RTT);
     }
 

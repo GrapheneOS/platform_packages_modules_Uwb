@@ -75,13 +75,9 @@ public class BaseRangingSession {
     private final AlarmManager mAlarmManager;
     private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
 
-    /* Lock for internal state. */
-    private final Object mLock = new Object();
-
     /**
      * Keeps track of state of the ranging session.
      */
-    @GuardedBy("mLock")
     private final StateMachine<State> mStateMachine;
 
     /**
@@ -95,13 +91,13 @@ public class BaseRangingSession {
      *    <li /> A session may contain multiple adapters for a single technology.
      * </ul>
      */
-    @GuardedBy("mLock")
+    @GuardedBy("this")
     private final ConcurrentMap<TechnologyConfig, RangingAdapter> mAdapters;
-    @GuardedBy("mLock")
+    @GuardedBy("this")
     private final ConcurrentMap<TechnologyConfig, @InternalReason Integer> mStopReasonOverride;
 
     /** State of all peers in the session */
-    @GuardedBy("mLock")
+    @GuardedBy("this")
     private final ConcurrentMap<RangingDevice, Peer> mPeers;
 
     public BaseRangingSession(
@@ -118,7 +114,7 @@ public class BaseRangingSession {
         mSessionConfig = config;
         mSessionListener = listener;
         mAdapterExecutor = adapterExecutor;
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, this);
         mPeers = new ConcurrentHashMap<>();
         mAdapters = new ConcurrentHashMap<>();
         mStopReasonOverride = new ConcurrentHashMap<>();
@@ -127,60 +123,56 @@ public class BaseRangingSession {
     }
 
     /** Start ranging in this session with the provided configs. */
-    public void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
-        synchronized (mLock) {
-            if (mStateMachine.transition(State.STOPPED, State.STARTING)) {
-                Log.i(TAG, "Starting session");
-                mSessionListener.onConfigurationComplete(technologyConfigs);
+    public synchronized void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
+        if (mStateMachine.transition(State.STOPPED, State.STARTING)) {
+            Log.i(TAG, "Starting session");
+            mSessionListener.onConfigurationComplete(technologyConfigs);
+        }
+
+        AttributionSource nonPrivilegedAttributionSource =
+                mInjector.getAnyNonPrivilegedAppInAttributionSource(mAttributionSource);
+
+        for (TechnologyConfig config : Sets.difference(technologyConfigs, mAdapters.keySet())) {
+            ImmutableSet<RangingDevice> peerDevices;
+
+            if (config instanceof UnicastTechnologyConfig unicastConfig) {
+                peerDevices = ImmutableSet.of(unicastConfig.getPeerDevice());
+            } else if (config instanceof MulticastTechnologyConfig multicastConfig) {
+                peerDevices = multicastConfig.getPeerDevices();
+            } else if (config instanceof com.android.server.ranging.uwb.DlTdoaConfig) {
+                // DL-TDOA is peerless, so we create an empty set of peer devices.
+                peerDevices = ImmutableSet.of();
+            } else {
+                Log.e(TAG, "Received unknown RangingTechnology subclass "
+                        + config.getClass());
+                onSessionClosed(InternalReason.INTERNAL_ERROR);
+                return;
             }
 
-            AttributionSource nonPrivilegedAttributionSource =
-                    mInjector.getAnyNonPrivilegedAppInAttributionSource(mAttributionSource);
+            peerDevices.forEach(device ->
+                    mPeers.computeIfAbsent(device, unused -> createPeer(device))
+                            .setUsingTechnology(config));
 
-            for (TechnologyConfig config : Sets.difference(technologyConfigs, mAdapters.keySet())) {
-                ImmutableSet<RangingDevice> peerDevices;
+            // Any calls to the corresponding technology stacks must be
+            // done with a clear calling identity.
+            long token = Binder.clearCallingIdentity();
 
-                if (config instanceof UnicastTechnologyConfig unicastConfig) {
-                    peerDevices = ImmutableSet.of(unicastConfig.getPeerDevice());
-                } else if (config instanceof MulticastTechnologyConfig multicastConfig) {
-                    peerDevices = multicastConfig.getPeerDevices();
-                } else if (config instanceof com.android.server.ranging.uwb.DlTdoaConfig) {
-                    // DL-TDOA is peerless, so we create an empty set of peer devices.
-                    peerDevices = ImmutableSet.of();
-                } else {
-                    Log.e(TAG, "Received unknown RangingTechnology subclass "
-                            + config.getClass());
-                    onSessionClosed(InternalReason.INTERNAL_ERROR);
-                    return;
-                }
-
-                peerDevices.forEach(device ->
-                        mPeers.computeIfAbsent(device, unused -> createPeer(device))
-                                .setUsingTechnology(config));
-
-                // Any calls to the corresponding technology stacks must be
-                // done with a clear calling identity.
-                long token = Binder.clearCallingIdentity();
-
-                RangingAdapter adapter = mInjector.createAdapter(
-                        mAttributionSource, config, mAdapterExecutor);
-                mAdapters.put(config, adapter);
-                Log.v(TAG, "Starting ranging with technology : " + config.getTechnology());
-                adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
-                Binder.restoreCallingIdentity(token);
-            }
+            RangingAdapter adapter = mInjector.createAdapter(
+                    mAttributionSource, config, mAdapterExecutor, this);
+            mAdapters.put(config, adapter);
+            Log.v(TAG, "Starting ranging with technology : " + config.getTechnology());
+            adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
+            Binder.restoreCallingIdentity(token);
         }
     }
 
-    public void addPeer(RawResponderRangingConfig params) {
-        synchronized (mLock) {
-            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
-                if (entry.getValue().isDynamicUpdatePeersSupported()) {
-                    RangingDevice peerDevice = params.getRawRangingDevice().getRangingDevice();
-                    mPeers.computeIfAbsent(peerDevice, unused -> createPeer(peerDevice))
-                            .setUsingTechnology(entry.getKey());
-                    entry.getValue().addPeer(params);
-                }
+    public synchronized void addPeer(RawResponderRangingConfig params) {
+        for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+            if (entry.getValue().isDynamicUpdatePeersSupported()) {
+                RangingDevice peerDevice = params.getRawRangingDevice().getRangingDevice();
+                mPeers.computeIfAbsent(peerDevice, unused -> createPeer(peerDevice))
+                        .setUsingTechnology(entry.getKey());
+                entry.getValue().addPeer(params);
             }
         }
     }
@@ -191,42 +183,34 @@ public class BaseRangingSession {
                 mInjector);
     }
 
-    public void removePeer(RangingDevice device) {
-        synchronized (mLock) {
-            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
-                if (entry.getValue().isDynamicUpdatePeersSupported()) {
-                    entry.getValue().removePeer(device);
-                }
+    public synchronized void removePeer(RangingDevice device) {
+        for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+            if (entry.getValue().isDynamicUpdatePeersSupported()) {
+                entry.getValue().removePeer(device);
             }
         }
     }
 
-    public void reconfigureInterval(int intervalSkipCount) {
-        synchronized (mLock) {
-            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
-                entry.getValue().reconfigureRangingInterval(intervalSkipCount);
+    public synchronized void reconfigureInterval(int intervalSkipCount) {
+        for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+            entry.getValue().reconfigureRangingInterval(intervalSkipCount);
+        }
+    }
+
+    public synchronized void appForegroundStateUpdated(boolean appInForeground) {
+        for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+            entry.getValue().appForegroundStateUpdated(appInForeground);
+            if (!appInForeground) {
+                startNonPrivilegedBgAppTimerIfNotSet();
+            } else {
+                stopNonPrivilegedBgAppTimerIfSet();
             }
         }
     }
 
-    public void appForegroundStateUpdated(boolean appInForeground) {
-        synchronized (mLock) {
-            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
-                entry.getValue().appForegroundStateUpdated(appInForeground);
-                if (!appInForeground) {
-                    startNonPrivilegedBgAppTimerIfNotSet();
-                } else {
-                    stopNonPrivilegedBgAppTimerIfSet();
-                }
-            }
-        }
-    }
-
-    public void appInBackgroundTimeout() {
-        synchronized (mLock) {
-            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
-                entry.getValue().appInBackgroundTimeout();
-            }
+    public synchronized void appInBackgroundTimeout() {
+        for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+            entry.getValue().appInBackgroundTimeout();
         }
     }
 
@@ -269,28 +253,26 @@ public class BaseRangingSession {
      * adapters, override the reason code provided in the callback with this one.
      * @return true if there are currently any active adapters in the session.
      */
-    protected boolean stop(@InternalReason int reason) {
+    protected synchronized boolean stop(@InternalReason int reason) {
         Log.v(TAG, "Stop ranging, stopping all adapters");
-        synchronized (mLock) {
-            if (mStateMachine.getState() == State.STOPPING
-                    || mStateMachine.getState() == State.STOPPED) {
-                Log.v(TAG, "Ranging already stopping or stopped, skipping");
-                return false;
-            }
-            stopNonPrivilegedBgAppTimerIfSet();
-            mStateMachine.setState(State.STOPPING);
-
-            // Any calls to the corresponding technology stacks must be
-            // done with a clear calling identity.
-            long token = Binder.clearCallingIdentity();
-            boolean existsAdaptersWithActiveRanging = !mAdapters.isEmpty();
-            for (TechnologyConfig config : mAdapters.keySet()) {
-                if (reason != InternalReason.LOCAL_REQUEST) mStopReasonOverride.put(config, reason);
-                mAdapters.get(config).stop();
-            }
-            Binder.restoreCallingIdentity(token);
-            return existsAdaptersWithActiveRanging;
+        if (mStateMachine.getState() == State.STOPPING
+                || mStateMachine.getState() == State.STOPPED) {
+            Log.v(TAG, "Ranging already stopping or stopped, skipping");
+            return false;
         }
+        stopNonPrivilegedBgAppTimerIfSet();
+        mStateMachine.setState(State.STOPPING);
+
+        // Any calls to the corresponding technology stacks must be
+        // done with a clear calling identity.
+        long token = Binder.clearCallingIdentity();
+        boolean existsAdaptersWithActiveRanging = !mAdapters.isEmpty();
+        for (TechnologyConfig config : mAdapters.keySet()) {
+            if (reason != InternalReason.LOCAL_REQUEST) mStopReasonOverride.put(config, reason);
+            mAdapters.get(config).stop();
+        }
+        Binder.restoreCallingIdentity(token);
+        return existsAdaptersWithActiveRanging;
     }
 
     /**
@@ -299,31 +281,29 @@ public class BaseRangingSession {
      * adapters, override the reason code provided in the callback with the {@code reason} given
      * here.
      */
-    protected void stopTechnologies(
+    protected synchronized void stopTechnologies(
             Set<RangingTechnology> technologies, @InternalReason int reason) {
         Log.v(TAG, "Stop ranging with technologies " + technologies);
-        synchronized (mLock) {
-            long token = Binder.clearCallingIdentity();
-            for (TechnologyConfig config : mAdapters.keySet()) {
-                if (technologies.contains(config.getTechnology())) {
-                    if (reason != InternalReason.LOCAL_REQUEST) {
-                        mStopReasonOverride.put(config, reason);
-                    }
-                    mAdapters.get(config).stop();
+        long token = Binder.clearCallingIdentity();
+        for (TechnologyConfig config : mAdapters.keySet()) {
+            if (technologies.contains(config.getTechnology())) {
+                if (reason != InternalReason.LOCAL_REQUEST) {
+                    mStopReasonOverride.put(config, reason);
                 }
+                mAdapters.get(config).stop();
             }
-            Binder.restoreCallingIdentity(token);
         }
+        Binder.restoreCallingIdentity(token);
     }
 
-    protected ImmutableSet<RangingTechnology> getTechnologiesUsedByPeer(RangingDevice device) {
-        synchronized (mLock) {
-            Peer peer = mPeers.get(device);
-            if (peer == null) {
-                return ImmutableSet.of();
-            } else {
-                return ImmutableSet.copyOf(peer.getActiveTechnologies());
-            }
+    protected synchronized ImmutableSet<RangingTechnology> getTechnologiesUsedByPeer(
+            RangingDevice device
+    ) {
+        Peer peer = mPeers.get(device);
+        if (peer == null) {
+            return ImmutableSet.of();
+        } else {
+            return ImmutableSet.copyOf(peer.getActiveTechnologies());
         }
     }
 
@@ -366,7 +346,7 @@ public class BaseRangingSession {
 
         @Override
         public void onStarted(@NonNull ImmutableSet<RangingDevice> peerDevices) {
-            synchronized (mLock) {
+            synchronized (BaseRangingSession.this) {
                 for (RangingDevice peerDevice : peerDevices) {
                     if (!mPeers.containsKey(peerDevice)) {
                         Log.w(TAG, "onStarted peer not found");
@@ -383,7 +363,7 @@ public class BaseRangingSession {
         public void onStopped(
                 @NonNull ImmutableSet<RangingDevice> peerDevices, @InternalReason int reason
         ) {
-            synchronized (mLock) {
+            synchronized (BaseRangingSession.this) {
                 for (RangingDevice peerDevice : peerDevices) {
                     Peer peer = mPeers.get(peerDevice);
                     if (peer == null) {
@@ -401,7 +381,7 @@ public class BaseRangingSession {
 
         @Override
         public void onRangingData(@NonNull RangingDevice peerDevice, @NonNull RangingData data) {
-            synchronized (mLock) {
+            synchronized (BaseRangingSession.this) {
                 if (mStateMachine.getState() != State.STOPPING
                         && mStateMachine.getState() != State.STOPPED
                 ) {
@@ -412,7 +392,7 @@ public class BaseRangingSession {
 
         @Override
         public void onClosed(@InternalReason int reason) {
-            synchronized (mLock) {
+            synchronized (BaseRangingSession.this) {
                 mAdapters.remove(mConfig);
                 if (mAdapters.isEmpty()) {
                     mStateMachine.setState(State.STOPPED);
@@ -423,7 +403,7 @@ public class BaseRangingSession {
         }
 
         /** @return the (possibly overriding) reason code for the last state change. */
-        @GuardedBy("mLock")
+        @GuardedBy("BaseRangingSession.this")
         private @InternalReason int maybeOverridden(@InternalReason int reason) {
             if (reason == InternalReason.LOCAL_REQUEST) {
                 return Optional.ofNullable(mStopReasonOverride.get(mConfig)).orElse(reason);
@@ -443,7 +423,7 @@ public class BaseRangingSession {
 
         @Override
         public void onData(@NonNull RangingData data) {
-            synchronized (mLock) {
+            synchronized (BaseRangingSession.this) {
                 if (mStateMachine.getState() != State.STOPPING
                         && mStateMachine.getState() != State.STOPPED
                 ) {

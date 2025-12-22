@@ -180,22 +180,24 @@ public class RangingInjector {
     public @NonNull RangingAdapter createAdapter(
             @NonNull AttributionSource attributionSource,
             @NonNull ConfigurationManager.TechnologyConfig config,
-            @NonNull ListeningExecutorService executor
+            @NonNull ListeningExecutorService executor,
+            @NonNull Object lock
     ) {
         switch (config.getTechnology()) {
             case UWB:
                 return new UwbAdapter(
-                        mContext, this, attributionSource, executor, config.getDeviceRole());
+                        mContext, this, attributionSource, executor, lock, config.getDeviceRole());
             case CS:
-                return new CsAdapter(mContext, this);
+                return new CsAdapter(mContext, this, lock);
             case RTT:
             case RTT_STATION:
                 return new RttAdapter(
-                        mContext, this, executor, config.getDeviceRole(), config.getTechnology());
+                        mContext, this, executor, lock, config.getDeviceRole(),
+                        config.getTechnology());
             case RSSI:
-                return new BleRssiAdapter(mContext, this);
+                return new BleRssiAdapter(mContext, this, lock);
             case WIFI_PD:
-                return new WifiPdAdapter(mContext, this, attributionSource, executor,
+                return new WifiPdAdapter(mContext, this, attributionSource, executor, lock,
                         config.getDeviceRole());
             default:
                 throw new IllegalArgumentException(

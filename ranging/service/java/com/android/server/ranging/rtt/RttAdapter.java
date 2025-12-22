@@ -73,6 +73,7 @@ public class RttAdapter implements RangingAdapter {
     private final ExecutorResultHandlers mRttClientResultHandlers = new ExecutorResultHandlers();
     private final RttRangingSessionCallback mRttListener = new RttListener();
     private final StateMachine<State> mStateMachine;
+    private final Object mLock;
 
     /** Invariant: non-null while a ranging session is active */
     private Callback mCallbacks;
@@ -93,10 +94,11 @@ public class RttAdapter implements RangingAdapter {
             @NonNull Context context,
             @NonNull RangingInjector rangingInjector,
             @NonNull ListeningExecutorService executorService,
+            @NonNull Object lock,
             @RangingPreference.DeviceRole int role,
             RangingTechnology tech
     ) {
-        this(context, rangingInjector, executorService,
+        this(context, rangingInjector, executorService, lock,
                 new RttServiceImpl(context,
                         tech == RangingTechnology.RTT
                                 ? RangingManager.WIFI_NAN_RTT : RangingManager.WIFI_STA_RTT),
@@ -108,6 +110,7 @@ public class RttAdapter implements RangingAdapter {
     public RttAdapter(@NonNull Context context,
             @NonNull RangingInjector rangingInjector,
             @NonNull ListeningExecutorService executorService,
+            @NonNull Object lock,
             @NonNull RttService rttService,
             @RangingPreference.DeviceRole int role,
             RangingTechnology tech) {
@@ -123,7 +126,8 @@ public class RttAdapter implements RangingAdapter {
         }
         mContext = context;
         mRangingInjector = rangingInjector;
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, lock);
+        mLock = lock;
         mRttService = rttService;
         if (mTech == RangingTechnology.RTT) {
             mRttClient = role == DEVICE_ROLE_INITIATOR
@@ -249,7 +253,7 @@ public class RttAdapter implements RangingAdapter {
         @Override
         public void onRangingInitialized(RttDevice device) {
             Log.i(TAG, "onRangingInitialized");
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STARTED) {
                     mCallbacks.onStarted(ImmutableSet.of(mPeerDevice));
                 }
@@ -297,7 +301,7 @@ public class RttAdapter implements RangingAdapter {
                             .setDistanceStandardDeviationMeters(position.getDistanceStdDevMeters())
                             .build())
                     .build());
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STARTED) {
                     mCallbacks.onRangingData(mPeerDevice, dataBuilder.build());
                 }
@@ -327,7 +331,7 @@ public class RttAdapter implements RangingAdapter {
 
     /** Close the session, disconnecting the peer and resetting internal state. */
     private void closeForReason(@InternalReason int reason) {
-        synchronized (mStateMachine) {
+        synchronized (mLock) {
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks != null) {
                 mCallbacks.onStopped(ImmutableSet.of(mPeerDevice), reason);
