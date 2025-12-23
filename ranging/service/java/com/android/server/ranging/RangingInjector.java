@@ -68,6 +68,7 @@ import com.android.server.ranging.wifipd.WifiPdAdapter;
 import com.android.server.ranging.wifipd.WifiPdCapabilitiesAdapter;
 import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.lang.reflect.InvocationTargetException;
@@ -83,6 +84,15 @@ public class RangingInjector {
 
     private static final int APP_INFO_FLAGS_SYSTEM_APP =
             ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
+
+    private static final ImmutableMap<DeviceType, Integer> DEVICE_TYPE_POWER_RANK =
+            ImmutableMap.of(
+                    DeviceType.Tablet, 0,
+                    DeviceType.Phone, 1,
+                    DeviceType.Wearable, 2,
+                    DeviceType.Hearable, 3,
+                    DeviceType.Tag, 4,
+                    DeviceType.Unknown, 5);
 
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
@@ -235,7 +245,8 @@ public class RangingInjector {
         RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
         return switch (technology) {
             case RangingTechnology.UWB -> new UwbConfigSelector(
-                    sessionConfig, oobConfig, sessionHandle, capabilities.getUwbCapabilities());
+                    sessionConfig, oobConfig, sessionHandle, capabilities.getUwbCapabilities(),
+                    getDeviceType());
             case RangingTechnology.CS -> new CsConfigSelector(
                     sessionConfig, oobConfig, capabilities.getCsCapabilities());
             case RangingTechnology.RTT -> new RttConfigSelector(
@@ -446,5 +457,9 @@ public class RangingInjector {
                 > Configuration.SCREENLAYOUT_SIZE_LARGE;
         boolean isSmallTablet = c.smallestScreenWidthDp > 600;
         return isTablet || isSmallTablet;
+    }
+
+    public int getDeviceTypePowerRank(DeviceType deviceType) {
+        return DEVICE_TYPE_POWER_RANK.get(deviceType);
     }
 }

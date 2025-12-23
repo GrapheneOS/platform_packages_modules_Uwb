@@ -108,7 +108,8 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities,
+            @NonNull com.android.server.ranging.oob.packets.DeviceType deviceType
     ) throws ConfigSelectionException {
         switch (baseCapabilities) {
             case WifiNanRttCapabilitiesV1 capabilities -> mRangingDevices.put(
