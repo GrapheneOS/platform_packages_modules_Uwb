@@ -59,6 +59,7 @@ import android.util.Range;
 import androidx.test.filters.SmallTest;
 
 import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceRole;
@@ -105,6 +106,8 @@ public class UwbConfigSelectorTest {
     private static final ImmutableList<@RawRangingDevice.RangingUpdateRate Integer>
             DEFAULT_SUPPORTED_SLOT_DURATIONS = ImmutableList.of(DURATION_1_MS, DURATION_2_MS);
 
+    private static final DeviceType DEVICETYPE_PHONE = DeviceType.Phone;
+
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private SessionConfig mMockSessionConfig;
 
@@ -113,7 +116,6 @@ public class UwbConfigSelectorTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private UwbRangingCapabilities mMockLocalCapabilities;
-
 
     private void mockConfiguredRangingIntervalRange(Range<Duration> range) {
         when(mMockOobConfig.getRangingIntervalRange()).thenReturn(range);
@@ -125,7 +127,8 @@ public class UwbConfigSelectorTest {
     private UwbConfigSelector createConfigSelector() throws ConfigSelectionException {
         return new UwbConfigSelector(
                 mMockSessionConfig, mMockOobConfig,
-                mock(SessionHandle.class, Answers.RETURNS_DEEP_STUBS), mMockLocalCapabilities);
+                mock(SessionHandle.class, Answers.RETURNS_DEEP_STUBS), mMockLocalCapabilities,
+                DEVICETYPE_PHONE);
     }
 
     private UwbCapabilities.Builder createCapabilities(byte peerId) {
@@ -179,7 +182,8 @@ public class UwbConfigSelectorTest {
 
         configSelector.addPeerCapabilities(
                 new RangingDevice.Builder().build(),
-                createCapabilities((byte) 0).setRoles((byte) 2).build());
+                createCapabilities((byte) 0).setRoles((byte) 2).build(),
+                DEVICETYPE_PHONE);
     }
 
     @Test
@@ -197,7 +201,8 @@ public class UwbConfigSelectorTest {
                                         CONFIG_UNICAST_DS_TWR, CONFIG_PROVISIONED_MULTICAST_DS_TWR)
                                 .boxed()
                                 .toList())))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
                 configSelector.selectLocalConfigs(Set.of(peer)));
@@ -223,7 +228,8 @@ public class UwbConfigSelectorTest {
                         .setConfigIds(bitset(ImmutableList.of(
                                 CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
                                 CONFIG_PROVISIONED_UNICAST_DS_TWR)))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
                 configSelector.selectLocalConfigs(Set.of(peer)));
@@ -245,7 +251,8 @@ public class UwbConfigSelectorTest {
         RangingDevice peer = new RangingDevice.Builder().build();
 
         UwbConfigSelector configSelector = createConfigSelector();
-        configSelector.addPeerCapabilities(peer, createCapabilities((byte) 0).build());
+        configSelector.addPeerCapabilities(peer, createCapabilities((byte) 0).build(),
+                DEVICETYPE_PHONE);
 
         UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
                 configSelector.selectLocalConfigs(Set.of(peer)));
@@ -267,8 +274,10 @@ public class UwbConfigSelectorTest {
                 new RangingDevice.Builder().build());
 
         UwbConfigSelector configSelector = createConfigSelector();
-        configSelector.addPeerCapabilities(peers.get(0), createCapabilities((byte) 0).build());
-        configSelector.addPeerCapabilities(peers.get(1), createCapabilities((byte) 1).build());
+        configSelector.addPeerCapabilities(
+                peers.get(0), createCapabilities((byte) 0).build(), DEVICETYPE_PHONE);
+        configSelector.addPeerCapabilities(
+                peers.get(1), createCapabilities((byte) 1).build(), DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs = configSelector.selectLocalConfigs(Set.copyOf(peers));
         assertThat(localConfigs).hasSize(2);
@@ -304,20 +313,23 @@ public class UwbConfigSelectorTest {
                 createCapabilities((byte) 0)
                         .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
                                 .getRangingIntervalFast())
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
         configSelector.addPeerCapabilities(
                 peers.get(1),
                 createCapabilities((byte) 1)
                         .setMinInterval((short) Utils.getRangingTimingParams(
                                 CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
                                         .getRangingIntervalFast())
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
         configSelector.addPeerCapabilities(
                 peers.get(2),
                 createCapabilities((byte) 2)
                         .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
                                 .getRangingIntervalNormal())
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
             UwbConfig localConfig = (UwbConfig) c;
@@ -347,7 +359,8 @@ public class UwbConfigSelectorTest {
                 peer,
                 createCapabilities((byte) 0)
                         .setMinInterval((short) 4)
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.of(peer))) {
             UwbConfig localConfig = (UwbConfig) c;
@@ -381,7 +394,8 @@ public class UwbConfigSelectorTest {
                 createCapabilities((byte) 0)
                         .setMinInterval((short) Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
                                 .getRangingIntervalFast())
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
         configSelector.addPeerCapabilities(
                 peers.get(1),
                 createCapabilities((byte) 1)
@@ -389,7 +403,8 @@ public class UwbConfigSelectorTest {
                                 (short) Utils.getRangingTimingParams(
                                         CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
                                         .getRangingIntervalFast())
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
             UwbConfig localConfig = (UwbConfig) c;
@@ -413,7 +428,8 @@ public class UwbConfigSelectorTest {
                 peer,
                 createCapabilities((byte) 0)
                         .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5, UWB_CHANNEL_9)))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
                 configSelector.selectLocalConfigs(Set.of(peer)));
@@ -436,12 +452,14 @@ public class UwbConfigSelectorTest {
                 peers.get(0),
                 createCapabilities((byte) 0)
                         .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5, UWB_CHANNEL_9)))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
         configSelector.addPeerCapabilities(
                 peers.get(1),
                 createCapabilities((byte) 1)
                         .setChannels(bitset(ImmutableList.of(UWB_CHANNEL_5)))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
             UwbConfig localConfig = (UwbConfig) c;
@@ -465,7 +483,8 @@ public class UwbConfigSelectorTest {
                         .setPreambleIndexes(bitset(ImmutableList.of(
                                 UWB_PREAMBLE_CODE_INDEX_29,
                                 UWB_PREAMBLE_CODE_INDEX_10), i -> i - 1))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         UwbConfig localConfig = (UwbConfig) Iterables.getOnlyElement(
                 configSelector.selectLocalConfigs(Set.of(peer)));
@@ -491,14 +510,16 @@ public class UwbConfigSelectorTest {
                                 UWB_PREAMBLE_CODE_INDEX_9,
                                 UWB_PREAMBLE_CODE_INDEX_12,
                                 UWB_PREAMBLE_CODE_INDEX_27), i -> i - 1))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
         configSelector.addPeerCapabilities(
                 peers.get(1),
                 createCapabilities((byte) 1)
                         .setPreambleIndexes(bitset(ImmutableList.of(
                                 UWB_PREAMBLE_CODE_INDEX_12,
                                 UWB_PREAMBLE_CODE_INDEX_32), i -> i - 1))
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
             UwbConfig localConfig = (UwbConfig) c;
@@ -530,8 +551,10 @@ public class UwbConfigSelectorTest {
         when(mMockLocalCapabilities.getSupportedSlotDurations()).thenReturn(List.of(DURATION_2_MS));
 
         UwbConfigSelector configSelector = createConfigSelector();
-        configSelector.addPeerCapabilities(peers.get(0), createCapabilities((byte) 0).build());
-        configSelector.addPeerCapabilities(peers.get(1), createCapabilities((byte) 1).build());
+        configSelector.addPeerCapabilities(
+                peers.get(0), createCapabilities((byte) 0).build(), DEVICETYPE_PHONE);
+        configSelector.addPeerCapabilities(
+                peers.get(1), createCapabilities((byte) 1).build(), DEVICETYPE_PHONE);
 
         for (TechnologyConfig c : configSelector.selectLocalConfigs(Set.copyOf(peers))) {
             UwbConfig localConfig = (UwbConfig) c;

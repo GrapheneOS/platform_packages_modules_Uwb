@@ -32,6 +32,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.DiscoveryChannels;
 import com.android.server.ranging.oob.packets.PreambleType;
 import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
@@ -61,6 +62,7 @@ import java.util.Set;
 public class WifiPdConfigSelectorTest {
     private static final int PREAMBLE_HE = 3;
     private static final MacAddress MAC_ADDRESS = MacAddress.fromString("00:01:02:03:04:05");
+    private static final DeviceType DEVICETYPE_PHONE = DeviceType.Phone;
 
     @Mock
     private OobInitiatorRangingConfig mOobInitiatorRangingConfig;
@@ -109,7 +111,7 @@ public class WifiPdConfigSelectorTest {
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
-                peerCapabilities);
+                peerCapabilities, DEVICETYPE_PHONE);
         mWifiPdConfigSelector.selectLocalConfigs(
                 Collections.singleton(new RangingDevice.Builder().build()));
     }
@@ -133,7 +135,7 @@ public class WifiPdConfigSelectorTest {
                 .setMinInterval11mc((short) 200)
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
-                peerCapabilities);
+                peerCapabilities, DEVICETYPE_PHONE);
         mWifiPdConfigSelector.selectLocalConfigs(
                 Collections.singleton(new RangingDevice.Builder().build()));
     }
@@ -162,7 +164,7 @@ public class WifiPdConfigSelectorTest {
                 .setAuthenticatedPasnSupport(true)
                 .build();
         RangingDevice peer = new RangingDevice.Builder().build();
-        mWifiPdConfigSelector.addPeerCapabilities(peer, peerCapabilities);
+        mWifiPdConfigSelector.addPeerCapabilities(peer, peerCapabilities, DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs =
                 mWifiPdConfigSelector.selectLocalConfigs(Collections.singleton(peer));

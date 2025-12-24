@@ -72,6 +72,7 @@ public class WifiPdAdapter implements RangingAdapter {
 
     private RangingDevice mPeer;
     private final StateMachine<State> mStateMachine;
+    private final Object mLock;
 
     private DataNotificationManager mDataNotificationManager;
 
@@ -85,13 +86,15 @@ public class WifiPdAdapter implements RangingAdapter {
             RangingInjector injector,
             AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
+            @NonNull Object lock,
             @RangingPreference.DeviceRole int role
     ) {
         mContext = context;
         mRangingInjector = injector;
         mAttributionSource = attributionSource;
         mExecutorService = executor;
-        mStateMachine = new StateMachine<>(State.STOPPED);
+        mStateMachine = new StateMachine<>(State.STOPPED, lock);
+        mLock = lock;
         mRangingServiceRole = role == DEVICE_ROLE_RESPONDER ? RANGING_SERVICE_ROLE_ADVERTISER
                 : RANGING_SERVICE_ROLE_SEEKER;
         mWifiRttManager = context.getSystemService(WifiRttManager.class);
@@ -228,7 +231,7 @@ public class WifiPdAdapter implements RangingAdapter {
     }
 
     public void closeForReason(@RangingUtils.InternalReason int reason) {
-        synchronized (mStateMachine) {
+        synchronized (mLock) {
             mStateMachine.setState(State.STOPPED);
             if (mCallback != null) {
                 mCallback.onStopped(ImmutableSet.of(mPeer), reason);
@@ -295,7 +298,7 @@ public class WifiPdAdapter implements RangingAdapter {
                                         result.getDistanceStdDevMm() / 1000.0)
                                 .build())
                         .build());
-                synchronized (mStateMachine) {
+                synchronized (mLock) {
                     if (mStateMachine.getState() == State.STARTED) {
                         mCallback.onRangingData(mPeer, rangingDataBuilder.build());
                     }

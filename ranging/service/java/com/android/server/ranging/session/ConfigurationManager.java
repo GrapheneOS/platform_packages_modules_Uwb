@@ -30,6 +30,7 @@ import com.android.server.ranging.common.RangingUtils;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.Technology;
 
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +75,8 @@ public class ConfigurationManager {
     public abstract static class ConfigSelector {
         public abstract void addPeerCapabilities(
                 @NonNull RangingDevice peer,
-                @NonNull Capabilities capabilities
+                @NonNull Capabilities capabilities,
+                @NonNull DeviceType deviceType
         ) throws ConfigSelectionException;
 
         public abstract @NonNull Set<TechnologyConfig> selectLocalConfigs(
@@ -119,7 +121,8 @@ public class ConfigurationManager {
     }
 
     public void addPeerCapabilities(
-            RangingDevice device,  Map<Technology, Capabilities> capabilities
+            RangingDevice device,  Map<Technology, Capabilities> capabilities,
+            DeviceType deviceType
     ) throws ConfigSelectionException {
         if (capabilities.isEmpty()) {
             throw new ConfigSelectionException(
@@ -133,7 +136,7 @@ public class ConfigurationManager {
                             RangingTechnology.fromByte(t.toByte()),
                             technology -> mInjector.createConfigSelector(
                                     technology, mSessionHandle, mSessionConfig, mOobConfig))
-                    .addPeerCapabilities(device, capabilities.get(t));
+                    .addPeerCapabilities(device, capabilities.get(t), deviceType);
         }
     }
 

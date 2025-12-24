@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.uwb;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE;
@@ -51,9 +52,11 @@ import androidx.annotation.Nullable;
 
 import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.UwbCapabilities;
 import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceMode;
@@ -70,8 +73,10 @@ import com.google.common.collect.Sets;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,6 +94,8 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final BiMap<RangingDevice, UwbAddress> mPeerAddresses;
+    private final DeviceType mLocalDeviceType;
+    private final Map<RangingDevice, DeviceType> mPeerDeviceTypes;
 
     private final Set<@UwbRangingParams.ConfigId Integer> mConfigIds;
     private final Set<@UwbComplexChannel.UwbChannel Integer> mChannels;
@@ -151,10 +158,13 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
             @NonNull SessionHandle sessionHandle,
-            @Nullable UwbRangingCapabilities capabilities
+            @Nullable UwbRangingCapabilities capabilities,
+            @NonNull DeviceType localDeviceType
     ) {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
+        mLocalDeviceType = localDeviceType;
+        mPeerDeviceTypes = new HashMap<>();
         mPeerAddresses = HashBiMap.create();
         mConfigIds = new HashSet<>(capabilities.getSupportedConfigIds());
         mChannels = new HashSet<>(capabilities.getSupportedChannels());
@@ -170,7 +180,8 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
      */
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities,
+            @NonNull DeviceType deviceType
     ) throws ConfigSelectionException {
         if (!(baseCapabilities instanceof UwbCapabilities capabilities)) {
             throw new ConfigSelectionException(
@@ -194,13 +205,14 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
                 mMinSlotDurationMs, Byte.toUnsignedInt(capabilities.getMinSlotDuration()));
         mMinRangingIntervalMs = Math.max(
                 mMinRangingIntervalMs, Short.toUnsignedLong(capabilities.getMinInterval()));
+        mPeerDeviceTypes.put(peer, deviceType);
     }
 
     @Override
     public @NonNull Set<TechnologyConfig> selectLocalConfigs(
             @NonNull Set<RangingDevice> peers
     ) throws ConfigSelectionException {
-        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig();
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig(peers);
         return mSelectedConfig.getLocalConfigs(peers);
     }
 
@@ -208,7 +220,7 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
     public @NonNull Configuration selectRemoteConfig(
             @NonNull RangingDevice peer
     ) throws ConfigSelectionException {
-        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig();
+        if (mSelectedConfig == null) mSelectedConfig = new SelectedUwbConfig(ImmutableSet.of(peer));
         return mSelectedConfig.getPeerConfig(peer);
     }
 
@@ -218,17 +230,18 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
         private final @UwbComplexChannel.UwbChannel int mChannel;
         private final @UwbComplexChannel.UwbPreambleCodeIndex int mPreambleIndex;
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
+        private final Map<RangingDevice, UwbDeviceRole> mPeerRoles;
 
-        SelectedUwbConfig() throws ConfigSelectionException {
+        SelectedUwbConfig(Set<RangingDevice> peers) throws ConfigSelectionException {
             mLocalAddress = UwbAddress.createRandomShortAddress();
             mConfigId = selectConfigId();
             mChannel = selectChannel();
             mPreambleIndex = selectPreambleIndex();
             mRangingUpdateRate = selectRangingUpdateRate();
+            mPeerRoles = selectPeerRole(peers);
         }
 
-        // For now, each GRAPI responder will be a UWB initiator for a unicast session. In the
-        // future we can look into combining these into a single multicast session somehow.
+        // In the future we can look into combining these into a single multicast session somehow.
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs(Set<RangingDevice> peers) {
             return peers.stream().map(
@@ -245,7 +258,9 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
                                     .setSlotDuration(mMinSlotDurationMs)
                                     .build())
                             .setSessionConfig(mSessionConfig)
-                            .setDeviceRole(DEVICE_ROLE_RESPONDER)
+                            .setDeviceRole(
+                                    mPeerRoles.get(peer) == UwbDeviceRole.Initiator
+                                            ? DEVICE_ROLE_RESPONDER : DEVICE_ROLE_INITIATOR)
                             .setPeerAddresses(ImmutableBiMap.of(peer, mPeerAddresses.get(peer)))
                             .build())
                     .collect(ImmutableSet.toImmutableSet());
@@ -263,7 +278,7 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
                     .setSlotDuration((byte) mMinSlotDurationMs)
                     .setSessionKey(selectSessionKeyInfo(peer))
                     .setCountryCode(mCountryCode.getBytes(StandardCharsets.US_ASCII))
-                    .setDeviceRole(UwbDeviceRole.Initiator)
+                    .setDeviceRole(mPeerRoles.get(peer))
                     .setDeviceMode(UwbDeviceMode.Controller)
                     .build();
         }
@@ -364,6 +379,30 @@ public class UwbConfigSelector extends ConfigurationManager.ConfigSelector {
         }
 
         return getFastestUpdateRateInRange(intervalsMs, timings);
+    }
+
+    private Map<RangingDevice, UwbDeviceRole> selectPeerRole(Set<RangingDevice> peers)
+            throws ConfigSelectionException {
+
+        Map<RangingDevice, UwbDeviceRole> peerRoles = new HashMap<>();
+        boolean isOneToMany = mOobConfig.getDeviceHandles().size() > 1;
+
+        for (RangingDevice peer : peers) {
+            if (isOneToMany) {
+                peerRoles.put(peer, UwbDeviceRole.Responder);
+            } else {
+                int localRank = RangingInjector.getInstance()
+                                    .getDeviceTypePowerRank(mLocalDeviceType);
+                int remoteRank = RangingInjector.getInstance()
+                                    .getDeviceTypePowerRank(mPeerDeviceTypes.get(peer));
+                peerRoles.put(
+                        peer,
+                        localRank > remoteRank
+                                ? UwbDeviceRole.Responder : UwbDeviceRole.Initiator);
+            }
+        }
+
+        return peerRoles;
     }
 
     private @RawRangingDevice.RangingUpdateRate int getFastestUpdateRateInRange(

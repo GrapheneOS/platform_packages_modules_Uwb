@@ -105,7 +105,8 @@ public class CsConfigSelector extends ConfigurationManager.ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities,
+            @NonNull com.android.server.ranging.oob.packets.DeviceType deviceType
     ) throws ConfigSelectionException {
         if (!(baseCapabilities instanceof BleCsCapabilities capabilities)) {
             throw new ConfigSelectionException(

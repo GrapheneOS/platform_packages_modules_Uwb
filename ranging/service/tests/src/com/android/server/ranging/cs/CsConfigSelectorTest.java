@@ -38,6 +38,7 @@ import android.util.Range;
 
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleCsConfiguration;
+import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.Technology;
 import com.android.server.ranging.oob.packets.UnknownCapabilities;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
@@ -61,6 +62,8 @@ public class CsConfigSelectorTest {
     private CsConfigSelector mSelector;
 
     private final String mPeerAddress = "AC:37:43:BC:A9:28";
+
+    private static final DeviceType DEVICETYPE_PHONE = DeviceType.Phone;
 
     private @Mock SessionConfig mMockSessionConfig;
     private @Mock OobInitiatorRangingConfig mMockOobConfig;
@@ -111,7 +114,8 @@ public class CsConfigSelectorTest {
                 new UnknownCapabilities.Builder()
                         .setTechnology(Technology.BleCs)
                         .setPayload(new byte[] {})
-                        .build());
+                        .build(),
+                DEVICETYPE_PHONE);
     }
 
     @Test
@@ -119,7 +123,7 @@ public class CsConfigSelectorTest {
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities, DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
         BleCsConfiguration remoteConfig = (BleCsConfiguration) mSelector
@@ -140,7 +144,7 @@ public class CsConfigSelectorTest {
                 .thenReturn(OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE);
 
         mSelector = new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities, DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
 
@@ -159,7 +163,7 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities, DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
         CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());
@@ -178,7 +182,7 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities, DEVICETYPE_PHONE);
 
         Set<TechnologyConfig> localConfigs = mSelector.selectLocalConfigs(Set.of(mMockPeerDevice));
         CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(localConfigs.iterator());

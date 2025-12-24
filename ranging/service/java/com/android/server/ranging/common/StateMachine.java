@@ -22,20 +22,31 @@ package com.android.server.ranging.common;
  * @param <E> enum representing the different states of the machine.
  */
 public class StateMachine<E extends Enum<E>> {
+    private final Object mLock;
     private E mState;
 
     public StateMachine(E start) {
+        mLock = this;
+        mState = start;
+    }
+
+    public StateMachine(E start, Object lock) {
+        mLock = lock;
         mState = start;
     }
 
     /** Gets the current state */
     public synchronized E getState() {
-        return mState;
+        synchronized (mLock) {
+            return mState;
+        }
     }
 
     /** Sets the current state */
-    public synchronized void setState(E state) {
-        mState = state;
+    public  void setState(E state) {
+        synchronized (mLock) {
+            mState = state;
+        }
     }
 
     /**
@@ -44,12 +55,14 @@ public class StateMachine<E extends Enum<E>> {
      * @return true if the state was successfully changed, false if the current state is
      * already {@code state}.
      */
-    public synchronized boolean changeStateTo(E state) {
-        if (mState == state) {
-            return false;
+    public boolean changeStateTo(E state) {
+        synchronized (mLock) {
+            if (mState == state) {
+                return false;
+            }
+            setState(state);
+            return true;
         }
-        setState(state);
-        return true;
     }
 
     /**
@@ -57,12 +70,14 @@ public class StateMachine<E extends Enum<E>> {
      *
      * @return true if the current state is {@code from}, false otherwise.
      */
-    public synchronized boolean transition(E from, E to) {
-        if (mState != from) {
-            return false;
+    public boolean transition(E from, E to) {
+        synchronized (mLock) {
+            if (mState != from) {
+                return false;
+            }
+            mState = to;
+            return true;
         }
-        mState = to;
-        return true;
     }
 
     /**
@@ -70,10 +85,12 @@ public class StateMachine<E extends Enum<E>> {
      *
      * @return the previous state before it was set to the provided one.
      */
-    public synchronized E getAndSet(E state) {
-        E previousState = mState;
-        mState = state;
-        return previousState;
+    public E getAndSet(E state) {
+        synchronized (mLock) {
+            E previousState = mState;
+            mState = state;
+            return previousState;
+        }
     }
 
     @Override

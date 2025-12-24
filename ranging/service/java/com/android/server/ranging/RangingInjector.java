@@ -68,6 +68,7 @@ import com.android.server.ranging.wifipd.WifiPdAdapter;
 import com.android.server.ranging.wifipd.WifiPdCapabilitiesAdapter;
 import com.android.server.ranging.wifipd.WifiPdConfigSelector;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.lang.reflect.InvocationTargetException;
@@ -83,6 +84,15 @@ public class RangingInjector {
 
     private static final int APP_INFO_FLAGS_SYSTEM_APP =
             ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
+
+    private static final ImmutableMap<DeviceType, Integer> DEVICE_TYPE_POWER_RANK =
+            ImmutableMap.of(
+                    DeviceType.Tablet, 0,
+                    DeviceType.Phone, 1,
+                    DeviceType.Wearable, 2,
+                    DeviceType.Hearable, 3,
+                    DeviceType.Tag, 4,
+                    DeviceType.Unknown, 5);
 
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
@@ -180,22 +190,24 @@ public class RangingInjector {
     public @NonNull RangingAdapter createAdapter(
             @NonNull AttributionSource attributionSource,
             @NonNull ConfigurationManager.TechnologyConfig config,
-            @NonNull ListeningExecutorService executor
+            @NonNull ListeningExecutorService executor,
+            @NonNull Object lock
     ) {
         switch (config.getTechnology()) {
             case UWB:
                 return new UwbAdapter(
-                        mContext, this, attributionSource, executor, config.getDeviceRole());
+                        mContext, this, attributionSource, executor, lock, config.getDeviceRole());
             case CS:
-                return new CsAdapter(mContext, this);
+                return new CsAdapter(mContext, this, lock);
             case RTT:
             case RTT_STATION:
                 return new RttAdapter(
-                        mContext, this, executor, config.getDeviceRole(), config.getTechnology());
+                        mContext, this, executor, lock, config.getDeviceRole(),
+                        config.getTechnology());
             case RSSI:
-                return new BleRssiAdapter(mContext, this);
+                return new BleRssiAdapter(mContext, this, lock);
             case WIFI_PD:
-                return new WifiPdAdapter(mContext, this, attributionSource, executor,
+                return new WifiPdAdapter(mContext, this, attributionSource, executor, lock,
                         config.getDeviceRole());
             default:
                 throw new IllegalArgumentException(
@@ -233,7 +245,8 @@ public class RangingInjector {
         RangingCapabilities capabilities = getCapabilitiesProvider().getCapabilities();
         return switch (technology) {
             case RangingTechnology.UWB -> new UwbConfigSelector(
-                    sessionConfig, oobConfig, sessionHandle, capabilities.getUwbCapabilities());
+                    sessionConfig, oobConfig, sessionHandle, capabilities.getUwbCapabilities(),
+                    getDeviceType());
             case RangingTechnology.CS -> new CsConfigSelector(
                     sessionConfig, oobConfig, capabilities.getCsCapabilities());
             case RangingTechnology.RTT -> new RttConfigSelector(
@@ -444,5 +457,9 @@ public class RangingInjector {
                 > Configuration.SCREENLAYOUT_SIZE_LARGE;
         boolean isSmallTablet = c.smallestScreenWidthDp > 600;
         return isTablet || isSmallTablet;
+    }
+
+    public int getDeviceTypePowerRank(DeviceType deviceType) {
+        return DEVICE_TYPE_POWER_RANK.get(deviceType);
     }
 }
