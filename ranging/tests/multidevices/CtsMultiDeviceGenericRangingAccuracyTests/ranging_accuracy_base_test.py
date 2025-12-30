@@ -80,6 +80,7 @@ class RangingBaseTestClass(base_test.BaseTestClass):
 
   def setup_class(self) -> None:
     super().setup_class()
+    self.all_test_metrics = {}
     self.ads = self.register_controller(android_device, min_number=2)
     utils.concurrent_exec(
         self._setup_android_device,
@@ -95,6 +96,7 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     self.responder.uwb_address = [3, 4]
 
   def teardown_test(self) -> None:
+    super().teardown_test()
     utils.concurrent_exec(
         lambda d: d.ranging.stopAllActiveRanging(),
         param_list=[[ad] for ad in self.ads],

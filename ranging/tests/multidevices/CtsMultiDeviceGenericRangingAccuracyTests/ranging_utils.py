@@ -8,11 +8,9 @@ import logging
 import random
 import statistics
 import time
-from types import MappingProxyType
 import uuid
 
 from mobly import asserts
-from mobly import signals
 from mobly import utils as mobly_utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import callback_handler_v2
@@ -29,6 +27,7 @@ _NO_DATA_TIMEOUT_SEC = 300
 
 _BLE_CS_ACCEPTABLE_RANGE_DEVIATION = 0.5
 _BLE_CS_PASS_RATE_THRESHOLD = 0.9
+_WIFI_RTT_PASS_RATE_THRESHOLD = 0.68
 
 _UWB_ACCEPTABLE_RANGE_DEVIATION = 0.3
 _UWB_ACCEPTABLE_MEDIAN_DEVIATION = 0.25
@@ -49,14 +48,16 @@ def skip_if_technology_not_supported(
 def log_ble_cs_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_data: list[float],
-    log_path: str,
-) -> None:
+    reference_device_name: str,
+) -> dict[str, str]:
   """Gets the Test metrics for BLE_CS.
 
   Args:
     real_distance_in_meters: The real distance in meters between two devices.
     measured_distance_data: A list of measured distance data.
-    log_path: The log path to save the test metrics.
+
+  Returns:
+    A dict containing the calculated metrics of the ranging results.
   """
   acceptable_range = real_distance_in_meters * _BLE_CS_ACCEPTABLE_RANGE_DEVIATION
   filtered_data = [
@@ -69,7 +70,6 @@ def log_ble_cs_distance_within_tolerance(
   pass_rate = 0.0 if num_measurements == 0 else (num_passed / num_measurements)
 
   acceptable_threshold_count = num_measurements * _BLE_CS_PASS_RATE_THRESHOLD
-
   logging.info(
       "[BLE_CS Metric @ %sm] Data to compare: num_passed = %d, "
       "acceptable_threshold_count = %.0f, pass_rate = %.2f%%",
@@ -78,64 +78,93 @@ def log_ble_cs_distance_within_tolerance(
       acceptable_threshold_count,
       pass_rate * 100.0,
   )
+  pass_percentage = pass_rate * 100.0
+
+  return {
+      "initiator": {
+          "reference_device": reference_device_name,
+          "percentage_results_in_range": f"{pass_percentage:.2f}%",
+      }
+  }
 
 
 def log_uwb_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_datas: Sequence[list[float]],
-    log_path: str,
-) -> None:
+    initiator_device_name: str,
+    responder_device_name: str,
+) -> dict[str, dict[str, str | int | float]]:
   """Gets the Test metrics for UWB.
 
   Args:
     real_distance_in_meters: The real distance in meters between two devices.
     measured_distance_datas: A list of measured distance data from initiator and
       responder.
-    log_path: The log path to save the test metrics.
+
+  Returns:
+    A dict containing the calculated metrics of the ranging results.
   """
-  acceptable_range = real_distance_in_meters * _UWB_ACCEPTABLE_RANGE_DEVIATION
-  uwb_ranging_test_metrics = []
-  for measured_distance_data in measured_distance_datas:
-    quantiles = statistics.quantiles(measured_distance_data, n=40)
+  acceptable_range_limit = real_distance_in_meters * _UWB_ACCEPTABLE_RANGE_DEVIATION
 
-    measured_distance_range = quantiles[38] - quantiles[0]
-    measured_distance_median = quantiles[19]
+  metrics_result = {}  # To store both initiator and responder data
 
-    uwb_ranging_test_metrics.append(
-        {
-            "real_distance_in_meters": real_distance_in_meters,
-            "measured_distance_range": measured_distance_range,
-            "measured_distance_median": measured_distance_median,
-        }
-    )
+  for i, measured_distance_data in enumerate(measured_distance_datas):
+    measured_distance_range = 0.0
+    measured_distance_median = 0.0
 
-  for test_metric in uwb_ranging_test_metrics:
-    logging.info(
-        "[UWB Metric @ %sm] Data to compare (Range): "
-        "measured_distance_range = %s, acceptable_range = %s",
-        real_distance_in_meters,
-        test_metric["measured_distance_range"],
-        acceptable_range,
-    )
+    if len(measured_distance_data) >= 2:
+      quantiles = statistics.quantiles(measured_distance_data, n=40)
+      measured_distance_range = quantiles[38] - quantiles[0]
+      measured_distance_median = quantiles[19]
+    elif len(measured_distance_data) == 1:
+      measured_distance_median = measured_distance_data[0]
 
-    deviation = (
-        abs(test_metric["measured_distance_median"] - real_distance_in_meters)
+    is_range_passed = measured_distance_range <= acceptable_range_limit
+    median_deviation = (
+        abs(measured_distance_median - real_distance_in_meters)
         / real_distance_in_meters
     )
+    is_median_passed = median_deviation <= _UWB_ACCEPTABLE_MEDIAN_DEVIATION
+    is_passed = is_range_passed and is_median_passed
+    status_str = "PASS" if is_passed else "FAIL"
+
+    role_key = "initiator" if i == 0 else "responder"
+    ref_key = responder_device_name if i == 0 else initiator_device_name
+
+    metrics_result[role_key] = {
+        "reference_device": ref_key,
+        "real_distance_in_meters": real_distance_in_meters,
+        "measured_distance_range": measured_distance_range,
+        "measured_distance_median": measured_distance_median,
+    }
+
+    range_status_str = "OK" if is_range_passed else "FAIL"
+    median_status_str = "OK" if is_median_passed else "FAIL"
+
     logging.info(
-        "[UWB Metric @ %sm] Data to compare (Median Deviation): "
-        "measured_deviation = %s, acceptable_deviation = %s",
+        "[UWB Metric (%s) @ %sm] - %s\n"
+        "  Range: %.4f (Limit: <=%.4f) -> %s\n"
+        "  Median: %.4f, Deviation: %.2f%% (Limit: <=%.2f%%) -> %s",
+        role_key,
         real_distance_in_meters,
-        deviation,
-        _UWB_ACCEPTABLE_MEDIAN_DEVIATION,
+        status_str,
+        measured_distance_range,
+        acceptable_range_limit,
+        range_status_str,
+        measured_distance_median,
+        median_deviation * 100,
+        _UWB_ACCEPTABLE_MEDIAN_DEVIATION * 100,
+        median_status_str,
     )
+
+  return metrics_result
 
 
 def log_wifi_rtt_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_datas: Sequence[list[float]],
-    log_path: str,
-) -> None:
+    reference_device_name: str,
+) -> dict[str, dict[str, str | float]]:
   """Gets the Test metrics for WIFI_RTT.
 
   Based on CDD 7.4.2.5. Wi-Fi Neighbor Awareness Networking (NAN):
@@ -147,21 +176,20 @@ def log_wifi_rtt_distance_within_tolerance(
     measured_distance_datas: A sequence containing lists of measured distance
       data. For Wi-Fi RTT, this will typically only contain the initiator's
       data, as only the initiator receives ranging results.
-    log_path: The log path to save the test metrics.
+
+  Returns:
+    A dict containing the calculated metrics of the ranging results.
   """
   # Per CDD [7.4.2.5/H-1-1], using the +/-2 meters threshold for 80MHz
   # bandwidth as the test requirement.
   acceptable_error_in_meters = 2.0
-  pass_rate_threshold = 0.68
 
-  wifi_rtt_ranging_test_metrics = []
   for measured_distance_data in measured_distance_datas:
     asserts.assert_true(
         measured_distance_data, "Measured distance data cannot be empty."
     )
     num_measurements = len(measured_distance_data)
 
-    # The logic is based on the CTS verifier test.
     filtered_data = [
         data
         for data in measured_distance_data
@@ -169,40 +197,32 @@ def log_wifi_rtt_distance_within_tolerance(
     ]
     pass_rate = len(filtered_data) / num_measurements
 
-    # Calculate other metrics for logging.
     errors = [abs(data - real_distance_in_meters) for data in measured_distance_data]
     error_quantiles = statistics.quantiles(errors, n=100)
     error_at_68_percentile = error_quantiles[67]
+    is_passed = pass_rate >= _WIFI_RTT_PASS_RATE_THRESHOLD
+    status_str = "PASSED" if is_passed else "FAILED"
+  logging.info(
+      "Test WIFI_RTT status: %s Pass Rate=%.2f, Error at 68 percentile=%.4f",
+      status_str,
+      pass_rate,
+      error_at_68_percentile,
+  )
 
-    distance_quantiles = statistics.quantiles(measured_distance_data, n=100)
-    measured_distance_median = distance_quantiles[49]
-
-    wifi_rtt_ranging_test_metrics.append(
-        {
-            "real_distance_in_meters": real_distance_in_meters,
-            "pass_rate": pass_rate,
-            "measured_distance_median": measured_distance_median,
-            "error_at68percentile": error_at_68_percentile,
-        }
-    )
-
-  for i, test_metric in enumerate(wifi_rtt_ranging_test_metrics):
-    role = "initiator" if i == 0 else "responder"
-    logging.info(
-        "[WiFi_RTT Metric @ %sm] (%s) Data to compare: "
-        "measured_pass_rate = %.2f%%, pass_rate_threshold = %.0f%%",
-        real_distance_in_meters,
-        role,
-        test_metric["pass_rate"] * 100.0,
-        pass_rate_threshold * 100.0,
-    )
+  return {
+      "initiator": {
+          "reference_device": reference_device_name,
+          "pass_rate": pass_rate,
+          "error_at_68_percentile": error_at_68_percentile,
+      }
+  }
 
 
 def log_ble_rssi_precision_within_tolerance(
     acceptable_spread_dbm: int,
+    reference_device_name: str,
     rssi_data: list[int],
-    log_path: str,
-) -> None:
+) -> dict[str, str | float]:
   """Gets the Test metrics for BLE RSSI.
 
   Based on CDD 7.4.3. Bluetooth:
@@ -211,16 +231,17 @@ def log_ble_rssi_precision_within_tolerance(
   This implies the spread (max - min) of the middle 95% of data must be <= 18 dBm.
 
   Args:
-    measured_rssi_datas: A sequence containing lists of measured RSSI data (in dBm).
-      Typically contains only the initiator's (scanner's) data.
-    log_path: The log path to save the test metrics.
+    acceptable_spread_dbm: The maximum allowed spread in dBm (e.g., 18).
+    reference_device_name: The name or serial number of the reference device
+        (responder) for logging purposes.
+    rssi_data: A list of measured RSSI values (in dBm).
+
+  Returns:
+    A dict containing the calculated metrics of the ranging results.
   """
   # Per CDD [C-10-1], +/- 9dBm means the total spread allowed is 18 dBm.
 
-  asserts.assert_not_equal(
-      len(rssi_data), 0, "Measured RSSI data is empty, skipping calculation."
-  )
-
+  asserts.assert_not_equal(len(rssi_data), 0, "Measured RSSI data is empty.")
   sorted_data = sorted(rssi_data)
   count = len(sorted_data)
 
@@ -231,10 +252,7 @@ def log_ble_rssi_precision_within_tolerance(
   median_rssi = statistics.median(sorted_data)
 
   log_msg = (
-      f"[BLE_RSSI Metric] Spread(95%)={spread_95th} dBm"
-      f" (Threshold<={acceptable_spread_dbm}). "
-      f"Median={median_rssi:.1f} dBm."
-      f" Range95=[{sorted_data[idx_min]}, {sorted_data[idx_max]}]"
+      f"[BLE_RSSI Metric] Spread(95%)={spread_95th} dBm, Median={median_rssi:.1f} dBm"
   )
 
   if spread_95th <= acceptable_spread_dbm:
@@ -242,29 +260,32 @@ def log_ble_rssi_precision_within_tolerance(
   else:
     logging.error(f"{log_msg} - FAIL")
 
+  return {
+      "reference_device": reference_device_name,
+      "rssi_range95_percentile": spread_95th,
+  }
+
 
 def log_ble_rx_tx_offset_precision(
     tx_rssi_data: list[int],
     rx_rssi_data: list[int],
+    reference_device: str,
     target_dbm: int,
     tolerance: int,
-    log_path: str,
-) -> None:
-  """Verifies that the median of RSSI data is within target +/- tolerance.
-
-  Args:
-      rssi_data: List of measured RSSI values.
-      target_dbm: The expected median value (e.g., -55).
-      tolerance: The allowed deviation (e.g., 10).
-  """
+) -> dict[str, str | float]:
   """Verifies that the median of both Tx and Rx RSSI data is within target +/- tolerance.
 
-    Args:
-        tx_rssi_data: List of measured RSSI values for Tx test (Ref device measuring DUT).
-        rx_rssi_data: List of measured RSSI values for Rx test (DUT measuring Ref device).
-        target_dbm: The expected median value (e.g., -55).
-        tolerance: The allowed deviation (e.g., 10).
-    """
+  Args:
+    tx_rssi_data: List of measured RSSI values for Tx test (Ref device measuring DUT).
+    rx_rssi_data: List of measured RSSI values for Rx test (DUT measuring Ref device).
+    reference_device_name: The name or serial number of the reference device
+        (responder) for logging purposes.
+    target_dbm: The expected median value (e.g., -55).
+    tolerance: The allowed deviation (e.g., 10).
+
+  Returns:
+    A dict containing the calculated metrics of the ranging results.
+  """
   asserts.assert_not_equal(
       len(tx_rssi_data), 0, "Tx Measured RSSI data is empty, skipping calculation."
   )
@@ -275,7 +296,7 @@ def log_ble_rx_tx_offset_precision(
   min_limit = target_dbm - tolerance
   max_limit = target_dbm + tolerance
 
-  def verify_single_dataset(data: list[int], label: str) -> bool:
+  def verify_single_dataset(data: list[int], label: str, role_key: str) -> float:
     sorted_data = sorted(data)
     count = len(sorted_data)
     median = statistics.median(sorted_data)
@@ -286,16 +307,23 @@ def log_ble_rx_tx_offset_precision(
     )
 
     if min_limit <= median <= max_limit:
-      logging.info(f"{log_msg} - PASS")
-      return True
+      logging.info("%s - PASS", log_msg)
     else:
-      logging.error(f"{log_msg} - FAIL")
-      return False
+      logging.error("%s - FAIL", log_msg)
+    return median
 
-  tx_passed = verify_single_dataset(tx_rssi_data, "Tx Test/DUT Power")
-  rx_passed = verify_single_dataset(rx_rssi_data, "Rx Test/DUT Sensitivity")
-  if not (tx_passed and rx_passed):
-    logging.info("BLE RSSI Median Verification Failed!")
+  tx_rssi_median = verify_single_dataset(
+      tx_rssi_data, "Tx Test/DUT Power", "tx_measurement"
+  )
+  rx_rssi_median = verify_single_dataset(
+      rx_rssi_data, "Rx Test/DUT Sensitivity", "rx_measurement"
+  )
+
+  return {
+      "reference_device": reference_device,
+      "rssi_median_dut": tx_rssi_median,
+      "rssi_median_ref": rx_rssi_median,
+  }
 
 
 def get_ranging_distance(
