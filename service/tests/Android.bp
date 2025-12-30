@@ -51,6 +51,7 @@ android_test {
         "uwb_flags_lib",
         "platform-test-annotations",
         "uwb_flags_lib",
+        "modules-utils-build",
     ],
 
     jarjar_rules: ":uwb-jarjar-rules",
