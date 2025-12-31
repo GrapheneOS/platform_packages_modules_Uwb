@@ -16,9 +16,10 @@
 
 package android.ranging;
 
-import android.ranging.SessionHandle;
+import android.ranging.MotionState;
 import android.ranging.RangingDevice;
 import android.ranging.RangingData;
+import android.ranging.SessionHandle;
 
 /**
 *  @hide
@@ -30,4 +31,5 @@ oneway interface IRangingCallbacks {
     void onResults(in SessionHandle session, in RangingDevice peer, in RangingData data);
     void onStopped(in SessionHandle session, in RangingDevice peer, in int technology);
     void onClosed(in SessionHandle session, in int reason);
+    void onMotionReceived(in SessionHandle session, in RangingDevice peer, in MotionState motion);
 }

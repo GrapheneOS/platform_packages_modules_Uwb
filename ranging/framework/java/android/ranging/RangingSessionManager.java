@@ -127,6 +127,17 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
         mSessions.get(session).onClosed(reason);
     }
 
+    @Override
+    public void onMotionReceived(SessionHandle session, RangingDevice peer, MotionState motion) {
+        Log.v(TAG, "onMotionReceived - sessionHandle: " + session + " peer: " + peer
+                + " motion: " + motion);
+        if (!mSessions.containsKey(session)) {
+            Log.e(TAG, "SessionHandle not found");
+            return;
+        }
+        mSessions.get(session).onMotionReceived(peer, motion);
+    }
+
     /**
      * Tells the service that OOB data has been received.
      *

@@ -82,6 +82,18 @@ package android.ranging {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement.Wgs84Location> CREATOR;
   }
 
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class MotionState implements android.os.Parcelable {
+    ctor public MotionState(int);
+    method public int describeContents();
+    method public int getMotionState();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.MotionState> CREATOR;
+    field public static final int MOTION_LARGE = 3; // 0x3
+    field public static final int MOTION_MODERATE = 2; // 0x2
+    field public static final int MOTION_NOT_DETECTED = 0; // 0x0
+    field public static final int MOTION_SLIGHT = 1; // 0x1
+  }
+
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingCapabilities implements android.os.Parcelable {
     method public int describeContents();
     method @Nullable public android.ranging.ble.cs.BleCsRangingCapabilities getCsCapabilities();
@@ -199,6 +211,7 @@ package android.ranging {
   public static interface RangingSession.Callback {
     method public void onClosed(int);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public default void onDlTdoaResults(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.DlTdoaMeasurement);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public default void onMotionReceived(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.MotionState);
     method public void onOpenFailed(int);
     method public void onOpened();
     method public void onResults(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.RangingData);
