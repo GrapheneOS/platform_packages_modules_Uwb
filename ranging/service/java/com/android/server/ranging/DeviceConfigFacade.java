@@ -54,13 +54,25 @@ public class DeviceConfigFacade {
     }
 
     private void updateDeviceConfigFlags() {
-        mTechnologyPreferenceList = getDeviceConfigStringArray(
-                "technology_preference_list",
-                mContext.getResources().getStringArray(R.array.technology_preference_list)
-        );
-        mRttRangingRequestDelay = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
-                "rtt_ranging_request_delay",
-                mContext.getResources().getInteger(R.integer.rtt_ranging_request_delay));
+        if (mContext.getResources() != null) {
+            mTechnologyPreferenceList = getDeviceConfigStringArray(
+                    "technology_preference_list",
+                    mContext.getResources().getStringArray(R.array.technology_preference_list)
+            );
+
+            mRttRangingRequestDelay = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
+                    "rtt_ranging_request_delay",
+                    mContext.getResources().getInteger(R.integer.rtt_ranging_request_delay));
+        } else {
+            String[] tempArray = new String[4];
+            tempArray[0] = "UWB";
+            tempArray[1] = "CS";
+            tempArray[2] = "RTT";
+            tempArray[3] = "RSSI";
+            mTechnologyPreferenceList = tempArray;
+
+            mRttRangingRequestDelay = 1000;
+        }
     }
 
     public String[] getTechnologyPreferenceList() {

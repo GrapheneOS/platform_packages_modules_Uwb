@@ -114,12 +114,18 @@ public class UwbContext extends ContextWrapper {
     }
 
     private Context getResourcesApkContext() {
+        String overlayApkPkgName = getUwbOverlayApkPkgName();
+        if (overlayApkPkgName == null) {
+            Log.wtf(TAG, "Failed to get Uwb overlay APK package name");
+            return null;
+        }
+
         try {
-            return createPackageContext(getUwbOverlayApkPkgName(), 0);
+            return createPackageContext(overlayApkPkgName, 0);
         } catch (PackageManager.NameNotFoundException e) {
             Log.wtf(TAG, "Failed to load resources", e);
+            return null;
         }
-        return null;
     }
 
     /**
