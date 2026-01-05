@@ -1166,6 +1166,14 @@ public class UwbManagerSnippet implements Snippet {
             builder.setLogicalLinkClassLength(json.getInt("logicalLinkClassLength"));
         }
 
+        if (json.has("maxSduTransmitSize")) {
+            builder.setMaxSduTransmitSize(json.getInt("maxSduTransmitSize"));
+        }
+
+        if (json.has("maxSduReceiveSize")) {
+            builder.setMaxSduReceiveSize(json.getInt("maxSduReceiveSize"));
+        }
+
         return builder.build();
     }
 
