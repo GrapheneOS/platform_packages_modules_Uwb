@@ -89,8 +89,14 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
      */
     public static final int RANGING_MODE_AUTO = 0;
     /**
-     * High accuracy ranging mode. No fallback allowed.
+     * @deprecated This mode is deprecated,
+     * use {@link RangingMode#RANGING_MODE_HIGH_ACCURACY_PREFERRED} and optionally with
+     * {@link Builder#setRangingTechnologyFilter(Set)} if apps want to restrict ranging
+     * technology usage.
+     *
      */
+    @Deprecated
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public static final int RANGING_MODE_HIGH_ACCURACY = 1;
     /**
      * High accuracy ranging mode. Fallback to lower accuracy if high accuracy ranging is not
