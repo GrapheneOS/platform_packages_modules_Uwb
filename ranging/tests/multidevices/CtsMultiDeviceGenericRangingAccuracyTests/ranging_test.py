@@ -143,6 +143,10 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     ranging_utils.skip_if_technology_not_supported(
         [self.initiator, self.responder], technology
     )
+    # The bluetooth_utils.ble_bond requires shell permissions while shell permissions
+    # can be delegated to only one instrumentation. So we need to drop MBS's shell permissions.
+    self.initiator.mbs.utilityDropShellPermission()
+    self.responder.mbs.utilityDropShellPermission()
 
     self.initiator.bt_address, self.responder.bt_address = bluetooth_utils.ble_bond(
         self.initiator, self.responder
@@ -186,6 +190,9 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           self.initiator.bt_address,
           self.responder.bt_address,
       )
+      # Restore permissions if needed for subsequent steps
+      self.initiator.mbs.utilityAdoptShellPermission(None)
+      self.responder.mbs.utilityAdoptShellPermission(None)
 
   @CddTest(requirements=["7.4.2.5/H-1-1"])
   def test_wifi_rtt_ranging(self) -> None:
