@@ -65,15 +65,18 @@ public class UwbMultichipData {
      * used.
      */
     public void initialize() {
-        if (mContext.getResources().getBoolean(R.bool.config_isMultichip)) {
-            String filePath =
-                    mContext.getResources().getString(R.string.config_multichipConfigPath);
-            if (Strings.isNullOrEmpty(filePath)) {
-                Log.w(TAG, "Multichip is set to true, but configuration file is not defined.");
-            } else {
-                readConfigurationFile(filePath);
+        if (mContext.getResources() != null) {
+            if (mContext.getResources().getBoolean(R.bool.config_isMultichip)) {
+                String filePath =
+                        mContext.getResources().getString(R.string.config_multichipConfigPath);
+                if (Strings.isNullOrEmpty(filePath)) {
+                    Log.w(TAG, "Multichip is set to true, but configuration file is not defined.");
+                } else {
+                    readConfigurationFile(filePath);
+                }
             }
         }
+
         if (mListener != null) {
             mListener.onInitialized();
         }
