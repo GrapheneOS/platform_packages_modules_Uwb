@@ -1797,12 +1797,31 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.open_fira_ranging(responder_params, session, expect_to_succeed=True)
 
     # Logical link creation
-    params = {
+    paramsV_1_0 = {
       "linkLayerMode": uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
       "destinationAddress": self.responder_addr,
       "logicalLinkClassLength": 0
     }
-    self.initiator.fira_create_logical_link(session, params)
+
+    paramsV_1_1 = {
+      "linkLayerMode": uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
+      "destinationAddress": self.responder_addr,
+      "logicalLinkClassLength": 1,
+      "maxSduTransmitSize": uwb_ranging_params.FiraParamEnums.SDU_SIZE_64_BYTES,
+      "maxSduReceiveSize": uwb_ranging_params.FiraParamEnums.SDU_SIZE_128_BYTES
+    }
+
+    llVersion = self.initiator.ad.uwb.getSpecificationInfo()["fira"]["fira_logical_link_version"]
+
+    major, minor = [int(v) for v in llVersion.split(".")]
+
+    if minor >= 1:
+      ll_params = paramsV_1_1
+    else:
+      ll_params = paramsV_1_0
+
+    # Create logical link
+    self.initiator.fira_create_logical_link(session, ll_params)
 
     # Start ranging
     self.initiator.start_fira_ranging(session)
