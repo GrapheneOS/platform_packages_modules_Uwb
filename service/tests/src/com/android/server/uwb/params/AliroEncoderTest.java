@@ -77,6 +77,29 @@ public class AliroEncoderTest {
                     .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
                             0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78,
                             0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
+    private static final AliroOpenRangingParams.Builder TEST_ALIRO_OPEN_RANGING_PARAMS_HOP_ENABLED =
+            new AliroOpenRangingParams.Builder()
+                    .setProtocolVersion(AliroParams.PROTOCOL_VERSION_1_0)
+                    .setUwbConfig(AliroParams.UWB_CONFIG_0)
+                    .setPulseShapeCombo(
+                            new AliroPulseShapeCombo(
+                                    PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                                    PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
+                    .setSessionId(1)
+                    .setRanMultiplier(4)
+                    .setChannel(UWB_CHANNEL_9)
+                    .setNumChapsPerSlot(CHAPS_PER_SLOT_3)
+                    .setNumResponderNodes(1)
+                    .setNumSlotsPerRound(SLOTS_PER_ROUND_6)
+                    .setSyncCodeIndex(1)
+                    .setHoppingConfigMode(AliroParams.HOPPING_CONFIG_MODE_CONTINUOUS)
+                    .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT)
+                    .setInitiationTimeMs(1)
+                    .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
+                    .setMacModeOffset(0)
+                    .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78,
+                            0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
 
     private static final String RANGE_DATA_NTF_CONFIG_DISABLED_TLV = "0E0100";
     private static final String RANGE_DATA_NTF_CONFIG_ENABLED_TLV = "0E0101";
@@ -85,11 +108,18 @@ public class AliroEncoderTest {
     private static final String RANGE_DATA_NTF_PROXIMITY_NEAR_TLV = "0F026400";
     private static final String RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV = "1002204E";
     private static final String RANGE_DATA_NTF_PROXIMITY_FAR_TLV = "1002C800";
+    private static final String SIXTEEN_BYTE_HOPMODEKEY_TLV =
+            "A010677B0678000000000000000000000000"
+            + "2B0801000000000000000E0100";
     private static final String TEST_ALIRO_OPEN_RANGING_TLV =
             "00010104010905010109048001000011010103010"
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
                     + "A9010045200578057805780578057805780578057805780578057805780578057805780578"
                     + "2B080100000000000000";
+    private static final String TEST_ALIRO_OPEN_RANGING_TLV_HOP_ENABLED =
+            "0001010401090501010904800100001101010301011B01062C0103A3020001"
+                    + "A4020000A50100A602D0020802B004140101A90100452005"
+                    + "78057805780578057805780578057805780578057805780578057805780578";
     private static final String TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT =
             TEST_ALIRO_OPEN_RANGING_TLV + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
     private static final byte[] TEST_ALIRO_OPEN_RANGING_TLV_DATA =
@@ -243,6 +273,28 @@ public class AliroEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_FAR_TLV;
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(20);
+        assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
+    }
+
+    @Test
+    public void testAliroOpenRangingParams_with16byteEnabled()
+            throws Exception {
+        // Setup the DeviceConfigFacade flag to indicate that the hopmodekey will be
+        // 16-byte instead of the default 4-byte. Random hopmodekey must also be enabled.
+        when(mDeviceConfigFacade.is16ByteHopmodekeyEnabled()).thenReturn(true);
+        when(mDeviceConfigFacade.isRandomHopmodekeySupported()).thenReturn(true);
+
+        AliroOpenRangingParams.Builder builder = new AliroOpenRangingParams
+                .Builder(TEST_ALIRO_OPEN_RANGING_PARAMS_HOP_ENABLED);
+        AliroOpenRangingParams params = builder
+                .setHopModeKey(2013690727)
+                .build();
+        TlvBuffer tlvs = mAliroEncoder.getTlvBuffer(params, AliroParams.PROTOCOL_VERSION_1_0);
+        // Setup the expected values to match the configured parameter values.
+        String expectedTlvStr = TEST_ALIRO_OPEN_RANGING_TLV_HOP_ENABLED
+                + SIXTEEN_BYTE_HOPMODEKEY_TLV;
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 

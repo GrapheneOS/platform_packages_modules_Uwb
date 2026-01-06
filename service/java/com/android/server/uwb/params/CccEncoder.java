@@ -34,6 +34,9 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.fira.FiraParams;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 public class CccEncoder extends TlvEncoder {
     private final UwbInjector mUwbInjector;
 
@@ -134,7 +137,16 @@ public class CccEncoder extends TlvEncoder {
         }
         if (params.getHoppingConfigMode() != CccParams.HOPPING_CONFIG_MODE_NONE
                 && params.getHopModeKey() != CccParams.HOP_MODE_KEY_UNSET) {
-            tlvBufferBuilder.putInt(ConfigParam.HOP_MODE_KEY, params.getHopModeKey());
+            if (mUwbInjector.getDeviceConfigFacade().is16ByteHopmodekeyEnabled()
+                    && mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()) {
+                ByteBuffer hopModeBuff = ByteBuffer.allocate(16);
+                hopModeBuff.order(ByteOrder.LITTLE_ENDIAN);
+                hopModeBuff.putInt(params.getHopModeKey());
+                tlvBufferBuilder.putByteArray(ConfigParam.HOP_MODE_KEY,
+                        16, hopModeBuff.array());
+            } else {
+                tlvBufferBuilder.putInt(ConfigParam.HOP_MODE_KEY, params.getHopModeKey());
+            }
         }
         if (params.getAbsoluteInitiationTimeUs() > 0) {
             tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
