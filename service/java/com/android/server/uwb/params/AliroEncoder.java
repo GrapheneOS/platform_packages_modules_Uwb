@@ -124,7 +124,7 @@ public class AliroEncoder extends TlvEncoder {
                 .putShort(ConfigParam.UWB_CONFIG_ID, (short) params.getUwbConfig()) // UWB_CONFIG_ID
                 .putByte(ConfigParam.PULSESHAPE_COMBO,
                         params.getPulseShapeCombo().toBytes()[0]) // PULSESHAPE_COMBO
-                .putShort(ConfigParam.URSK_TTL, (short) 0x2D0) // URSK_TTL
+                .putShort(ConfigParam.URSK_TTL, (short) params.getUrskTtl()) // URSK_TTL
                 // T(Slotk) =  N(Chap_per_Slot) * T(Chap)
                 // T(Chap) = 400RSTU
                 // reference : digital key release 3 20.2 MAC Time Grid
