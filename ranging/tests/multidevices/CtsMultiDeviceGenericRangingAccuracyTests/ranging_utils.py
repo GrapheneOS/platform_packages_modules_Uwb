@@ -32,37 +32,6 @@ _BLE_CS_PASS_RATE_THRESHOLD = 0.9
 
 _UWB_ACCEPTABLE_RANGE_DEVIATION = 0.3
 _UWB_ACCEPTABLE_MEDIAN_DEVIATION = 0.25
-_RSSI_ACCEPTABLE_SPREAD_DBM = 0.25
-
-ADVERTISE_SETTINGS = MappingProxyType(
-    {
-        "AdvertiseMode": "ADVERTISE_MODE_LOW_LATENCY",
-        "TxPowerLevel": "ADVERTISE_TX_POWER_HIGH",
-        "Connectable": True,
-        "Timeout": 0,
-    }
-)
-ADVERTISE_DATA = MappingProxyType(
-    {"IncludeDeviceName": True, "IncludeTxPowerLevel": False}
-)
-SCAN_SETTINGS = MappingProxyType({"ScanMode": "SCAN_MODE_LOW_LATENCY", "Legacy": False})
-
-# Parameters used in GATT connection
-TEST_BLE_SERVICE_UUID = "0000fe23-0000-1000-8000-00805f9b34fb"
-SCAN_FILTER = MappingProxyType({"ServiceUuid": TEST_BLE_SERVICE_UUID})
-SERVICE = MappingProxyType(
-    {
-        "UUID": TEST_BLE_SERVICE_UUID,
-        "Type": "SERVICE_TYPE_PRIMARY",
-        "Characteristics": [],
-    }
-)
-SCAN_RESPONSE = MappingProxyType(
-    {
-        "IncludeDeviceName": False,
-        "ServiceData": [],
-    }
-)
 
 
 def skip_if_technology_not_supported(
@@ -77,7 +46,7 @@ def skip_if_technology_not_supported(
     )
 
 
-def verify_ble_cs_distance_within_tolerance(
+def log_ble_cs_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_data: list[float],
     log_path: str,
@@ -111,7 +80,7 @@ def verify_ble_cs_distance_within_tolerance(
   )
 
 
-def verify_uwb_distance_within_tolerance(
+def log_uwb_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_datas: Sequence[list[float]],
     log_path: str,
@@ -162,7 +131,7 @@ def verify_uwb_distance_within_tolerance(
     )
 
 
-def verify_wifi_rtt_distance_within_tolerance(
+def log_wifi_rtt_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_datas: Sequence[list[float]],
     log_path: str,
@@ -229,7 +198,7 @@ def verify_wifi_rtt_distance_within_tolerance(
     )
 
 
-def verify_ble_rssi_precision_within_tolerance(
+def log_ble_rssi_precision_within_tolerance(
     acceptable_spread_dbm: int,
     rssi_data: list[int],
     log_path: str,
@@ -274,7 +243,7 @@ def verify_ble_rssi_precision_within_tolerance(
     logging.error(f"{log_msg} - FAIL")
 
 
-def verify_ble_rssi_median_at_target(
+def log_ble_rx_tx_offset_precision(
     tx_rssi_data: list[int],
     rx_rssi_data: list[int],
     target_dbm: int,
@@ -435,79 +404,6 @@ def start_ranging_and_get_distance_data(
   )  # pytype: disable=bad-return-type
 
 
-def start_cs_ranging_and_get_distance_data(
-    initiator: android_device.AndroidDevice,
-    responder: android_device.AndroidDevice,
-    technology: ranging_params.RangingTechnology,
-    initiator_preference: ranging_params.RangingPreference,
-    responder_preference: ranging_params.RangingPreference,
-    ranging_measure_count: int = _DEFAULT_RANGING_MEASURE_COUNTS,
-) -> list[float]:
-  """Starts CS ranging and gets all measured distance data from initiator.
-
-  For BLE CS, only the initiator device receives ranging results.
-
-  Args:
-    initiator: The device acting as the ranging initiator.
-    responder: The device acting as the ranging responder.
-    technology: The ranging technology to use.
-    initiator_preference: Ranging preferences for the initiator.
-    responder_preference: Ranging preferences for the responder.
-    ranging_measure_count: The number of ranging measurements to collect.
-
-  Returns:
-    A list of distance measurements collected by the initiator.
-  """
-  session_handle = str(uuid.uuid4())
-
-  initiator_ranging_handler = initiator.ranging.startRanging(
-      session_handle, dataclasses.asdict(initiator_preference)
-  )
-
-  try:
-    initiator_ranging_handler.waitAndGet("OPENED")
-  except snippet_errors.CallbackHandlerTimeoutError:
-    asserts.fail(
-        f"{initiator} Failed to open ranging session with preference"
-        f" {initiator_preference}"
-    )
-
-  responder_ranging_handler = responder.ranging.startRanging(
-      session_handle, dataclasses.asdict(responder_preference)
-  )
-
-  try:
-    responder_ranging_handler.waitAndGet("OPENED")
-  except snippet_errors.CallbackHandlerTimeoutError:
-    asserts.fail(
-        f"{responder} Failed to open ranging session with preference"
-        f" {responder_preference}"
-    )
-  initiator_distance_list = []
-  ranging_end_time = time.monotonic() + _WAIT_FOR_RANGING_DATA_TIMEOUT.total_seconds()
-
-  for _ in range(ranging_measure_count):
-    if time.monotonic() >= ranging_end_time:
-      logging.info(
-          "Collecting data reached to the timeout. Expected %d data points, but"
-          " only got %d.",
-          ranging_measure_count,
-          len(initiator_distance_list),
-      )
-      break
-    initiator_distance = get_ranging_distance(
-        initiator_ranging_handler, technology, responder.id
-    )
-    initiator_distance_list.append(initiator_distance)
-
-  initiator.ranging.stopRanging(session_handle)
-  initiator_ranging_handler.waitAndGet("CLOSED")
-  responder.ranging.stopRanging(session_handle)
-  responder_ranging_handler.waitAndGet("CLOSED")
-
-  return initiator_distance_list
-
-
 def start_rtt_ranging_and_get_distance_data(
     initiator: android_device.AndroidDevice,
     responder: android_device.AndroidDevice,
@@ -605,7 +501,7 @@ def start_ble_rssi_test_and_get_data_pure_scan(
   unique_name = f"Target_{random.randint(1000, 9999)}"
   advertiser.mbs.btSetName(unique_name)
   advertiser_handler = advertiser.mbs.bleStartAdvertising(
-      dict(ADVERTISE_SETTINGS), dict(ADVERTISE_DATA), None
+      dict(ranging_params.ADVERTISE_SETTINGS), dict(ranging_params.ADVERTISE_DATA), None
   )
 
   try:
@@ -617,7 +513,9 @@ def start_ble_rssi_test_and_get_data_pure_scan(
   scanner.log.info("Starting BLE scanning...")
 
   scan_filter = [{"DeviceName": unique_name}]
-  scanner_handler = scanner.mbs.bleStartScan(scan_filter, dict(SCAN_SETTINGS))
+  scanner_handler = scanner.mbs.bleStartScan(
+      scan_filter, dict(ranging_params.SCAN_SETTINGS)
+  )
 
   rssi_list = []
   timeout = time.monotonic() + _WAIT_FOR_RSSI_TIMEOUT_SEC
