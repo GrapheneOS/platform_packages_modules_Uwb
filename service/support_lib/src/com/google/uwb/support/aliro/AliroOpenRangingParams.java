@@ -76,6 +76,8 @@ public class AliroOpenRangingParams extends AliroParams {
     private static final String KEY_MAC_MODE_ROUND = "mac_mode_round";
     private static final String KEY_MAC_MODE_OFFSET = "mac_mode_offset";
 
+    private static final String KEY_URSK_TTL = "ursk_ttl";
+
     private final AliroProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
     private final AliroPulseShapeCombo mPulseShapeCombo;
@@ -106,6 +108,9 @@ public class AliroOpenRangingParams extends AliroParams {
     private double mRangeDataNtfAoaAzimuthUpper;
     private double mRangeDataNtfAoaElevationLower;
     private double mRangeDataNtfAoaElevationUpper;
+
+    private int mUrskTtl ;
+
     @StsConfig
     private final int mStsConfig;
     @Nullable private final byte[] mSessionKey;
@@ -140,7 +145,8 @@ public class AliroOpenRangingParams extends AliroParams {
             int stsConfig,
             @Nullable byte[] sessionKey,
             @MacModeRound int macModeRound,
-            int macModeOffset) {
+            int macModeOffset,
+            int urskTtl) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -169,6 +175,7 @@ public class AliroOpenRangingParams extends AliroParams {
         mSessionKey = sessionKey;
         mMacModeRound = macModeRound;
         mMacModeOffset = macModeOffset;
+        mUrskTtl = urskTtl;
     }
 
     @Override
@@ -230,6 +237,7 @@ public class AliroOpenRangingParams extends AliroParams {
         bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
         bundle.putInt(KEY_MAC_MODE_ROUND, mMacModeRound);
         bundle.putInt(KEY_MAC_MODE_OFFSET, mMacModeOffset);
+        bundle.putInt(KEY_URSK_TTL, mUrskTtl);
         return bundle;
     }
 
@@ -293,6 +301,7 @@ public class AliroOpenRangingParams extends AliroParams {
                 .setSessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SESSION_KEY)))
                 .setMacModeRound(bundle.getInt(KEY_MAC_MODE_ROUND, MAC_MODE_ROUND_DEFAULT))
                 .setMacModeOffset(bundle.getInt(KEY_MAC_MODE_OFFSET, MAC_MODE_OFFSET_DEFAULT))
+                .setUrskTtl(bundle.getInt(KEY_URSK_TTL))
                 .build();
     }
 
@@ -400,6 +409,8 @@ public class AliroOpenRangingParams extends AliroParams {
         return mRangeDataNtfAoaElevationUpper;
     }
 
+    public int getUrskTtl() { return mUrskTtl;}
+
     /** Returns a builder from the params. */
     public AliroOpenRangingParams.Builder toBuilder() {
         return new AliroOpenRangingParams.Builder(this);
@@ -475,6 +486,7 @@ public class AliroOpenRangingParams extends AliroParams {
         private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
         private int mMacModeOffset = 0;
 
+        private int mUrskTtl = 0x2D0;
 
         public Builder() {}
 
@@ -507,6 +519,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mSessionKey = builder.mSessionKey;
             mMacModeRound = builder.mMacModeRound;
             mMacModeOffset = builder.mMacModeOffset;
+            mUrskTtl = builder.mUrskTtl;
         }
 
         public Builder(@NonNull AliroOpenRangingParams params) {
@@ -538,6 +551,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mSessionKey = params.mSessionKey;
             mMacModeRound = params.mMacModeRound;
             mMacModeOffset = params.mMacModeOffset;
+            mUrskTtl = params.mUrskTtl;
         }
 
         public Builder setProtocolVersion(AliroProtocolVersion version) {
@@ -706,6 +720,11 @@ public class AliroOpenRangingParams extends AliroParams {
             return this;
         }
 
+        public Builder setUrskTtl(int urskttl) {
+            mUrskTtl = urskttl;
+            return this;
+        }
+
         private void checkRangeDataNtfConfig() {
             if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_DISABLE) {
                 checkArgument(mRangeDataNtfProximityNear
@@ -797,7 +816,8 @@ public class AliroOpenRangingParams extends AliroParams {
                     mStsConfig,
                     mSessionKey,
                     mMacModeRound,
-                    mMacModeOffset);
+                    mMacModeOffset,
+                    mUrskTtl);
         }
     }
 }
