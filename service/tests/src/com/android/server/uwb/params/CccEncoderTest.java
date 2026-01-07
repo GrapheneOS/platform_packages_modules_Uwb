@@ -212,4 +212,30 @@ public class CccEncoderTest {
         assertThat(tlvs.getNoOfParams()).isEqualTo(18);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
+
+    @Test
+    public void testCccOpenRangingParams_withUrskTtl() throws Exception {
+        // Define the full expected TLV string without relying on string manipulation.
+        // This is the base TLV with the URSK_TTL field A602D002 (720) replaced by A602E803 (1000).
+        final String expectedTlvString =
+                "00010104010905010109048001000011010103010"
+                        + "11B01062C0100A3020001A4020000A50100A602E8030802B004140101"
+                        + "2B080100000000000000"
+                        + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
+        final byte[] expectedTlvData = UwbUtil.getByteArray(expectedTlvString);
+
+        // Explicitly set mock behavior to make the test self-contained, even if it matches setup.
+        when(mDeviceConfigFacade.isCccSupportedRangeDataNtfConfig()).thenReturn(false);
+
+        // Set a non-default URSK TTL to verify it's correctly encoded.
+        int urskTtl = 1000;
+        CccOpenRangingParams.Builder builder = new CccOpenRangingParams
+                .Builder(TEST_CCC_OPEN_RANGING_PARAMS);
+        CccOpenRangingParams params = builder.setUrskTtl(urskTtl).build();
+
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
+        assertThat(tlvs.getByteArray()).isEqualTo(expectedTlvData);
+    }
 }
