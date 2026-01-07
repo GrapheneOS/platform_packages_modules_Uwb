@@ -27,6 +27,7 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
+import android.ranging.MotionState;
 import android.ranging.RangingConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
@@ -367,6 +368,20 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                 } catch (RemoteException e) {
                     Log.e(TAG, "onOpenFailed callback failed: " + e);
                 }
+            }
+        }
+
+        /**
+         * Called when the peer's motion state is received.
+         *
+         * @param peer The peer device whose motion state has reported.
+         * @param motion The new motion state of the peer.
+         */
+        public void onMotionReceived(@NonNull RangingDevice peer, @NonNull MotionState motion) {
+            try {
+                mRangingCallbacks.onMotionReceived(mSessionHandle, peer, motion);
+            } catch (RemoteException e) {
+                Log.e(TAG, "onMotionReceived callback failed: " + e);
             }
         }
 

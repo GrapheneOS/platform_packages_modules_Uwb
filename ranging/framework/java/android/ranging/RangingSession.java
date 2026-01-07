@@ -266,6 +266,13 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
+    public void onMotionReceived(@NonNull RangingDevice peer, @NonNull MotionState motion) {
+        mExecutor.execute(() -> mCallback.onMotionReceived(peer, motion));
+    }
+
+    /**
+     * @hide
+     */
     public void onStopped(RangingDevice peer, @RangingManager.RangingTechnology int technology) {
         mExecutor.execute(() -> mCallback.onStopped(peer, technology));
     }
@@ -391,6 +398,17 @@ public final class RangingSession implements AutoCloseable {
         @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
         default void onDlTdoaResults(
                 @NonNull RangingDevice peer, @NonNull DlTdoaMeasurement measurement) {
+        }
+
+        /**
+         * Called when the peer's motion state is received.
+         *
+         * @param peer The peer device whose movement state has reported.
+         * @param motion The new motion state of the peer.
+         */
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        default void onMotionReceived(
+                @NonNull RangingDevice peer, @NonNull MotionState motion) {
         }
 
         /**
