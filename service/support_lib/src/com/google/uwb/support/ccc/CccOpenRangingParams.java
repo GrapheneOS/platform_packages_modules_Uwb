@@ -74,7 +74,8 @@ public class CccOpenRangingParams extends CccParams {
             "range_data_ntf_aoa_elevation_lower";
     private static final String KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER =
             "range_data_ntf_aoa_elevation_upper";
-
+    private static final String KEY_URSK_TTL =
+            "ursk_ttl";
     private final CccProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
     private final CccPulseShapeCombo mPulseShapeCombo;
@@ -107,6 +108,8 @@ public class CccOpenRangingParams extends CccParams {
     private double mRangeDataNtfAoaElevationLower;
     private double mRangeDataNtfAoaElevationUpper;
 
+    private int mUrskTtl ;
+
     private CccOpenRangingParams(
             CccProtocolVersion protocolVersion,
             @UwbConfig int uwbConfig,
@@ -131,7 +134,8 @@ public class CccOpenRangingParams extends CccParams {
             double rangeDataNtfAoaAzimuthLower,
             double rangeDataNtfAoaAzimuthUpper,
             double rangeDataNtfAoaElevationLower,
-            double rangeDataNtfAoaElevationUpper) {
+            double rangeDataNtfAoaElevationUpper,
+            int urskTtl) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -156,6 +160,7 @@ public class CccOpenRangingParams extends CccParams {
         mRangeDataNtfAoaAzimuthUpper = rangeDataNtfAoaAzimuthUpper;
         mRangeDataNtfAoaElevationLower = rangeDataNtfAoaElevationLower;
         mRangeDataNtfAoaElevationUpper = rangeDataNtfAoaElevationUpper;
+        mUrskTtl = urskTtl;
     }
 
     @Override
@@ -190,6 +195,7 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER, mRangeDataNtfAoaAzimuthUpper);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER, mRangeDataNtfAoaElevationLower);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER, mRangeDataNtfAoaElevationUpper);
+        bundle.putInt(KEY_URSK_TTL, mUrskTtl);
         return bundle;
     }
 
@@ -249,6 +255,7 @@ public class CccOpenRangingParams extends CccParams {
                 .setRangeDataNtfAoaElevationUpper(
                         bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
                                 RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
+                .setUrskTtl(bundle.getInt(KEY_URSK_TTL))
                 .build();
     }
 
@@ -356,6 +363,8 @@ public class CccOpenRangingParams extends CccParams {
         return mRangeDataNtfAoaElevationUpper;
     }
 
+    public int getUrskTtl() { return mUrskTtl;}
+
     /** Returns a builder from the params. */
     public CccOpenRangingParams.Builder toBuilder() {
         return new CccOpenRangingParams.Builder(this);
@@ -408,6 +417,8 @@ public class CccOpenRangingParams extends CccParams {
         /** UCI spec default: +90 (No upper-bound filtering) */
         private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
 
+        private int mUrskTtl = 0x2D0;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -435,6 +446,7 @@ public class CccOpenRangingParams extends CccParams {
             mRangeDataNtfAoaAzimuthUpper = builder.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = builder.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = builder.mRangeDataNtfAoaElevationUpper;
+            mUrskTtl = builder.mUrskTtl;
         }
 
         public Builder(@NonNull CccOpenRangingParams params) {
@@ -462,6 +474,7 @@ public class CccOpenRangingParams extends CccParams {
             mRangeDataNtfAoaAzimuthUpper = params.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = params.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = params.mRangeDataNtfAoaElevationUpper;
+            mUrskTtl = params.mUrskTtl;
         }
 
         public Builder setProtocolVersion(CccProtocolVersion version) {
@@ -606,6 +619,11 @@ public class CccOpenRangingParams extends CccParams {
             return this;
         }
 
+        public Builder setUrskTtl(int urskttl) {
+            mUrskTtl = urskttl;
+            return this;
+        }
+
         private void checkRangeDataNtfConfig() {
             if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_DISABLE) {
                 checkArgument(mRangeDataNtfProximityNear
@@ -690,7 +708,8 @@ public class CccOpenRangingParams extends CccParams {
                     mRangeDataNtfAoaAzimuthLower,
                     mRangeDataNtfAoaAzimuthUpper,
                     mRangeDataNtfAoaElevationLower,
-                    mRangeDataNtfAoaElevationUpper);
+                    mRangeDataNtfAoaElevationUpper,
+                    mUrskTtl);
         }
     }
 }

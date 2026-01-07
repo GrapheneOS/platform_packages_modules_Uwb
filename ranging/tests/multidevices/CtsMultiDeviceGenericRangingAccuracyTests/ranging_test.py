@@ -104,7 +104,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
             ranging_measure_count,
         )
     )
-    ranging_utils.verify_uwb_distance_within_tolerance(
+    ranging_utils.log_uwb_distance_within_tolerance(
         real_distance_in_meters=_DISTANCE_IN_METERS,
         measured_distance_datas=[initiator_distances, responder_distances],
         log_path=self.current_test_info.output_path,
@@ -143,6 +143,10 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     ranging_utils.skip_if_technology_not_supported(
         [self.initiator, self.responder], technology
     )
+    # The bluetooth_utils.ble_bond requires shell permissions while shell permissions
+    # can be delegated to only one instrumentation. So we need to drop MBS's shell permissions.
+    self.initiator.mbs.utilityDropShellPermission()
+    self.responder.mbs.utilityDropShellPermission()
 
     self.initiator.bt_address, self.responder.bt_address = bluetooth_utils.ble_bond(
         self.initiator, self.responder
@@ -174,7 +178,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           None,
           ranging_measure_count,
       )
-      ranging_utils.verify_ble_cs_distance_within_tolerance(
+      ranging_utils.log_ble_cs_distance_within_tolerance(
           _DISTANCE_IN_METERS,
           initiator_distances,
           log_path=self.current_test_info.output_path,
@@ -186,6 +190,9 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           self.initiator.bt_address,
           self.responder.bt_address,
       )
+      # Restore permissions if needed for subsequent steps
+      self.initiator.mbs.utilityAdoptShellPermission(None)
+      self.responder.mbs.utilityAdoptShellPermission(None)
 
   @CddTest(requirements=["7.4.2.5/H-1-1"])
   def test_wifi_rtt_ranging(self) -> None:
@@ -266,7 +273,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
         responder_preference,
         ranging_measure_count,
     )
-    ranging_utils.verify_wifi_rtt_distance_within_tolerance(
+    ranging_utils.log_wifi_rtt_distance_within_tolerance(
         _DISTANCE_IN_METERS,
         [initiator_distances],
         log_path=self.current_test_info.output_path,
@@ -309,7 +316,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
         sample_count=_NUMBER_OF_BLE_RSSI_TEST_SAMPLES,
     )
 
-    ranging_utils.verify_ble_rssi_precision_within_tolerance(
+    ranging_utils.log_ble_rssi_precision_within_tolerance(
         acceptable_spread_dbm=_MAX_BLE_RSSI_RANGE_DBM,
         rssi_data=rssi_data,
         log_path=self.current_test_info.output_path,
@@ -362,7 +369,7 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     dut_measured_rssi_data = results[0]
     ref_measured_rssi_data = results[1]
 
-    ranging_utils.verify_ble_rssi_median_at_target(
+    ranging_utils.log_ble_rx_tx_offset_precision(
         tx_rssi_data=ref_measured_rssi_data,
         rx_rssi_data=dut_measured_rssi_data,
         target_dbm=_TARGET_MEDIAN_DBM,

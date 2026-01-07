@@ -346,7 +346,7 @@ package android.ranging.oob {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.oob.OobInitiatorRangingConfig> CREATOR;
     field public static final int RANGING_MODE_AUTO = 0; // 0x0
     field public static final int RANGING_MODE_FUSED = 3; // 0x3
-    field public static final int RANGING_MODE_HIGH_ACCURACY = 1; // 0x1
+    field @Deprecated @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int RANGING_MODE_HIGH_ACCURACY = 1; // 0x1
     field public static final int RANGING_MODE_HIGH_ACCURACY_PREFERRED = 2; // 0x2
     field public static final int SECURITY_LEVEL_BASIC = 0; // 0x0
     field public static final int SECURITY_LEVEL_SECURE = 1; // 0x1
@@ -468,6 +468,7 @@ package android.ranging.raw {
 package android.ranging.uwb {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class DlTdoaRangingParams implements android.os.Parcelable {
+    method @NonNull public static android.ranging.uwb.DlTdoaRangingParams createFromFiraConfigPacket(@NonNull byte[], @Nullable byte[]);
     method public int describeContents();
     method @NonNull public android.ranging.uwb.UwbComplexChannel getComplexChannel();
     method @NonNull public android.ranging.uwb.UwbAddress getDeviceAddress();
