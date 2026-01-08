@@ -262,4 +262,6 @@ public abstract class AliroParams extends Params {
     public static final int MAC_MODE_ROUND_DEFAULT = MAC_MODE_ROUND_1;
 
     public static final int MAC_MODE_OFFSET_DEFAULT = 0;
+
+    public static final int URSK_TTL_DEFAULT = 0x2D0;
 }
