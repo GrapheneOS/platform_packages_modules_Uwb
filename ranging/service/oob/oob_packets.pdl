@@ -17,11 +17,11 @@ enum MessageId: 8 {
     CONFIGURATION_RESPONSE = 0x3,
     STOP_REQUEST = 0x6,
     STOP_RESPONSE = 0x7,
-    MOVEMENT_NOTIFICATION = 0x8,
+    MOTION_NOTIFICATION = 0x8,
     RESERVED = ..,
 }
 
-enum Movement: 8 {
+enum Motion: 8 {
     NOT_DETECTED = 0x0,
     SLIGHT = 0x1,
     MODERRATE = 0x2,
@@ -313,6 +313,6 @@ packet StopResponse: OobMessage(id = STOP_RESPONSE) {
     stopped_technologies: TechnologySet,
 }
 
-packet MovementNotification: OobMessage(id = MOVEMENT_NOTIFICATION) {
-    movement: Movement,
+packet MotionNotification: OobMessage(id = MOTION_NOTIFICATION) {
+    motion: Motion,
 }

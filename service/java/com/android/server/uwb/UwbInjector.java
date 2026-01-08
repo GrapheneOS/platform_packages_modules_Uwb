@@ -489,19 +489,31 @@ public class UwbInjector {
     }
 
     public boolean isMulticastListNtfV2Supported() {
-        return mContext.getResources().getBoolean(
-                        com.android.uwb.resources.R.bool.is_multicast_list_update_ntf_v2_supported);
+        if (mContext.getResources() != null) {
+            return mContext.getResources().getBoolean(
+                    com.android.uwb.resources.R.bool.is_multicast_list_update_ntf_v2_supported);
+        } else {
+            return false;
+        }
     }
 
     public boolean isMulticastListRspV2Supported() {
-        return mContext.getResources().getBoolean(
-                        com.android.uwb.resources.R.bool.is_multicast_list_update_rsp_v2_supported);
+        if (mContext.getResources() != null) {
+            return mContext.getResources().getBoolean(
+                    com.android.uwb.resources.R.bool.is_multicast_list_update_rsp_v2_supported);
+        } else {
+            return false;
+        }
     }
 
     public boolean isCccSupportedTwoByteConfigIdLittleEndian() {
-        return mContext.getResources().getBoolean(
-                com.android.uwb.resources.R.bool.ccc_two_byte_config_id_little_endian_supported
-        );
+        if (mContext.getResources() != null) {
+            return mContext.getResources().getBoolean(
+                    com.android.uwb.resources.R.bool.ccc_two_byte_config_id_little_endian_supported
+            );
+        } else {
+            return false;
+        }
     }
 
     private boolean isPrivilegedApp(int uid, String packageName) {

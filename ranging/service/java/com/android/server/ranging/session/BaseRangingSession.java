@@ -20,6 +20,7 @@ import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.Binder;
 import android.os.SystemClock;
+import android.ranging.MotionState;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
@@ -325,6 +326,11 @@ public class BaseRangingSession {
     /** Let subclasses override to inspect ranging data. */
     protected void onResults(@NonNull RangingDevice peer, @NonNull RangingData data) {
         mSessionListener.onResults(peer, data);
+    }
+
+    protected void onMotionReceived(
+            @NonNull RangingDevice peer, @NonNull MotionState motion) {
+        mSessionListener.onMotionReceived(peer, motion);
     }
 
     /** Let subclasses override how onSessionClosed gets called. */
