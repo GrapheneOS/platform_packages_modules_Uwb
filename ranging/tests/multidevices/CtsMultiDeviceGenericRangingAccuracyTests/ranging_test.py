@@ -3,6 +3,10 @@
 The tests in this file are designed to be run with devices placed 1 meter apart.
 """
 
+import json
+import pathlib
+import logging
+
 from android.platform.test.annotations import CddTest
 from mobly import test_runner
 from mobly import utils
@@ -25,8 +29,23 @@ _MAX_BLE_RSSI_RANGE_DBM = 18
 _MAX_BLE_RSSI_DBM = 10
 
 
-class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
+class CtsMultiDeviceGenericRangingAccuracyTests(
+    ranging_accuracy_base_test.RangingBaseTestClass
+):
   """Tests ranging accuracy for different technologies between two devices."""
+
+  def teardown_class(self) -> None:
+    super().teardown_class()
+    mobly_log_root = pathlib.Path(self.log_path).parent
+    report_dir = mobly_log_root / "report-log-files"
+    report_dir.mkdir(exist_ok=True)
+    file_path = report_dir / f"{self.TAG}.reportlog.json"
+
+    try:
+      file_path.write_text(json.dumps(self.all_test_metrics, indent=2))
+      logging.info("Metrics successfully written to: %s", file_path)
+    except (OSError, TypeError):
+      logging.exception("Failed to save collected test metrics to %s", file_path)
 
   @CddTest(requirements=["7.4.9/C-1-6", "7.4.9/C-1-7"])
   def test_uwb_ranging(self) -> None:
@@ -42,13 +61,13 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
       3. Collect 1000 ranging measurements (_NUMBER_OF_UWB_TEST_SAMPLES).
       4. Stop the ranging session.
       5. Verify that the median and 95% inter-percentile range of the
-         measured distances are within the acceptable tolerance for 1m.
+          measured distances are within the acceptable tolerance for 1m.
 
     Expected Results:
       * The ranging session starts successfully.
       * The measured distance metrics (median deviation, range) pass
         the accuracy and consistency checks defined in
-        ranging_utils.verify_uwb_distance_within_tolerance.
+        ranging_utils.log_uwb_distance_within_tolerance.
     """
     technology = ranging_params.RangingTechnology.UWB
     ranging_utils.skip_if_technology_not_supported(
@@ -104,10 +123,14 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
             ranging_measure_count,
         )
     )
-    ranging_utils.log_uwb_distance_within_tolerance(
-        real_distance_in_meters=_DISTANCE_IN_METERS,
-        measured_distance_datas=[initiator_distances, responder_distances],
-        log_path=self.current_test_info.output_path,
+
+    self.all_test_metrics["uwb_ranging_test"] = (
+        ranging_utils.log_uwb_distance_within_tolerance(
+            real_distance_in_meters=_DISTANCE_IN_METERS,
+            measured_distance_datas=[initiator_distances, responder_distances],
+            initiator_device_name=self.initiator.serial,
+            responder_device_name=self.responder.serial,
+        )
     )
 
   # TODO(b/454692647): Keep @retry commented out. It reports retry_# cases
@@ -124,19 +147,19 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     Test Steps:
       1. Perform BLE bonding between the two devices.
       2. Set up BLE_CS initiator and responder preferences (with sensor fusion
-         enabled).
+          enabled).
       3. Start the ranging session on both devices.
       4. Collect 100 ranging measurements (_NUMBER_OF_BLE_CS_TEST_SAMPLES)
-         from the initiator. (Note: Only initiator receives BLE CS results).
+          from the initiator. (Note: Only initiator receives BLE CS results).
       5. Stop the ranging session.
       6. Verify that at least 90% of the measurements are within the
-         acceptable tolerance for 1m.
+          acceptable tolerance for 1m.
       7. Perform BLE unbond to clean up the device state.
 
     Expected Results:
       * The BLE bonding and ranging session starts successfully.
       * The measured distance metrics pass the accuracy checks defined in
-        ranging_utils.verify_ble_cs_distance_within_tolerance.
+        ranging_utils.log_ble_cs_distance_within_tolerance.
       * Devices are successfully unbonded.
     """
     technology = ranging_params.RangingTechnology.BLE_CS
@@ -178,11 +201,15 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
           None,
           ranging_measure_count,
       )
-      ranging_utils.log_ble_cs_distance_within_tolerance(
-          _DISTANCE_IN_METERS,
-          initiator_distances,
-          log_path=self.current_test_info.output_path,
+
+      self.all_test_metrics["ble_cs_ranging_test"] = (
+          ranging_utils.log_ble_cs_distance_within_tolerance(
+              real_distance_in_meters=_DISTANCE_IN_METERS,
+              measured_distance_data=initiator_distances,
+              reference_device_name=self.responder.serial,
+          )
       )
+
     finally:
       bluetooth_utils.ble_unbond(
           self.initiator,
@@ -208,15 +235,15 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
       3. Set up Wi-Fi RTT initiator and responder preferences.
       4. Start the ranging session on both devices.
       5. Collect 100 ranging measurements (_NUMBER_OF_WIFI_RTT_TEST_SAMPLES)
-         from the initiator. (Note: Only initiator receives Wi-Fi RTT results).
+          from the initiator. (Note: Only initiator receives Wi-Fi RTT results).
       6. Stop the ranging session.
       7. Verify that the 68th percentile of measurements are within the
-         acceptable tolerance (+/- 2m) as required by CDD.
+          acceptable tolerance (+/- 2m) as required by CDD.
 
     Expected Results:
       * The ranging session starts successfully.
       * The measured distance metrics pass the accuracy checks defined in
-        ranging_utils.verify_wifi_rtt_distance_within_tolerance.
+        ranging_utils.log_wifi_rtt_distance_within_tolerance.
     """
 
     technology = ranging_params.RangingTechnology.WIFI_RTT
@@ -273,10 +300,13 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
         responder_preference,
         ranging_measure_count,
     )
-    ranging_utils.log_wifi_rtt_distance_within_tolerance(
-        _DISTANCE_IN_METERS,
-        [initiator_distances],
-        log_path=self.current_test_info.output_path,
+
+    self.all_test_metrics["nan_rtt_ranging_test"] = (
+        ranging_utils.log_wifi_rtt_distance_within_tolerance(
+            real_distance_in_meters=_DISTANCE_IN_METERS,
+            measured_distance_datas=[initiator_distances],
+            reference_device_name=self.responder.serial,
+        )
     )
 
   @CddTest(requirements=["7.4.3/C-10-1"])
@@ -316,10 +346,12 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
         sample_count=_NUMBER_OF_BLE_RSSI_TEST_SAMPLES,
     )
 
-    ranging_utils.log_ble_rssi_precision_within_tolerance(
-        acceptable_spread_dbm=_MAX_BLE_RSSI_RANGE_DBM,
-        rssi_data=rssi_data,
-        log_path=self.current_test_info.output_path,
+    self.all_test_metrics["ble_rssi_precision_test"] = (
+        ranging_utils.log_ble_rssi_precision_within_tolerance(
+            acceptable_spread_dbm=_MAX_BLE_RSSI_RANGE_DBM,
+            reference_device_name=self.responder.serial,
+            rssi_data=rssi_data,
+        )
     )
 
   @CddTest(requirements=["7.4.3/C-SR-2", "7.4.3/C-SR-3"])
@@ -369,12 +401,14 @@ class RangingTest(ranging_accuracy_base_test.RangingBaseTestClass):
     dut_measured_rssi_data = results[0]
     ref_measured_rssi_data = results[1]
 
-    ranging_utils.log_ble_rx_tx_offset_precision(
-        tx_rssi_data=ref_measured_rssi_data,
-        rx_rssi_data=dut_measured_rssi_data,
-        target_dbm=_TARGET_MEDIAN_DBM,
-        tolerance=_MAX_BLE_RSSI_DBM,
-        log_path=self.current_test_info.output_path,
+    self.all_test_metrics["ble_rx_tx_offset_test"] = (
+        ranging_utils.log_ble_rx_tx_offset_precision(
+            tx_rssi_data=ref_measured_rssi_data,
+            rx_rssi_data=dut_measured_rssi_data,
+            reference_device=self.responder.serial,
+            target_dbm=_TARGET_MEDIAN_DBM,
+            tolerance=_MAX_BLE_RSSI_DBM,
+        )
     )
 
 
