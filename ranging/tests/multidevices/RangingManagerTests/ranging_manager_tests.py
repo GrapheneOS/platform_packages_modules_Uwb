@@ -86,6 +86,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       return ("watch" in ad1.adb.getprop("ro.build.characteristics")) or \
         ("watch" in ad2.adb.getprop("ro.build.characteristics"))
 
+  def _is_pc(self, ad1: android_device.AndroidDevice, ad2: android_device.AndroidDevice) -> bool:
+        return ('feature:android.hardware.type.pc' in ad1.adb.shell('pm list features').decode('utf-8')) or \
+          ('feature:android.hardware.type.pc' in ad2.adb.shell('pm list features').decode('utf-8'))
+
   def setup_class(self):
     super().setup_class()
     self.devices = [RangingDecorator(ad) for ad in self.android_devices]
@@ -408,6 +412,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_uwb_ranging_app_switch_to_bg_and_fg(self):
       """ verifies Uwb ranging with foreground and background"""
+      #TODO: b/474105892 Add support via test api for AL.
+      asserts.skip_if(
+          self._is_pc(self.initiator.ad, self.responder.ad),
+          f"Skip test on AL",
+      )
       SESSION_HANDLE = str(uuid4())
       UWB_SESSION_ID = 5
       TECHNOLOGIES = {RangingTechnology.UWB}
@@ -486,6 +495,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_ble_rssi_ranging_app_switch_to_bg_and_fg(self):
       """ verifies ble rssi ranging with foreground and background"""
+      #TODO: b/474105892 Add support via test api for AL.
+      asserts.skip_if(
+          self._is_pc(self.initiator.ad, self.responder.ad),
+          f"Skip test on AL",
+      )
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
@@ -551,6 +565,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_ble_cs_ranging_app_switch_to_bg_and_fg(self):
       """ verifies ble cs ranging with foreground and background"""
+      #TODO: b/474105892 Add support via test api for AL.
+      asserts.skip_if(
+          self._is_pc(self.initiator.ad, self.responder.ad),
+          f"Skip test on AL",
+      )
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
       asserts.skip_if(self._is_emulator_device(self.initiator.ad),
