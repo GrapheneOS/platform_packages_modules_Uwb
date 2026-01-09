@@ -94,6 +94,12 @@ public class AliroEncoderTest {
             TEST_ALIRO_OPEN_RANGING_TLV + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
     private static final byte[] TEST_ALIRO_OPEN_RANGING_TLV_DATA =
             UwbUtil.getByteArray(TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT);
+    private static final String TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT_WITH_CUSTOM_URSK_TTL =
+            "00010104010905010109048001000011010103010"
+                    + "11B01062C0100A3020001A4020000A50100A602E8030802B004140101"
+                    + "A9010045200578057805780578057805780578057805780578057805780578057805780578"
+                    + "2B080100000000000000"
+                    + "0E0100";
 
     @Mock
     private UwbInjector mUwbInjector;
@@ -238,5 +244,24 @@ public class AliroEncoderTest {
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(20);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
+    }
+
+    @Test
+    public void testAliroOpenRangingParams_withUrskTtl() throws Exception {
+        // Verifies that a non-default URSK_TTL value is correctly encoded.
+        final int urskTtl = 1000;
+        AliroOpenRangingParams.Builder builder =
+                new AliroOpenRangingParams.Builder(TEST_ALIRO_OPEN_RANGING_PARAMS);
+        AliroOpenRangingParams params = builder
+                .setUrskTtl(urskTtl).build();
+        TlvBuffer tlvs = mAliroEncoder.getTlvBuffer(params, AliroParams.PROTOCOL_VERSION_1_0);
+
+        // The default TLV has URSK_TTL (0xA6) with value 720 (0x02D0).
+        // The new value 1000 is 0x03E8. The expected TLV should contain this value.
+        byte[] expectedTlv = UwbUtil.getByteArray(
+                TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT_WITH_CUSTOM_URSK_TTL);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(18);
+        assertThat(tlvs.getByteArray()).isEqualTo(expectedTlv);
     }
 }
