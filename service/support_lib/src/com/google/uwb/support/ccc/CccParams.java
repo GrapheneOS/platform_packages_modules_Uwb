@@ -256,4 +256,6 @@ public abstract class CccParams extends Params {
     public static final int STS_INDEX_UNSET = 0;
 
     public static final int HOP_MODE_KEY_UNSET = 0;
+
+    public static final int URSK_TTL_DEFAULT = 0x2D0;
 }

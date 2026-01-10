@@ -255,7 +255,7 @@ public class CccOpenRangingParams extends CccParams {
                 .setRangeDataNtfAoaElevationUpper(
                         bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
                                 RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
-                .setUrskTtl(bundle.getInt(KEY_URSK_TTL))
+                .setUrskTtl(bundle.getInt(KEY_URSK_TTL, URSK_TTL_DEFAULT))
                 .build();
     }
 
@@ -417,7 +417,7 @@ public class CccOpenRangingParams extends CccParams {
         /** UCI spec default: +90 (No upper-bound filtering) */
         private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
 
-        private int mUrskTtl = 0x2D0;
+        private int mUrskTtl = URSK_TTL_DEFAULT;
 
         public Builder() {}
 

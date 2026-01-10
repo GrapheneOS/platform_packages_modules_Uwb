@@ -301,7 +301,7 @@ public class AliroOpenRangingParams extends AliroParams {
                 .setSessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SESSION_KEY)))
                 .setMacModeRound(bundle.getInt(KEY_MAC_MODE_ROUND, MAC_MODE_ROUND_DEFAULT))
                 .setMacModeOffset(bundle.getInt(KEY_MAC_MODE_OFFSET, MAC_MODE_OFFSET_DEFAULT))
-                .setUrskTtl(bundle.getInt(KEY_URSK_TTL))
+                .setUrskTtl(bundle.getInt(KEY_URSK_TTL, URSK_TTL_DEFAULT))
                 .build();
     }
 
@@ -486,7 +486,7 @@ public class AliroOpenRangingParams extends AliroParams {
         private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
         private int mMacModeOffset = 0;
 
-        private int mUrskTtl = 0x2D0;
+        private int mUrskTtl = URSK_TTL_DEFAULT;
 
         public Builder() {}
 
