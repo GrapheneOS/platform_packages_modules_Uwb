@@ -426,4 +426,81 @@ public class DeviceConfigFacadeTest {
                 mDeviceConfigFacade.getBackNoiseInfluenceCoeff(),
                 0.001);
     }
+
+    /**
+     * Verifies that default values are set correctly when resources are null.
+     */
+    @Test
+    public void testDefaultValuesWhenResourcesIsNull() throws Exception {
+        // Simulate context returning null resources.
+        when(mContext.getResources()).thenReturn(null);
+
+        // Re-initialize DeviceConfigFacade to pick up the new mock behavior.
+        mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper.getLooper()), mContext);
+
+        // Verify basic device config values (not from resources).
+        assertEquals(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS,
+                mDeviceConfigFacade.getRangingResultLogIntervalMs());
+        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(true, mDeviceConfigFacade.isSessionInitErrorBugreportEnabled());
+        assertEquals(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS,
+                mDeviceConfigFacade.getBugReportMinIntervalMs());
+
+        // Verify default values from the "else" block when resources are null.
+        assertEquals(true, mDeviceConfigFacade.isEnableFilters());
+        assertEquals(false, mDeviceConfigFacade.isEnablePrimerEstElevation());
+        assertEquals(true, mDeviceConfigFacade.isEnablePrimerAoA());
+        assertEquals(true, mDeviceConfigFacade.isEnableBackAzimuth());
+        assertEquals(true, mDeviceConfigFacade.isEnableBackAzimuthMasking());
+
+        assertEquals(0, mDeviceConfigFacade.getFilterDistanceInliersPercent());
+        assertEquals(3, mDeviceConfigFacade.getFilterDistanceWindow());
+        assertEquals(50, mDeviceConfigFacade.getFilterAngleInliersPercent());
+        assertEquals(5, mDeviceConfigFacade.getFilterAngleWindow());
+        assertEquals(60, mDeviceConfigFacade.getPrimerFovDegree());
+        assertEquals(PoseSourceType.ROTATION_VECTOR, mDeviceConfigFacade.getPoseSourceType());
+        assertEquals(5, mDeviceConfigFacade.getPredictionTimeoutSeconds());
+        assertEquals(5, mDeviceConfigFacade.getBackAzimuthWindow());
+        assertEquals(
+                Math.toRadians(12),
+                mDeviceConfigFacade.getFrontAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(10),
+                mDeviceConfigFacade.getBackAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(8),
+                mDeviceConfigFacade.getMirrorScoreStdRadians(),
+                0.001);
+        assertEquals(
+                8 / 100F,
+                mDeviceConfigFacade.getBackNoiseInfluenceCoeff(),
+                0.001);
+
+        // true because FOV is 60: within limits.
+        assertEquals(true, mDeviceConfigFacade.isEnablePrimerFov());
+
+        // Check the default values for the Advertising profile and Rx packet parameters.
+        assertEquals(10, mDeviceConfigFacade.getAdvertiseAoaCriteriaAngle());
+        assertEquals(5000, mDeviceConfigFacade.getAdvertiseTimeThresholdMillis());
+        assertEquals(10, mDeviceConfigFacade.getAdvertiseArraySizeToCheck());
+        assertEquals(2, mDeviceConfigFacade.getAdvertiseArrayStartIndexToCalVariance());
+        assertEquals(8, mDeviceConfigFacade.getAdvertiseArrayEndIndexToCalVariance());
+        assertEquals(5, mDeviceConfigFacade.getAdvertiseTrustedVarianceValue());
+        assertEquals(10, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
+        assertEquals(false, mDeviceConfigFacade.isBackgroundRangingEnabled());
+        assertEquals(true, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
+        assertEquals(false, mDeviceConfigFacade.isCccRangingStoppedParamsSendEnabled());
+        assertEquals(false, mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled());
+        assertEquals(true, mDeviceConfigFacade.isLocationUseForCountryCodeEnabled());
+        assertEquals(false, mDeviceConfigFacade.isUwbDisabledUntilFirstToggle());
+        assertEquals(false, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
+        assertEquals(false, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
+        assertEquals(false, mDeviceConfigFacade.isFusedCountryCodeProviderEnabled());
+        assertEquals(false, mDeviceConfigFacade.isAntennaModeConfigSupported());
+        assertEquals(0, mDeviceConfigFacade.getMccMncOemOverrideList().length);
+        assertEquals(false, mDeviceConfigFacade.isRandomHopmodekeySupported());
+        assertEquals(false, mDeviceConfigFacade.isFiraSupportedExtensionForCCC());
+    }
 }
