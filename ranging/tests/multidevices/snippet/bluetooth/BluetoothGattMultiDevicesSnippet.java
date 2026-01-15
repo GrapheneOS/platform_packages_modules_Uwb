@@ -56,14 +56,6 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
     public void reset() throws Throwable {
         mGattServer = new BluetoothGattMultiDevicesServer(mContext, mBluetoothManager);
         mGattClient = new BluetoothGattMultiDevicesClient(mContext, mBluetoothManager);
-        // Reset all bonded devices to clear device state.
-        runWithShellPermission(
-                () -> {
-                    for (BluetoothDevice bluetoothDevice :
-                            mBluetoothManager.getAdapter().getBondedDevices()) {
-                        removeBondImplBtDevice(bluetoothDevice);
-                    }
-                });
     }
 
     @Rpc(description = "Creates Bluetooth GATT server with a given UUID and advertises it.")
@@ -108,6 +100,11 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
                         Utils.convertBtDeviceToJson(
                                 mGattClient.createBondOob(
                                         uuid, Utils.convertJsonToOobData(jsonObject))));
+    }
+
+    @Rpc(description = "Connect to the peer device advertising the specified UUID")
+    public boolean isRemoteDeviceBonded() throws Throwable {
+        return runWithShellPermission(() -> mGattClient.isRemoteDeviceBonded());
     }
 
     @Rpc(description = "Remove bond with the remote device")
