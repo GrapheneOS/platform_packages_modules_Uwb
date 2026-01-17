@@ -24,7 +24,7 @@ enum MessageId: 8 {
 enum Motion: 8 {
     NOT_DETECTED = 0x0,
     SLIGHT = 0x1,
-    MODERRATE = 0x2,
+    MODERATE = 0x2,
     LARGE = 0x3,
 }
 

@@ -133,7 +133,17 @@ public final class BluetoothGattMultiDevicesClient {
             Log.e(TAG, "Did not connect to server");
             return null;
         }
+        Log.i(TAG, "mServer: " + mServer + " connected");
         return mServer;
+    }
+
+    public boolean isRemoteDeviceBonded() {
+        if (mServer == null) {
+            Log.w(TAG, "mServer is null ");
+            return false;
+        }
+        Log.i(TAG, "getBondState " + mServer.getBondState());
+        return mServer.getBondState() == BluetoothDevice.BOND_BONDED;
     }
 
     public boolean containsService(String uuid) {

@@ -328,7 +328,7 @@ public class BaseRangingSession {
         mSessionListener.onResults(peer, data);
     }
 
-    protected void onMotionReceived(
+    protected void reportPeerMotion(
             @NonNull RangingDevice peer, @NonNull MotionState motion) {
         mSessionListener.onMotionReceived(peer, motion);
     }
