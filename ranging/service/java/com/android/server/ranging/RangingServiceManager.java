@@ -372,7 +372,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         }
 
         /**
-         * Called when the peer's motion state is received.
+         * Called when the peer's motion state is received when a motion is detected from the
+         * previous reported motion change.
          *
          * @param peer The peer device whose motion state has reported.
          * @param motion The new motion state of the peer.
