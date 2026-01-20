@@ -47,7 +47,6 @@ java_library {
     sdk_version: "system_server_current",
 
     libs: [
-        "androidx.annotation_annotation",
         "error_prone_annotations",
         "framework-annotations-lib",
         "framework-configinfrastructure.stubs.module_lib",
