@@ -63,6 +63,7 @@ java_defaults {
     libs: [
         "androidx.annotation_annotation",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
+        "framework-bluetooth.stubs.module_lib",
     ],
     srcs: [
         ":framework-uwb-updatable-sources",

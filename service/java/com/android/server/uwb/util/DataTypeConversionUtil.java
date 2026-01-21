@@ -184,5 +184,42 @@ public class DataTypeConversionUtil {
         }
         return true;
     }
+
+    public static String bytesToStringBluetoothAddress(byte[] bytes) {
+        if (bytes == null || bytes.length != 6) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(17);
+        for (int i = 0; i < bytes.length; i++) {
+            // Handle signed byte to unsigned int conversion
+            sb.append(String.format("%02X", bytes[i]));
+            if (i < bytes.length - 1) {
+                sb.append(":");
+            }
+        }
+        return sb.toString().toUpperCase();
+    }
+
+    public static byte[] bluetoothAddressToBytes(String address) {
+        if (address == null || address.isEmpty()) {
+            return new byte[0];
+        }
+
+        // Split by colon or hyphen to be flexible
+        String[] parts = address.split("[:|-]");
+
+        if (parts.length != 6) {
+            throw new IllegalArgumentException("Invalid Bluetooth address format: " + address);
+        }
+
+        byte[] bytes = new byte[6];
+        for (int i = 0; i < 6; i++) {
+            // Parse the hex string to an integer, then cast to byte
+            // radix 16 handles the hexadecimal base
+            int val = Integer.parseInt(parts[i], 16);
+            bytes[i] = (byte) val;
+        }
+        return bytes;
+    }
     private DataTypeConversionUtil() {}
 }
