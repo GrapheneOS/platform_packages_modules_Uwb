@@ -357,6 +357,7 @@ package android.uwb {
     method @FlaggedApi("com.android.uwb.flags.query_timestamp_micros") @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public long queryUwbsTimestampMicros();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerAdapterStateCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.AdapterStateCallback);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerChannelUsageCallback(@NonNull java.util.concurrent.Executor, @NonNull java.util.function.Consumer<java.util.Set<java.lang.Integer>>);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerTimesyncCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.TimesyncCallback, @NonNull String, int);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbOemExtensionCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbVendorUciCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbVendorUciCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int removeProfileAdf(@NonNull android.os.PersistableBundle);
@@ -367,6 +368,7 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setUwbEnabled(boolean);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterAdapterStateCallback(@NonNull android.uwb.UwbManager.AdapterStateCallback);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterChannelUsageCallback(@NonNull java.util.function.Consumer<java.util.Set<java.lang.Integer>>);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterTimesyncCallback(@NonNull android.uwb.UwbManager.TimesyncCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterUwbOemExtensionCallback(@NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method public void unregisterUwbVendorUciCallback(@NonNull android.uwb.UwbManager.UwbVendorUciCallback);
     field public static final int MESSAGE_TYPE_COMMAND = 1; // 0x1
@@ -416,6 +418,12 @@ package android.uwb {
     field public static final int REASON_UNKNOWN = 3; // 0x3
   }
 
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static interface UwbManager.TimesyncCallback {
+    method public void onRegistered();
+    method public void onRegisteredFailed();
+    method public void onTimesyncEvent(@NonNull android.uwb.timesync.TimesyncEvent);
+  }
+
   public static interface UwbManager.UwbOemExtensionCallback {
     method public boolean onCheckPointedTarget(@NonNull android.os.PersistableBundle);
     method public void onDeviceStatusNotificationReceived(@NonNull android.os.PersistableBundle);
@@ -427,6 +435,28 @@ package android.uwb {
   public static interface UwbManager.UwbVendorUciCallback {
     method public void onVendorUciNotification(@IntRange(from=9, to=15) int, int, @NonNull byte[]);
     method public void onVendorUciResponse(@IntRange(from=0, to=15) int, int, @NonNull byte[]);
+  }
+
+}
+
+package android.uwb.timesync {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class TimesyncEvent implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getAddressType();
+    method public long getDeviceTimeUncertaintyUs();
+    method public int getDirection();
+    method public int getEvent();
+    method @IntRange(from=0, to=65535) public int getEventCounter();
+    method @NonNull public String getMacAddress();
+    method public int getMaxClockSkewPpm();
+    method public long getUwbTimestampUs();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int CONNECT_IND = 0; // 0x0
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.timesync.TimesyncEvent> CREATOR;
+    field public static final int DIRECTION_RX = 0; // 0x0
+    field public static final int DIRECTION_TX = 1; // 0x1
+    field public static final int LL_PHY_UPDATE_IND = 1; // 0x1
   }
 
 }

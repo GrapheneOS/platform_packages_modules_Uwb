@@ -49,6 +49,7 @@ import android.util.Log;
 
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.ServiceProfileData;
+import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
@@ -155,7 +156,7 @@ public class UwbInjector {
                 mUwbCountryCode, mUwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
-        mTimesyncManager = new TimesyncManager(mContext, this);
+        mTimesyncManager = new TimesyncManager(mContext, mNativeUwbManager, this);
     }
 
     public boolean dataTransferPhaseConfig() {
@@ -477,6 +478,21 @@ public class UwbInjector {
 
     /* Helps to mock the executor for tests */
     public int runTaskOnSingleThreadExecutor(FutureTask<Integer> task, int timeoutMs)
+            throws InterruptedException, TimeoutException, ExecutionException {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.submit(task);
+        try {
+            return task.get(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            executor.shutdownNow();
+            throw e;
+        }
+    }
+
+    /* Runs a FutureTask<UwbVendorUciResponse> on a single-threaded executor with a timeout */
+    public UwbVendorUciResponse runTaskOnSingleThreadExecutorUci(
+            FutureTask<UwbVendorUciResponse> task,
+            int timeoutMs)
             throws InterruptedException, TimeoutException, ExecutionException {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(task);

@@ -22,6 +22,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
 import android.uwb.UwbManager;
+import android.uwb.UwbManager.AddressType;
 
 import java.util.concurrent.Executor;
 
@@ -58,7 +59,7 @@ public class TimesyncCallbackListener extends ITimesyncCallbackListener.Stub {
      * @param addressType the address type of the peer device
      */
     public void register(@NonNull Executor executor, UwbManager.TimesyncCallback timesyncCallback,
-            String macAddress, int addressType) {
+            String macAddress, @AddressType int addressType) {
         synchronized (this) {
             if (mIsRegistered) {
                 throw new IllegalStateException(TAG
