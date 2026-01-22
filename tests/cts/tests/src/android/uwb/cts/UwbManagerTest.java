@@ -27,6 +27,8 @@ import static android.uwb.UwbManager.MESSAGE_TYPE_COMMAND;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T64_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
@@ -56,6 +58,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextParams;
+import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.Process;
@@ -86,6 +89,12 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.uwb.flags.Flags;
 
+import com.google.uwb.support.aliro.AliroOpenRangingParams;
+import com.google.uwb.support.aliro.AliroParams;
+import com.google.uwb.support.aliro.AliroProtocolVersion;
+import com.google.uwb.support.aliro.AliroPulseShapeCombo;
+import com.google.uwb.support.aliro.AliroSpecificationParams;
+import com.google.uwb.support.aliro.AliroStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraControleeParams;
@@ -306,7 +315,7 @@ public class UwbManagerTest {
         try {
             uiAutomation.adoptShellPermissionIdentity();
             long prev = mUwbManager.queryUwbsTimestampMicros();
-            for (int i  = 0; i < 10; i++) {
+            for (int i = 0; i < 10; i++) {
                 Thread.sleep(1); // Sleep for 1ms.
                 long next = mUwbManager.queryUwbsTimestampMicros();
                 // Accounting for 1ms sleep.
@@ -815,11 +824,14 @@ public class UwbManagerTest {
         }
 
         public void onDataReceiveFailed(UwbAddress remoteDeviceAddress,
-                int reason, PersistableBundle params) { }
+                int reason, PersistableBundle params) {
+        }
 
-        public void onServiceDiscovered(PersistableBundle params) { }
+        public void onServiceDiscovered(PersistableBundle params) {
+        }
 
-        public void onServiceConnected(PersistableBundle params) { }
+        public void onServiceConnected(PersistableBundle params) {
+        }
 
         public void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {
             onUpdateDtTagStatusCalled = true;
@@ -846,9 +858,11 @@ public class UwbManagerTest {
             onLogicalLinkClosureFailedCalled = true;
         }
 
-        public void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {}
+        public void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {
+        }
 
-        public void onControleeRoleChanged(int deviceRole) {}
+        public void onControleeRoleChanged(int deviceRole) {
+        }
     }
 
     @Test
@@ -1046,7 +1060,8 @@ public class UwbManagerTest {
     }
 
     /**
-     * Simulates the calling app holding UWB_PRIVILEGED permission and UWB_RANGING permission, but
+     * Simulates the calling app holding UWB_PRIVILEGED permission and UWB_RANGING permission,
+     * but
      * the proxied app not holding UWB_RANGING permission.
      */
     @Test
@@ -1231,6 +1246,24 @@ public class UwbManagerTest {
                 return null;
             }
             return RadarSpecificationParams.fromBundle(bundle);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private AliroSpecificationParams getAliroSpecificationParams() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Only hold UWB_PRIVILEGED permission
+            uiAutomation.adoptShellPermissionIdentity();
+            PersistableBundle bundle = mUwbManager.getSpecificationInfo();
+            if (bundle.keySet().contains(AliroParams.PROTOCOL_NAME)) {
+                bundle = requireNonNull(bundle.getPersistableBundle(AliroParams.PROTOCOL_NAME));
+            } else {
+                Log.i(TAG, "No Aliro specification info found.");
+                return null;
+            }
+            return AliroSpecificationParams.fromBundle(bundle);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -2056,6 +2089,7 @@ public class UwbManagerTest {
         ChannelUsageCallback(CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
         }
+
         public void replaceCountDownLatch(CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
         }
@@ -2084,6 +2118,7 @@ public class UwbManagerTest {
         public void replaceCountDownLatch(CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
         }
+
         @Override
         public void onSessionStatusNotificationReceived(
                 @NonNull PersistableBundle sessionStatusBundle) {
@@ -2738,14 +2773,14 @@ public class UwbManagerTest {
 
             LogicalLinkCreationParams.Builder builder = new LogicalLinkCreationParams.Builder(
                     LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
-                    UwbAddress.fromBytes(new byte[] { (byte) 0x33, (byte) 0x22 }));
+                    UwbAddress.fromBytes(new byte[]{(byte) 0x33, (byte) 0x22}));
 
             if (params.getFiraLogicalLinkVersionSupported()
                     .equals(FiraSpecificationParams.DEFAULT_LOGICAL_LINK_VERSION)) {
                 builder.setLogicalLinkClassLength(0);
             } else {
                 builder.setLogicalLinkClassLength(1)
-                    .setMaxSduTransmitSize(LogicalLinkCreationParams.SDU_SIZE_64_BYTES)
+                        .setMaxSduTransmitSize(LogicalLinkCreationParams.SDU_SIZE_64_BYTES)
                         .setMaxSduReceiveSize(LogicalLinkCreationParams.SDU_SIZE_128_BYTES);
             }
 
@@ -2773,11 +2808,11 @@ public class UwbManagerTest {
             // Send logical link mode data
             PersistableBundle bundle = new FiraLogicalLinkInfo.Builder(
                     rangingSessionCallback.connectId).build().toBundle();
-            UwbAddress address = UwbAddress.fromBytes(new byte[] {(byte) 0xff, (byte) 0xff});
+            UwbAddress address = UwbAddress.fromBytes(new byte[]{(byte) 0xff, (byte) 0xff});
             countDownLatch = new CountDownLatch(1);
             rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
             rangingSessionCallback.rangingSession.sendData(address, bundle,
-                    new byte[] { 0x11, 0x22});
+                    new byte[]{0x11, 0x22});
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onDataSentCalled).isTrue();
             assertThat(rangingSessionCallback.onDataSendFailedCalled).isFalse();
@@ -3076,7 +3111,7 @@ public class UwbManagerTest {
         }
     }
 
-//    @Test
+    //    @Test
 //    @SdkSuppress(minSdkVersion = 36)
 //    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testTimesyncCallback() throws Exception {
@@ -3093,7 +3128,7 @@ public class UwbManagerTest {
             //Get UWB permission
             uiAutomation.adoptShellPermissionIdentity();
 
-            Log.e(">>>>>" , "Registering TimesyncCallback");
+            Log.e(">>>>>", "Registering TimesyncCallback");
             mUwbManager.registerTimesyncCallback(Executors.newSingleThreadExecutor(),
                     cb, macAddress, BluetoothDevice.ADDRESS_TYPE_PUBLIC);
             Log.e(">>>>>", "after register before assert");
@@ -3111,7 +3146,107 @@ public class UwbManagerTest {
             Log.e(">>>>>", "Exception e: " + e);
             fail("Test failed due to exception: " + e.getMessage());
         }
+    }
 
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public void testAliroSession_withHostKey() throws Exception {
+        AliroSpecificationParams params = getAliroSpecificationParams();
+        assumeTrue(params != null && params.getProtocolVersions() != null);
+        if (getVsrApiLevel() >= Build.VERSION_CODES.CINNAMON_BUN) {
+            assertTrue(params.getProtocolVersions().stream().anyMatch(
+                    v -> v.getMajor() != 0 || v.getMinor() != 0));
+        } else {
+            // Skip if protocol version is 0x0000
+            assumeTrue(params.getProtocolVersions().stream().anyMatch(
+                    v -> v.getMajor() != 0 || v.getMinor() != 0));
+        }
 
+        AliroProtocolVersion protocolVersion = params.getProtocolVersions().stream()
+                .filter(v -> v.getMajor() != 0 || v.getMinor() != 0)
+                .findFirst()
+                .get();
+        int uwbConfig = params.getUwbConfigs().get(0);
+        AliroPulseShapeCombo pulseShapeCombo = params.getPulseShapeCombos().get(0);
+        int channel = params.getChannels().get(0);
+        int chapsPerSlot = params.getChapsPerSlot().get(0);
+        int syncCodeIndex = params.getSyncCodes().get(0);
+        int ranMultiplier = params.getRanMultiplier();
+        int hoppingConfigMode = params.getHoppingConfigModes().get(0);
+        int hoppingSequence = params.getHoppingSequences().get(0);
+
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        int sessionId = 1;
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch);
+
+        AliroOpenRangingParams aliroOpenRangingParams = new AliroOpenRangingParams.Builder()
+                .setProtocolVersion(protocolVersion)
+                .setUwbConfig(uwbConfig)
+                .setPulseShapeCombo(pulseShapeCombo)
+                .setSessionId(sessionId)
+                .setRanMultiplier(ranMultiplier)
+                .setChannel(channel)
+                .setNumChapsPerSlot(chapsPerSlot)
+                .setNumResponderNodes(1)
+                .setHoppingConfigMode(hoppingConfigMode)
+                .setHoppingSequence(hoppingSequence)
+                .setNumSlotsPerRound(AliroParams.SLOTS_PER_ROUND_6)
+                .setSyncCodeIndex(syncCodeIndex)
+                // Host based
+                .setSessionKey(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x01, 0x02, 0x03, 0x04, 0x05,
+                        0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+                .build();
+
+        AliroStartRangingParams aliroStartRangingParams = new AliroStartRangingParams.Builder()
+                .setSessionId(sessionId)
+                .setRanMultiplier(ranMultiplier)
+                .build();
+
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Start ranging session
+            cancellationSignal = mUwbManager.openRangingSession(
+                    aliroOpenRangingParams.toBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    mDefaultChipId);
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isTrue();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.start(aliroStartRangingParams.toBundle());
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStartedCalled).isTrue();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
+
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
+        } finally {
+            if (cancellationSignal != null) {
+                // Close session.
+                cancellationSignal.cancel();
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }
