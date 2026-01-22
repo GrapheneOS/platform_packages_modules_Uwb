@@ -20,6 +20,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_HW_IDLE;
 
 import android.annotation.NonNull;
+import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.content.AttributionSource;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -49,10 +50,12 @@ import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
+import android.uwb.timesync.ITimesyncCallbackListener;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.timesync.TimesyncManager;
 import com.android.uwb.flags.Flags;
 
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -97,6 +100,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
     private final UwbServiceCore mUwbServiceCore;
+    private final TimesyncManager mTimesyncManager;
 
     private boolean mUwbUserRestricted;
 
@@ -107,6 +111,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbInjector = uwbInjector;
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
+        mTimesyncManager = uwbInjector.getTimesyncManager();
         mInitializationFailureListener = () -> {
             Log.i(TAG, "Initialization failed, retry initialization after "
                     + INITIALIZATION_RETRY_TIMEOUT_MS + "ms");
@@ -284,6 +289,24 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         Log.i(TAG, "Unregister Oem Extension callback");
         enforceUwbPrivilegedPermission();
         mUwbServiceCore.unregisterOemExtensionCallback(callbacks);
+    }
+
+    @Override
+    public void registerTimesyncCallback(ITimesyncCallbackListener callback,
+            String address, int addressType)
+            throws RemoteException {
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.registerTimesyncCallback(callback,
+                new BluetoothAddress(address, addressType));
+    }
+
+    @Override
+    public void unregisterTimesyncCallback(ITimesyncCallbackListener callback,
+            String address, int addressType)
+            throws RemoteException {
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.unregisterTimesyncCallback(callback,
+                new BluetoothAddress(address, addressType));
     }
 
     @Override
