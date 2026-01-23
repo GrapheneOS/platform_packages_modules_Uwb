@@ -29,8 +29,8 @@ import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
-
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -39,9 +39,9 @@ import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.WifiDeviceRole;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV3;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV4;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV3;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV4;
 import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
@@ -117,8 +117,8 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
                     new RttDeviceConfig(getServiceName(peer),
                             sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
                             1));
-            // TODO: Correctly handle V3
-            case WifiNanRttCapabilitiesV3 capabilities -> mRangingDevices.put(
+            // TODO: Correctly handle V4
+            case WifiNanRttCapabilitiesV4 capabilities -> mRangingDevices.put(
                     peer,
                     new RttDeviceConfig(getServiceName(peer),
                             sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
@@ -184,8 +184,8 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
                         .setPeriodic(config.mUsePeriodicRangingFeature)
                         .build();
             } else {
-                // TODO: Correctly handle V2
-                return new WifiNanRttConfigurationV3.Builder()
+                // TODO: Correctly handle V4
+                return new WifiNanRttConfigurationV4.Builder()
                         .setDeviceRole(WifiDeviceRole.Responder)
                         .setServiceName(
                                 config.mServiceName.getBytes(StandardCharsets.UTF_8))

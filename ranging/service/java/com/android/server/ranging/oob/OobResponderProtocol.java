@@ -62,7 +62,8 @@ import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV1;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DiscoveryChannels;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.PreambleType;
@@ -74,9 +75,9 @@ import com.android.server.ranging.oob.packets.UwbDeviceRole;
 import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV3;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV4;
 import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV3;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV4;
 import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
 import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
@@ -109,7 +110,7 @@ public class OobResponderProtocol {
     /**
      * Retrieves the system's supported ranging capabilities based on the provided request.
      *
-     * @param request The {@link CapabilitiesRequest} specifying the desired technologies
+     * @param request The {@link OobMessage} specifying the desired technologies
      *                and the requested protocol version.
      * @return A {@link CapabilitiesResponseV1} or {@link CapabilitiesResponseV2} object
      * containing the agreed-upon version, a set of all supported technologies,
@@ -166,7 +167,7 @@ public class OobResponderProtocol {
                         .build());
             } else {
                 // TODO: Correctly handle version 3
-                capabilities.add(new WifiNanRttCapabilitiesV3.Builder().build());
+                capabilities.add(new WifiNanRttCapabilitiesV4.Builder().build());
             }
         }
 
@@ -238,16 +239,26 @@ public class OobResponderProtocol {
     }
 
     public ImmutableSet<TechnologyConfig> getConfigurations(
-            OobHandle handle, ConfigurationRequest request
+            OobHandle handle, OobMessage request
     ) {
         // TODO: Only start for technologies who have the start ranging immediately
         //  bit set. Otherwise we need to wait for the start ranging message
 
-        ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
+        final Configuration[] configs;
+        if (request instanceof ConfigurationRequestV1 v1) {
+            configs = v1.getConfigs();
+        } else if (request instanceof ConfigurationRequestV3 v3) {
+            configs = v3.getConfigs();
+        } else {
+            Log.w(TAG, "Got unexpected " + request);
+            return ImmutableSet.of();
+        }
 
-        for (Configuration config : request.getConfigs()) {
+        ImmutableSet.Builder<TechnologyConfig> configsBuilder = ImmutableSet.builder();
+
+        for (Configuration config : configs) {
             switch (config) {
-                case UwbConfiguration uwb -> configs.add(new UwbConfig.Builder(
+                case UwbConfiguration uwb -> configsBuilder.add(new UwbConfig.Builder(
                         new UwbRangingParams.Builder(
                                 uwb.getSessionId(), Byte.toUnsignedInt(uwb.getConfigId()),
                                 mLocalUwbAddress, UwbAddress.fromBytes(uwb.getAddress()))
@@ -273,7 +284,7 @@ public class OobResponderProtocol {
                 case BleRssiConfiguration unused -> {
                     // Skip: BLE RSSI does not need to be configured on responder.
                 }
-                case WifiNanRttConfigurationV1 wifiNan -> configs.add(new RttConfig(
+                case WifiNanRttConfigurationV1 wifiNan -> configsBuilder.add(new RttConfig(
                         Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
                         new RttRangingParams.Builder(
                                 new String(wifiNan.getServiceName(), StandardCharsets.UTF_8))
@@ -281,7 +292,7 @@ public class OobResponderProtocol {
                                 .build(),
                         new SessionConfig.Builder().build(),
                         handle.getRangingDevice()));
-                case WifiNanRttConfigurationV3 wifiNan -> configs.add(new RttConfig(
+                case WifiNanRttConfigurationV4 wifiNan -> configsBuilder.add(new RttConfig(
                         // TODO: Correctly handle V2
                         Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
                         new RttRangingParams.Builder(
@@ -290,7 +301,7 @@ public class OobResponderProtocol {
                                 .build(),
                         new SessionConfig.Builder().build(),
                         handle.getRangingDevice()));
-                case WifiPdUnauthenticatedConfiguration wifiPd -> configs.add(
+                case WifiPdUnauthenticatedConfiguration wifiPd -> configsBuilder.add(
                         new WifiPdConfig(
                                 RangingPreference.DEVICE_ROLE_RESPONDER,
                                 new WifiPdRangingParams.Builder(
@@ -305,7 +316,7 @@ public class OobResponderProtocol {
                                         .build(),
                                 new SessionConfig.Builder().build(),
                                 handle.getRangingDevice()));
-                case WifiPdAuthenticatedConfiguration wifiPd -> configs.add(
+                case WifiPdAuthenticatedConfiguration wifiPd -> configsBuilder.add(
                         new WifiPdConfig(
                                 RangingPreference.DEVICE_ROLE_RESPONDER,
                                 new WifiPdRangingParams.Builder(
@@ -328,7 +339,7 @@ public class OobResponderProtocol {
             }
         }
 
-        return configs.build();
+        return configsBuilder.build();
     }
 
     private static @RangingPreference.DeviceRole int uwbDeviceRole(UwbDeviceRole role) {

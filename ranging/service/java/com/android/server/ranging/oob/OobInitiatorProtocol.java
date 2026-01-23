@@ -29,8 +29,9 @@ import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DeviceType;
+import com.android.server.ranging.oob.packets.MotionIndicator;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.StopRequest;
 import com.android.server.ranging.oob.packets.Technology;
@@ -115,17 +116,27 @@ public class OobInitiatorProtocol {
         return new PeerCapabilities(transitioning, capsByTech);
     }
 
-    public ConfigurationRequest getConfigurationRequest(
-            RangingDevice peer, Set<Configuration> configurations
+    /**
+     * Creates a configuration request message to be sent to a peer device.
+     *
+     * @param peer The remote device to which this request is being sent.
+     * @param configurations The set of technology-specific configurations.
+     * @param supportedMotion Indicates if the local device supports motion detection.
+     * @return A byte array representing the {@link ConfigurationRequestV3} message.
+     */
+    public byte[] getConfigurationRequest(
+            RangingDevice peer, Set<Configuration> configurations, MotionIndicator supportedMotion
     ) {
         TechnologySet technologies = technologyBitset(configurations.stream().map(
                 c -> RangingTechnology.fromByte(c.getTechnology().toByte())).toList());
-        return new ConfigurationRequest.Builder()
+        return new ConfigurationRequestV3.Builder()
                 .setVersion(mPeerVersions.get(peer))
                 .setTechnologiesToConfigure(technologies)
                 .setTechnologiesToStart(technologies)
                 .setConfigs(configurations.toArray(new Configuration[0]))
-                .build();
+                .setSupportedMotion(supportedMotion)
+                .build()
+                .toBytes();
     }
 
     public byte[] getStopRequest(RangingDevice peer, Set<RangingTechnology> technologies) {
