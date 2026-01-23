@@ -21,6 +21,9 @@ import com.android.server.uwb.util.UwbUtil;
 import java.util.Arrays;
 
 public class UwbDlTDoAMeasurement {
+    private static final int ANCHOR_CFO_UNAVAILABLE_RAW_VALUE = -32768;  // 0x8000 in 2 octets
+    private static final int CFO_UNAVAILABLE_RAW_VALUE = -32768;  // 0x8000 in 2 octets
+
     public byte[] mMacAddress;
     public int mStatus;
     public int mMessageType;
@@ -62,8 +65,10 @@ public class UwbDlTDoAMeasurement {
         mRssi = -(rssi / 2);
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
-        mAnchorCfo = toFloatFromQ6_10_Format(anchorCfo);
-        mCfo = toFloatFromQ6_10_Format(cfo);
+        mAnchorCfo = anchorCfo == ANCHOR_CFO_UNAVAILABLE_RAW_VALUE
+                ? Float.NaN : toFloatFromQ6_10_Format(anchorCfo);
+        mCfo = cfo == CFO_UNAVAILABLE_RAW_VALUE
+                ? Float.NaN : toFloatFromQ6_10_Format(cfo);
         mInitiatorReplyTime = initiatorReplyTime;
         mResponderReplyTime = responderReplyTime;
         mInitiatorResponderTof = initiatorResponderTof;

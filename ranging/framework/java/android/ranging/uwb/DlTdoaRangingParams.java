@@ -17,24 +17,47 @@
 package android.ranging.uwb;
 
 import android.annotation.FlaggedApi;
+import android.annotation.IntDef;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.uwb.UwbRangingParams.SlotDuration;
+
 import com.android.ranging.flags.Flags;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * Class to represent UWB Downlink TDoA ranging parameters.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
 public final class DlTdoaRangingParams implements Parcelable {
+
+    /**
+     * Defines supported DL-TDoA Ranging Measurement notification and result versions.
+     */
+    /** DL-TDoA Ranging Measurement version 1 */
+    public static final int MEASUREMENT_VERSION_1 = 1;
+    /** DL-TDoA Ranging Measurement version 2 */
+    public static final int MEASUREMENT_VERSION_2 = 2;
+    /** DL-TDoA Ranging Measurement version unknown */
+    public static final int MEASUREMENT_VERSION_UNKNOWN = Integer.MAX_VALUE;
+    /** @hide */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+            MEASUREMENT_VERSION_1,
+            MEASUREMENT_VERSION_2,
+            MEASUREMENT_VERSION_UNKNOWN,
+    })
+    public @interface MeasurementVersion {}
+
     private static final int FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH = 6;
     private static final int FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH = 2;
 
@@ -68,6 +91,8 @@ public final class DlTdoaRangingParams implements Parcelable {
     private final int mSlotDuration;
     private final int mSlotsPerRangingRound;
     private final byte[] mRangingRoundIndexes;
+    @MeasurementVersion
+    private final int mMeasurementVersion;
 
     private DlTdoaRangingParams(Builder builder) {
         mSessionId = builder.mSessionId;
@@ -78,6 +103,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         mSlotDuration = builder.mSlotDuration;
         mSlotsPerRangingRound = builder.mSlotsPerRangingRound;
         mRangingRoundIndexes = builder.mRangingRoundIndexes;
+        mMeasurementVersion = builder.mMeasurementVersion;
     }
 
     private DlTdoaRangingParams(Parcel in) {
@@ -91,6 +117,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         mSlotDuration = in.readInt();
         mSlotsPerRangingRound = in.readInt();
         mRangingRoundIndexes = in.createByteArray();
+        mMeasurementVersion = in.readInt();
     }
 
     public static final @NonNull Creator<DlTdoaRangingParams> CREATOR =
@@ -392,6 +419,16 @@ public final class DlTdoaRangingParams implements Parcelable {
                 mRangingRoundIndexes.length);
     }
 
+    /**
+     * Gets the measurement version.
+     *
+     * @return The measurement version.
+     */
+    @MeasurementVersion
+    public int getMeasurementVersion() {
+        return mMeasurementVersion;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -407,6 +444,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         dest.writeInt(mSlotDuration);
         dest.writeInt(mSlotsPerRangingRound);
         dest.writeByteArray(mRangingRoundIndexes);
+        dest.writeInt(mMeasurementVersion);
     }
 
     @Override
@@ -421,13 +459,14 @@ public final class DlTdoaRangingParams implements Parcelable {
                 Objects.equals(mDeviceAddress, that.mDeviceAddress) &&
                 Arrays.equals(mSessionKeyInfo, that.mSessionKeyInfo) &&
                 Objects.equals(mComplexChannel, that.mComplexChannel) &&
-                Arrays.equals(mRangingRoundIndexes, that.mRangingRoundIndexes);
+                Arrays.equals(mRangingRoundIndexes, that.mRangingRoundIndexes) &&
+                mMeasurementVersion == that.mMeasurementVersion;
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hash(mSessionId, mDeviceAddress, mComplexChannel, mRangingIntervalMs,
-                mSlotDuration, mSlotsPerRangingRound);
+                mSlotDuration, mSlotsPerRangingRound, mMeasurementVersion);
         result = 31 * result + Arrays.hashCode(mSessionKeyInfo);
         result = 31 * result + Arrays.hashCode(mRangingRoundIndexes);
         return result;
@@ -444,6 +483,7 @@ public final class DlTdoaRangingParams implements Parcelable {
                 ", mSlotDuration=" + mSlotDuration +
                 ", mSlotsPerRangingRound=" + mSlotsPerRangingRound +
                 ", mRangingRoundIndexes=" + Arrays.toString(mRangingRoundIndexes) +
+                ", mMeasurementVersion=" + mMeasurementVersion +
                 '}';
     }
 
@@ -465,6 +505,8 @@ public final class DlTdoaRangingParams implements Parcelable {
         private int mSlotsPerRangingRound = UwbConstants.DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_25;
         private byte[] mRangingRoundIndexes =
                 UwbConstants.DEFAULT_DLTDOA_RANGING_ROUND_INDEXES.clone();
+        @MeasurementVersion
+        private int mMeasurementVersion = MEASUREMENT_VERSION_1;
 
         /**
          * Constructor for the Builder.
@@ -578,6 +620,18 @@ public final class DlTdoaRangingParams implements Parcelable {
         @NonNull
         public Builder setRangingRoundIndexes(@NonNull byte[] rangingRoundIndexes) {
             mRangingRoundIndexes = Objects.requireNonNull(rangingRoundIndexes);
+            return this;
+        }
+
+        /**
+         * Sets the measurement version.
+         *
+         * @param measurementVersion The measurement version.
+         * @return this {@link Builder} instance.
+         */
+        @NonNull
+        public Builder setMeasurementVersion(@MeasurementVersion int measurementVersion) {
+            mMeasurementVersion = measurementVersion;
             return this;
         }
 

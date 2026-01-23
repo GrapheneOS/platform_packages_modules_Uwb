@@ -30,7 +30,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
+import com.google.uwb.support.fira.FiraParams;
 
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +54,7 @@ final class Conversions {
     }
 
     public static boolean isDlTdoaMeasurement(android.uwb.RangingMeasurement measurement) {
-        if (Build.VERSION.SDK_INT <= VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT < VERSION_CODES.UPSIDE_DOWN_CAKE) {
             return false;
         }
         try {
@@ -63,38 +65,90 @@ final class Conversions {
         }
     }
 
+    // copied from com.android.server.uwb.util.UwbUtil.radianTodegree()
+    private static float radianTodegree(double angleInRadians) {
+        return (float) ((angleInRadians) * 180 / Math.PI);
+    }
+
+    // Gather all necessary data and put them altogether into DlTdoaMeasurement for the
+    // RangingSessionCallback.onDlTdoaRangingResult() callback.
+    private static DlTdoaMeasurement convertToInternalDlTdoaMeasurement(
+            android.uwb.RangingMeasurement measurement) {
+        if (Build.VERSION.SDK_INT < VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return null;
+        }
+
+        // Only process the measurement if the status is successful.
+        if (measurement.getStatus() != FiraParams.STATUS_CODE_OK) {
+            return null;
+        }
+
+        // Get the support library DL-TDoA measurement from the metadata bundle.
+        com.google.uwb.support.dltdoa.DlTDoAMeasurement supportDlTdoaMeasurement =
+                com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
+                        measurement.getRangingMeasurementMetadata());
+
+        // Workaround for invalid empty measurement reported from UWB stack. If the message control
+        // field is 0, the measurement is no use for localization. It is safe to drop the
+        // measurement entirely.
+        if (supportDlTdoaMeasurement.getMessageControl() == 0) {
+            return null;
+        }
+
+        // Get angle of arrival data from the measurement.
+        float azimuth = Float.NaN;
+        int azimuthFom = 0;
+        float elevation = Float.NaN;
+        int elevationFom = 0;
+        AngleOfArrivalMeasurement aoaMeasurement = measurement.getAngleOfArrivalMeasurement();
+        if (aoaMeasurement != null) {
+            AngleMeasurement azimuthMeasurement = aoaMeasurement.getAzimuth();
+            if (azimuthMeasurement != null) {
+                azimuth = radianTodegree(azimuthMeasurement.getRadians());
+                azimuthFom = (int) (azimuthMeasurement.getConfidenceLevel() * 100);
+            }
+            AngleMeasurement altitudeMeasurement = aoaMeasurement.getAltitude();
+            if (altitudeMeasurement != null) {
+                elevation = radianTodegree(altitudeMeasurement.getRadians());
+                elevationFom = (int) (altitudeMeasurement.getConfidenceLevel() * 100);
+            }
+        }
+
+        // TODO: support DlTdoaMeasurement for both measurement v1 and v2
+        return new DlTdoaMeasurement(
+                DlTdoaMeasurement.MEASUREMENT_VERSION_1,
+                supportDlTdoaMeasurement.getMessageType(),
+                supportDlTdoaMeasurement.getMessageControl(),
+                supportDlTdoaMeasurement.getBlockIndex(),
+                supportDlTdoaMeasurement.getRoundIndex(),
+                supportDlTdoaMeasurement.getNLoS(),
+                azimuth,
+                azimuthFom,
+                elevation,
+                elevationFom,
+                measurement.getRssiDbm(),
+                supportDlTdoaMeasurement.getTxTimestamp(),
+                supportDlTdoaMeasurement.getRxTimestamp(),
+                supportDlTdoaMeasurement.getAnchorCfo(),
+                supportDlTdoaMeasurement.getCfo(),
+                supportDlTdoaMeasurement.getInitiatorReplyTime(),
+                supportDlTdoaMeasurement.getResponderReplyTime(),
+                supportDlTdoaMeasurement.getInitiatorResponderTof(),
+                supportDlTdoaMeasurement.getAnchorLocation(),
+                supportDlTdoaMeasurement.getActiveRangingRounds(),
+                DlTdoaMeasurement.SUPERCLUSTER_ID_ABSENT);
+    }
+
     /** Convert system API's {@link android.uwb.RangingMeasurement} to {@link RangingPosition} */
     @Nullable
     static RangingPosition convertToPosition(android.uwb.RangingMeasurement measurement) {
         RangingMeasurement distance;
         DlTdoaMeasurement dlTdoaMeasurement = null;
-        if (Build.VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE  &&
-                isDlTdoaMeasurement(measurement)) {
-            com.google.uwb.support.dltdoa.DlTDoAMeasurement
-                    dlTDoAMeasurement = com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
-                    measurement.getRangingMeasurementMetadata());
-            // Return null if Dl-TDoA measurement is not valid.
-            if (dlTDoAMeasurement.getMessageControl() == 0) {
-                return null;
-            }
-            dlTdoaMeasurement = new DlTdoaMeasurement(
-                    dlTDoAMeasurement.getMessageType(),
-                    dlTDoAMeasurement.getMessageControl(),
-                    dlTDoAMeasurement.getBlockIndex(),
-                    dlTDoAMeasurement.getRoundIndex(),
-                    dlTDoAMeasurement.getNLoS(),
-                    dlTDoAMeasurement.getTxTimestamp(),
-                    dlTDoAMeasurement.getRxTimestamp(),
-                    dlTDoAMeasurement.getAnchorCfo(),
-                    dlTDoAMeasurement.getCfo(),
-                    dlTDoAMeasurement.getInitiatorReplyTime(),
-                    dlTDoAMeasurement.getResponderReplyTime(),
-                    dlTDoAMeasurement.getInitiatorResponderTof(),
-                    dlTDoAMeasurement.getAnchorLocation(),
-                    dlTDoAMeasurement.getActiveRangingRounds()
-            );
-            // No distance measurement for DL-TDoa, make it invalid.
+        if (isDlTdoaMeasurement(measurement)) {
+            // No distance measurement for DL-TDoA, make it invalid.
             distance = createMeasurement(0.0, 0.0, false);
+            // Convert to backend internal DL-TDoA measurement.
+            dlTdoaMeasurement = convertToInternalDlTdoaMeasurement(measurement);
         } else {
             DistanceMeasurement distanceMeasurement = measurement.getDistanceMeasurement();
             if (distanceMeasurement == null) {
