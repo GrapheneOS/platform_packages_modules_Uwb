@@ -46,9 +46,8 @@ import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_MIN_UW
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_RAN_MULTIPLIER;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_SYNC_CODES;
-import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_UWB_CONFIGS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_UWBS_MAX_PPM;
-import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_VERSIONS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_UWB_CONFIGS;
 
 import static com.google.uwb.support.aliro.AliroParams.CHAPS_PER_SLOT_12;
 import static com.google.uwb.support.aliro.AliroParams.CHAPS_PER_SLOT_24;
@@ -143,12 +142,11 @@ public class AliroDecoder extends TlvDecoder {
             TlvDecoderBuffer tlvs) {
         AliroSpecificationParams.Builder builder = new AliroSpecificationParams.Builder();
 
-        byte[] versions = null;
+        byte[] versions = new byte[]{0, 0};
         try {
             versions = tlvs.getByteArray(ALIRO_SUPPORTED_PROTOCOL_VERSION);
         } catch (IllegalArgumentException e) {
             Log.i(TAG, "ALIRO_SUPPORTED_PROTOCOL_VERSION not found");
-            versions = tlvs.getByteArray(CCC_SUPPORTED_VERSIONS);
         }
 
         if (versions.length % 2 != 0) {

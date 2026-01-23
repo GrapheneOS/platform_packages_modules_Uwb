@@ -36,6 +36,7 @@ android_test {
         "compatibility-device-util-axt",
         "mockito-target-minus-junit4",
         "com.uwb.support.fira",
+        "com.uwb.support.aliro",
         "com.uwb.support.multichip",
         "com.uwb.support.oemextension",
         "com.uwb.support.dltdoa",
