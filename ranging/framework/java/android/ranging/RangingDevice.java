@@ -18,11 +18,14 @@ package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.uwb.UwbAddress;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -35,9 +38,11 @@ import java.util.UUID;
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingDevice implements Parcelable {
     private final UUID mId;
+    private final UwbAddress mDlTdoaUwbAddress;
 
     private RangingDevice(Builder builder) {
         mId = builder.mId;
+        mDlTdoaUwbAddress = builder.mDlTdoaUwbAddress;
     }
 
     private RangingDevice(Parcel in) {
@@ -45,12 +50,14 @@ public final class RangingDevice implements Parcelable {
         long mostSigBits = in.readLong();
         long leastSigBits = in.readLong();
         mId = new UUID(mostSigBits, leastSigBits);
+        mDlTdoaUwbAddress = in.readParcelable(UwbAddress.class.getClassLoader());
     }
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeLong(mId.getMostSignificantBits());
         dest.writeLong(mId.getLeastSignificantBits());
+        dest.writeParcelable(mDlTdoaUwbAddress, flags);
     }
 
     @Override
@@ -81,18 +88,30 @@ public final class RangingDevice implements Parcelable {
         return mId;
     }
 
+    /**
+     * Returns the UWB address of the anchor device for DL-TDoA ranging.
+     *
+     * @return The device's {@link UwbAddress}. Returns null if the device is not an anchor device
+     * for DL-TDoA ranging.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @Nullable
+    public UwbAddress getDlTdoaUwbAddress() {
+        return mDlTdoaUwbAddress;
+    }
+
     @Override
     public int hashCode() {
-        return mId.hashCode();
+        return Objects.hash(mId, mDlTdoaUwbAddress);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof RangingDevice device) {
-            return mId.equals(device.getUuid());
-        } else {
-            return false;
-        }
+        if (this == obj) return true;
+        if (!(obj instanceof RangingDevice)) return false;
+        RangingDevice other = (RangingDevice) obj;
+        return Objects.equals(mId, other.mId)
+                && Objects.equals(mDlTdoaUwbAddress, other.mDlTdoaUwbAddress);
     }
 
     /**
@@ -100,6 +119,7 @@ public final class RangingDevice implements Parcelable {
      */
     public static final class Builder {
         private UUID mId = UUID.randomUUID();
+        private UwbAddress mDlTdoaUwbAddress;
 
         /**
          * Sets the UUID for the device.
@@ -112,6 +132,20 @@ public final class RangingDevice implements Parcelable {
         @NonNull
         public Builder setUuid(@NonNull UUID id) {
             mId = id;
+            return this;
+        }
+
+        /**
+         * Sets the UWB address of the anchor device for DL-TDoA ranging.
+         *
+         * @param dlTdoaUwbAddress The {@link UwbAddress} of the anchor device.
+         * @return This {@link Builder} instance.
+         *
+         * @throws IllegalArgumentException if the provided UWB address is null.
+         */
+        @NonNull
+        public Builder setDlTdoaUwbAddress(@NonNull UwbAddress dlTdoaUwbAddress) {
+            mDlTdoaUwbAddress = dlTdoaUwbAddress;
             return this;
         }
 
@@ -129,7 +163,8 @@ public final class RangingDevice implements Parcelable {
     @Override
     public String toString() {
         return "RangingDevice{ "
-                + mId
+                + "mId=" + mId
+                + ", mDlTdoaUwbAddress=" + mDlTdoaUwbAddress
                 + " }";
     }
 }

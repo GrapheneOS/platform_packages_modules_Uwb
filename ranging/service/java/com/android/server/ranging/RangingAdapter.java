@@ -107,13 +107,13 @@ public interface RangingAdapter {
         void onRangingData(@NonNull RangingDevice peer, @NonNull RangingData data);
 
         /**
-         * Notifies the caller on each instance of DL TDOA measurement received from the ranging
+         * Notifies the caller on each instance of DL-TDoA measurement received from the ranging
          * technology.
          *
-         * @param peer device whose distance was measured.
-         * @param measurement the DL TDOA measurement.
+         * @param anchor anchor whose result was measured.
+         * @param measurement the DL-TDoA measurement.
          */
-        default void onDlTdoaRangingResult(@NonNull RangingDevice peer,
+        default void onDlTdoaRangingResult(@NonNull RangingDevice anchor,
                 @NonNull android.ranging.DlTdoaMeasurement measurement){};
 
         /**

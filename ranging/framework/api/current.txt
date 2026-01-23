@@ -25,61 +25,85 @@ package android.ranging {
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class DlTdoaMeasurement implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public java.util.List<java.lang.Integer> getActiveRangingRoundIndexes();
-    method public float getAnchorCfo();
-    method public int getAnchorLocationPresenceType();
-    method @Nullable public android.ranging.DlTdoaMeasurement.RelativeLocation getAnchorLocationRelative();
-    method @Nullable public android.ranging.DlTdoaMeasurement.Wgs84Location getAnchorLocationWgs84();
-    method public float getAzimuth();
-    method @IntRange(from=0xffffffff, to=100) public int getAzimuthFom();
-    method @IntRange(from=0) public int getBlockIndex();
-    method public float getCfo();
-    method public float getElevation();
-    method @IntRange(from=0xffffffff, to=100) public int getElevationFom();
-    method public long getInitiatorReplyTime();
-    method @IntRange(from=0) public int getInitiatorResponderTof();
-    method public int getMessageControl();
+    method @FloatRange(from=-32.0, to=32.0, fromInclusive=false, toInclusive=false) public float getAnchorCfo();
+    method @Nullable public android.ranging.DlTdoaMeasurement.AnchorLocation getAnchorLocation();
+    method @FloatRange(from=-180.0, to=180.0) public float getAoaAzimuth();
+    method @IntRange(from=0, to=100) public int getAoaAzimuthFom();
+    method @FloatRange(from=-90.0, to=90.0) public float getAoaElevation();
+    method @IntRange(from=0, to=100) public int getAoaElevationFom();
+    method @IntRange(from=0, to=65535) public int getBlockIndex();
+    method @FloatRange(from=-32.0, to=32.0, fromInclusive=false, toInclusive=false) public float getCfo();
+    method @IntRange(from=0, to=4294967295L) public long getInitiatorReplyTime();
+    method @IntRange(from=0, to=65535) public int getInitiatorResponderTof();
+    method public int getMeasurementVersion();
+    method @IntRange(from=0, to=2047) public int getMessageControl();
     method public int getMessageType();
     method public int getNlos();
-    method @IntRange(from=0) public int getNumActiveRangingRoundIndexes();
-    method public long getResponderReplyTime();
-    method @IntRange(from=0) public int getRoundIndex();
-    method public float getRssi();
-    method public long getRxTimestamp();
-    method public int getRxTimestampLength();
-    method public long getTxTimestamp();
-    method public int getTxTimestampLength();
+    method @IntRange(from=0, to=4294967295L) public long getResponderReplyTime();
+    method @IntRange(from=0, to=255) public int getRoundIndex();
+    method @IntRange(from=0xffffff81, to=0) public int getRssi();
+    method @NonNull public byte[] getRxTimestamp();
+    method @IntRange(from=0x0, to=0xff) public int getSuperclusterId();
+    method @NonNull public byte[] getTxTimestamp();
+    method public boolean hasSuperclusterId();
     method public boolean isTxTimestampInCommonTimeBase();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
-    field public static final int ANCHOR_LOCATION_NOT_PRESENT = 0; // 0x0
-    field public static final int ANCHOR_LOCATION_RELATIVE = 2; // 0x2
-    field public static final int ANCHOR_LOCATION_WGS84 = 1; // 0x1
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement> CREATOR;
     field public static final int MESSAGE_TYPE_FINAL_DTM = 2; // 0x2
     field public static final int MESSAGE_TYPE_POLL_DTM = 0; // 0x0
     field public static final int MESSAGE_TYPE_RESPONSE_DTM = 1; // 0x1
-    field public static final int NLOS_LOS = 0; // 0x0
-    field public static final int NLOS_NLOS = 1; // 0x1
-    field public static final int NLOS_UNABLE_TO_DETERMINE = 255; // 0xff
-    field public static final int TIMESTAMP_LEN_40 = 0; // 0x0
-    field public static final int TIMESTAMP_LEN_64 = 1; // 0x1
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class DlTdoaMeasurement.AnchorLocation implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getCoordinateType();
+    method @NonNull public byte[] getRawBytes();
+    method @Nullable public android.ranging.DlTdoaMeasurement.RelativeLocation getRelativeLocation();
+    method @Nullable public android.ranging.DlTdoaMeasurement.Wgs84Location getWgs84Location();
+    method @Nullable public android.ranging.DlTdoaMeasurement.ZElementExtension getZElementExtension();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int COORDINATE_RELATIVE = 1; // 0x1
+    field public static final int COORDINATE_RELATIVE_PLUS_Z_ELEMENT = 3; // 0x3
+    field public static final int COORDINATE_RELATIVE_WITH_Z_GRAVITY_ALIGNED = 4; // 0x4
+    field public static final int COORDINATE_RELATIVE_WITH_Z_GRAVITY_ALIGNED_PLUS_Z_ELEMENT = 5; // 0x5
+    field public static final int COORDINATE_UNKNOWN = 2147483647; // 0x7fffffff
+    field public static final int COORDINATE_WGS84 = 0; // 0x0
+    field public static final int COORDINATE_WGS84_PLUS_Z_ELEMENT = 2; // 0x2
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement.AnchorLocation> CREATOR;
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class DlTdoaMeasurement.RelativeLocation implements android.os.Parcelable {
     method public int describeContents();
-    method public int getX();
-    method public int getY();
-    method public int getZ();
+    method @IntRange(from=0xf8000001, to=0x7ffffff) public int getX();
+    method @IntRange(from=0xf8000001, to=0x7ffffff) public int getY();
+    method @IntRange(from=0xff800001, to=0x7fffff) public int getZ();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement.RelativeLocation> CREATOR;
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class DlTdoaMeasurement.Wgs84Location implements android.os.Parcelable {
     method public int describeContents();
-    method public double getAltitude();
-    method public double getLatitude();
-    method public double getLongitude();
+    method @FloatRange(from=-256.0, to=256.0, fromInclusive=false, toInclusive=false) public double getAltitude();
+    method @FloatRange(from=-90.0, to=90.0) public double getLatitude();
+    method @FloatRange(from=-180.0, to=180.0) public double getLongitude();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement.Wgs84Location> CREATOR;
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class DlTdoaMeasurement.ZElementExtension implements android.os.Parcelable {
+    method public int describeContents();
+    method @FloatRange(from=-512.0, to=512.0, fromInclusive=false, toInclusive=false) public double getAnchorFloorNumber();
+    method @FloatRange(from=-2048.0, to=2048.0, fromInclusive=false, toInclusive=false) public double getAnchorHeightAboveFloor();
+    method @Nullable public android.util.Range<java.lang.Double> getAnchorHeightAboveFloorRange();
+    method @IntRange(from=0, to=24) public int getAnchorHeightAboveFloorUncertainty();
+    method public int getExpectedToMove();
+    method public boolean isAnchorFloorNumberOutOfRange();
+    method public boolean isAnchorHeightAboveFloorOutOfRange();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.DlTdoaMeasurement.ZElementExtension> CREATOR;
+    field public static final int MOVEMENT_EXPECTATION_MOVABLE = 1; // 0x1
+    field public static final int MOVEMENT_EXPECTATION_STATIONARY = 0; // 0x0
+    field public static final int MOVEMENT_EXPECTATION_UNKNOWN = 2; // 0x2
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class MotionState implements android.os.Parcelable {
@@ -143,6 +167,7 @@ package android.ranging {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingDevice implements android.os.Parcelable {
     method public int describeContents();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.uwb.UwbAddress getDlTdoaUwbAddress();
     method @NonNull public java.util.UUID getUuid();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingDevice> CREATOR;
@@ -151,6 +176,7 @@ package android.ranging {
   public static final class RangingDevice.Builder {
     ctor public RangingDevice.Builder();
     method @NonNull public android.ranging.RangingDevice build();
+    method @NonNull public android.ranging.RangingDevice.Builder setDlTdoaUwbAddress(@NonNull android.ranging.uwb.UwbAddress);
     method @NonNull public android.ranging.RangingDevice.Builder setUuid(@NonNull java.util.UUID);
   }
 
@@ -485,6 +511,7 @@ package android.ranging.uwb {
     method public int describeContents();
     method @NonNull public android.ranging.uwb.UwbComplexChannel getComplexChannel();
     method @NonNull public android.ranging.uwb.UwbAddress getDeviceAddress();
+    method public int getMeasurementVersion();
     method public int getRangingIntervalMillis();
     method @Nullable public byte[] getRangingRoundIndexes();
     method public int getSessionId();
@@ -493,6 +520,9 @@ package android.ranging.uwb {
     method public int getSlotsPerRangingRound();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.DlTdoaRangingParams> CREATOR;
+    field public static final int MEASUREMENT_VERSION_1 = 1; // 0x1
+    field public static final int MEASUREMENT_VERSION_2 = 2; // 0x2
+    field public static final int MEASUREMENT_VERSION_UNKNOWN = 2147483647; // 0x7fffffff
   }
 
   public static final class DlTdoaRangingParams.Builder {
@@ -500,6 +530,7 @@ package android.ranging.uwb {
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams build();
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setComplexChannel(@NonNull android.ranging.uwb.UwbComplexChannel);
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setDeviceAddress(@NonNull android.ranging.uwb.UwbAddress);
+    method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setMeasurementVersion(int);
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setRangingIntervalMillis(@IntRange(from=1) int);
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setRangingRoundIndexes(@NonNull byte[]);
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setSessionKeyInfo(@NonNull byte[]);
