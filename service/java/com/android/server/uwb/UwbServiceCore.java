@@ -771,6 +771,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 builder.setIsDiagnosticsEnabled(true);
                 builder.setDiagramsFrameReportsFieldsFlags(mDiagramsFrameReportsFieldsFlags);
             }
+            if (getCachedSpecificationParams(chipId).getAntennaModeCapabilities().isEmpty()) {
+                // Antenna mode unsupported by the device, don't set the SET_APP_CONFIG TLV.
+                builder.setAntennaMode((byte) FiraParams.ANTENNA_MODE_UNSET);
+            }
             FiraOpenSessionParams firaOpenSessionParams = builder.build();
             sessionId = firaOpenSessionParams.getSessionId();
             sessionType = firaOpenSessionParams.getSessionType();

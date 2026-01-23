@@ -1225,13 +1225,16 @@ public abstract class FiraParams extends Params {
             value = {
                     ANTENNA_MODE_OMNI,
                     ANTENNA_MODE_DIRECTIONAL,
+                    ANTENNA_MODE_UNSET,
             })
     public @interface AntennaMode {}
 
-    /** (Default) The ranging antenna is used for both Tx and Rx. **/
+    /** The ranging antenna is used for both Tx and Rx. **/
     public static final int ANTENNA_MODE_OMNI = 0;
     /** The patch antenna is used for both Tx and Rx. **/
     public static final int ANTENNA_MODE_DIRECTIONAL = 1;
+    /** (Default) Antenna mode is unset */
+    public static final int ANTENNA_MODE_UNSET = 2;
 
     /**
      * Link Layer Mode

@@ -230,10 +230,6 @@
      If enabled, the response will be parsed into version 2 if uci major version is 2.0. -->
     <bool name = "is_multicast_list_update_rsp_v2_supported">false</bool>
 
-    <!-- Whether or not the antenna operation mode shall be configured by the ANTENNA_MODE vendor
-    config param. If false, the FiRa-specified AOA_RESULT_REQ param is used instead. -->
-    <bool name = "is_antenna_mode_config_supported">false</bool>
-
     <!-- List of MCC/MNC where OEM default country code is used as an override.
     This is a array of MCC/MNC values, where each value is a 3-digit string (only MCC)
     or a 5/6-digit string (MCC + MNC). -->
