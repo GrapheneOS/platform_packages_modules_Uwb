@@ -160,7 +160,8 @@ public class UwbConfig implements MulticastTechnologyConfig {
                 !mSessionConfig.isAngleOfArrivalNeeded(),
                 new UwbRangeLimitsConfig.Builder().setRangeMaxNumberOfMeasurements(
                         mSessionConfig.getRangingMeasurementsLimit()
-                ).build()
+                ).build(),
+                (int) mSessionConfig.getAntennaMode()
         );
     }
 

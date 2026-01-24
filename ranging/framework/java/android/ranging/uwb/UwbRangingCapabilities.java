@@ -23,6 +23,7 @@ import android.os.Parcelable;
 import android.ranging.DataNotificationConfig.NotificationConfigType;
 import android.ranging.RangingCapabilities.TechnologyCapabilities;
 import android.ranging.RangingManager;
+import android.ranging.SessionConfig.AntennaMode;
 import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 import android.ranging.uwb.UwbComplexChannel.UwbChannel;
 import android.ranging.uwb.UwbComplexChannel.UwbPreambleCodeIndex;
@@ -59,6 +60,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     private final boolean mHasBackgroundRangingSupport;
     private final String mCountryCode;
     private final boolean mSupportsDlTdoa;
+    private final List<Integer> mSupportedAntennaModes;
 
     private UwbRangingCapabilities(Builder builder) {
         mSupportsDistance = builder.mSupportsDistance;
@@ -75,6 +77,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mHasBackgroundRangingSupport = builder.mHasBackgroundRangingSupport;
         mCountryCode = builder.mCountryCode;
         mSupportsDlTdoa = builder.mSupportsDlTdoa;
+        mSupportedAntennaModes = builder.mSupportedAntennaModes;
     }
 
     private UwbRangingCapabilities(Parcel in) {
@@ -98,6 +101,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mHasBackgroundRangingSupport = in.readByte() != 0;
         mCountryCode = in.readString();
         mSupportsDlTdoa = in.readBoolean();
+        mSupportedAntennaModes = new ArrayList<>();
+        in.readList(mSupportedAntennaModes, Integer.class.getClassLoader(), Integer.class);
     }
 
     @NonNull
@@ -267,6 +272,18 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
+     * Gets the list of supported antenna modes.
+     *
+     * @return a list of supported antenna modes.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @NonNull
+    @AntennaMode
+    public List<Integer> getSupportedAntennaModes() {
+        return List.copyOf(mSupportedAntennaModes);
+    }
+
+    /**
      * @hide
      */
     @Override
@@ -290,6 +307,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         dest.writeByte((byte) (mHasBackgroundRangingSupport ? 1 : 0));
         dest.writeString(mCountryCode);
         dest.writeBoolean(mSupportsDlTdoa);
+        dest.writeList(mSupportedAntennaModes);
     }
 
     /**
@@ -312,6 +330,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         private boolean mHasBackgroundRangingSupport;
         private String mCountryCode;
         private boolean mSupportsDlTdoa = false;
+        private List<Integer> mSupportedAntennaModes;
 
         /**
          * Sets supports distance.
@@ -487,6 +506,19 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         }
 
         /**
+         * Sets supported antenna modes.
+         *
+         * @param supportedAntennaModes the supported antenna modes
+         * @return the supported antenna modes
+         * @throws IllegalArgumentException if the provided list is null.
+         */
+        @NonNull
+        public Builder setSupportedAntennaModes(@NonNull List<Integer> supportedAntennaModes) {
+            this.mSupportedAntennaModes = supportedAntennaModes;
+            return this;
+        }
+
+        /**
          * Build uwb ranging capabilities.
          *
          * @return the uwb ranging capabilities
@@ -528,6 +560,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
                 + mCountryCode
                 + ", mSupportsDlTdoa="
                 + mSupportsDlTdoa
+                + ", mSupportedAntennaModes="
+                + mSupportedAntennaModes
                 + " }";
     }
 }

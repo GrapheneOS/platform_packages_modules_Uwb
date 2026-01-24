@@ -25,6 +25,7 @@ import androidx.annotation.IntRange;
 
 import com.google.common.collect.ImmutableList;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Describes UWB ranging capabilities for the current device. */
@@ -46,6 +47,9 @@ public class RangingCapabilities {
     /** Default supported ranging interval if the system API doesn't provide it. */
     public static final ImmutableList<Integer> DEFAULT_SUPPORTED_RANGING_UPDATE_RATE =
             ImmutableList.of(Utils.NORMAL, Utils.INFREQUENT);
+    /** Default supported antenna modes if the system API doesn't provide it. */
+    public static final ImmutableList<Integer> DEFAULT_SUPPORTED_ANTENNA_MODES =
+            ImmutableList.of();
 
 
     private final boolean mSupportsDistance;
@@ -62,6 +66,7 @@ public class RangingCapabilities {
     private final boolean mHasBackgroundRangingSupport;
     private final String mCountryCode;
     private final boolean mSupportsDlTdoa;
+    private final List<Integer> mSupportedAntennaModes;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -82,7 +87,8 @@ public class RangingCapabilities {
                 SUPPORTED_BPRF_PREAMBLE_INDEX,
                 false,
                 countryCode,
-                false);
+                false,
+                DEFAULT_SUPPORTED_ANTENNA_MODES);
     }
 
     public RangingCapabilities(
@@ -100,6 +106,40 @@ public class RangingCapabilities {
             boolean hasBackgroundRangingSupport,
             String countryCode,
             boolean supportsDlTdoa) {
+        this(
+                supportsDistance,
+                supportsAzimuthalAngle,
+                supportsElevationAngle,
+                supportsRangingIntervalReconfigure,
+                minRangingInterval,
+                supportedChannels,
+                supportedNtfConfigs,
+                supportedConfigIds,
+                supportedSlotDurations,
+                supportedRangingUpdateRates,
+                supportedPreambleIndexes,
+                hasBackgroundRangingSupport,
+                countryCode,
+                supportsDlTdoa,
+                DEFAULT_SUPPORTED_ANTENNA_MODES);
+    }
+
+    public RangingCapabilities(
+            boolean supportsDistance,
+            boolean supportsAzimuthalAngle,
+            boolean supportsElevationAngle,
+            boolean supportsRangingIntervalReconfigure,
+            int minRangingInterval,
+            List<Integer> supportedChannels,
+            List<Integer> supportedNtfConfigs,
+            List<Integer> supportedConfigIds,
+            ImmutableList<Integer> supportedSlotDurations,
+            ImmutableList<Integer> supportedRangingUpdateRates,
+            ImmutableList<Integer> supportedPreambleIndexes,
+            boolean hasBackgroundRangingSupport,
+            String countryCode,
+            boolean supportsDlTdoa,
+            List<Integer> supportedAntennaModes) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
@@ -114,6 +154,7 @@ public class RangingCapabilities {
         this.mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
         this.mCountryCode = countryCode;
         this.mSupportsDlTdoa = supportsDlTdoa;
+        this.mSupportedAntennaModes = supportedAntennaModes;
     }
 
     /** Whether distance ranging is supported. */
@@ -187,5 +228,10 @@ public class RangingCapabilities {
     /** Whether DL-TDOA is supported. */
     public boolean supportsDlTdoa() {
         return mSupportsDlTdoa;
+    }
+
+    /** Whether the antenna mode is supported. */
+    public Collection<Integer> getSupportedAntennaModes() {
+        return mSupportedAntennaModes;
     }
 }

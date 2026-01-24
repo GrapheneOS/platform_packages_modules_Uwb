@@ -22,9 +22,12 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
 import android.util.ArrayMap;
+
 import androidx.annotation.IntDef;
+
 import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraParams;
+
 import java.util.Map;
 
 /** Definitions that are common for all classes. */
@@ -202,6 +205,40 @@ public final class Utils {
 
     public static final int DURATION_1_MS = 1;
     public static final int DURATION_2_MS = 2;
+
+    /**
+     * Antenna Mode configuration.
+     */
+    @IntDef({
+            ANTENNA_MODE_OMNI,
+            ANTENNA_MODE_DIRECTIONAL,
+	    ANTENNA_MODE_UNSET
+    })
+    public @interface AntennaMode {}
+
+    /** (Default) The ranging antenna is used for both Tx and Rx. **/
+    public static final int ANTENNA_MODE_OMNI = 0;
+    /** The patch antenna is used for both Tx and Rx. **/
+    public static final int ANTENNA_MODE_DIRECTIONAL = 1;
+    public static final int ANTENNA_MODE_UNSET = 2;
+
+    /** Convert Utils antenna mode to Fira antenna mode.*/
+    public static @FiraParams.AntennaMode int convertToFiraAntennaMode(
+            @Utils.AntennaMode int antennaMode) {
+        switch (antennaMode) {
+            case ANTENNA_MODE_OMNI:
+                return FiraParams.ANTENNA_MODE_OMNI;
+            case ANTENNA_MODE_DIRECTIONAL:
+                return FiraParams.ANTENNA_MODE_DIRECTIONAL;
+            // TODO(rpius): Fix This.
+            // case ANTENNA_MODE_UNSET:
+            //    return FiraParams.ANTENNA_MODE_UNSET;
+            // default:
+            //    return FiraParams.ANTENNA_MODE_UNSET;
+            default:
+               return FiraParams.ANTENNA_MODE_OMNI;
+        }
+    }
 
     /**
      * Unusual failures happened in UWB system callback, such as stopping ranging or removing a
