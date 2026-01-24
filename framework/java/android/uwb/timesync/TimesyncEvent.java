@@ -16,10 +16,15 @@
 
 package android.uwb.timesync;
 
+import android.annotation.DurationMillisLong;
+import android.annotation.ElapsedRealtimeLong;
 import android.annotation.FlaggedApi;
 import android.annotation.Hide;
 import android.annotation.IntDef;
+import android.annotation.IntRange;
 import android.annotation.NonNull;
+import android.annotation.SystemApi;
+import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.uwb.UwbManager.AddressType;
@@ -30,8 +35,8 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * @hide
  */
+@SystemApi
 @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
-@Hide
 public final class TimesyncEvent implements Parcelable {
 
     private String mMacAddress;
@@ -72,16 +77,16 @@ public final class TimesyncEvent implements Parcelable {
     public static final int DIRECTION_TX = 1;
 
     /**
-     * Returns the mac address from the client device.
+     * Returns the {@link BluetoothAddress#getAddress()} from the client device.
      *
-     * @return mac address
+     * @return bluetooth MAC address
      */
     @NonNull public String getMacAddress() {
         return mMacAddress;
     }
 
     /**
-     * Returns the address type from the client device.
+     * Returns the {@link BluetoothAddress#getAddressType()} address type from the client device.
      *
      * @return {@link AddressType}
      */
@@ -113,16 +118,16 @@ public final class TimesyncEvent implements Parcelable {
      *
      * @return uwb timestamp in microseconds.
      */
-    public long getUwbTimestamp() {
+    public @ElapsedRealtimeLong long getUwbTimestampUs() {
         return mUwbTimestamp;
     }
 
     /**
      * Returns the uncertainty of the device time.
      *
-     * @return device time uncertainty
+     * @return device time uncertainty in microseconds.
      */
-    public int getDeviceTimeUncertainty() {
+    public @DurationMillisLong long getDeviceTimeUncertaintyUs() {
         return mDeviceTimeUncertainty;
     }
 
@@ -136,10 +141,13 @@ public final class TimesyncEvent implements Parcelable {
     }
 
     /**
-     * Returns the event counter.
+     * Returns the Bluetooth Low Energy (BLE) event counter, a 16-bit value that increments for each
+     * connection event since the connection was established. This is used for accurately
+     * correlating time synchronization data between the local device and peer device.
      *
-     * @return event counter
+     * @return 16-bit event counter, ranging from 0 to 65535
      */
+    @IntRange(from = 0, to = 65535)
     public int getEventCounter() {
         return mEventCounter;
     }

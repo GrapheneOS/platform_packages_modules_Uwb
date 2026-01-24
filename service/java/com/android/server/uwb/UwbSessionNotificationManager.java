@@ -997,6 +997,7 @@ public class UwbSessionNotificationManager {
                                 angleOfArrivalMeasurement);
                     }
                 }
+                // TODO: support DlTDoAMeasurement for both measurement v1 and v2
                 DlTDoAMeasurement dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
                         .setMessageType(uwbDlTDoAMeasurements[i].getMessageType())
                         .setMessageControl(uwbDlTDoAMeasurements[i].getMessageControl())

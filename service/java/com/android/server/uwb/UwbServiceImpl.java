@@ -50,6 +50,7 @@ import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
+import android.uwb.UwbManager.AddressType;
 import android.uwb.timesync.ITimesyncCallbackListener;
 
 import com.android.internal.annotations.VisibleForTesting;
@@ -293,7 +294,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
 
     @Override
     public void registerTimesyncCallback(ITimesyncCallbackListener callback,
-            String address, int addressType)
+            String address, @AddressType int addressType)
             throws RemoteException {
         enforceUwbPrivilegedPermission();
         mUwbServiceCore.registerTimesyncCallback(callback,
@@ -302,7 +303,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
 
     @Override
     public void unregisterTimesyncCallback(ITimesyncCallbackListener callback,
-            String address, int addressType)
+            String address, @AddressType int addressType)
             throws RemoteException {
         enforceUwbPrivilegedPermission();
         mUwbServiceCore.unregisterTimesyncCallback(callback,

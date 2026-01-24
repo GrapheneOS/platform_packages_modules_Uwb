@@ -29,6 +29,7 @@ import android.annotation.RequiresPermission;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Binder;
 import android.os.Build;
@@ -1333,52 +1334,38 @@ public final class UwbManager {
 
     /**
      * @hide
-     * Hardware MAC Address of the device
-     */
-    public static final int ADDRESS_TYPE_PUBLIC = 0;
-
-    /**
-     * @hide
-     * Address is either resolvable, non-resolvable or static.
-     */
-    public static final int ADDRESS_TYPE_RANDOM = 1;
-
-    /**
-     * @hide
-     * Address type is unknown or unavailable
-     */
-    public static final int ADDRESS_TYPE_UNKNOWN = 0xFFFF;
-
-    /**
-     * @hide
-     * Address type used to indicate an anonymous advertisement.
-     */
-    public static final int ADDRESS_TYPE_ANONYMOUS = 0xFF;
-
-    /**
-     * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef(
             prefix = {"ADDRESS_TYPE_"},
             value = {
-                    ADDRESS_TYPE_PUBLIC,
-                    ADDRESS_TYPE_RANDOM,
-                    ADDRESS_TYPE_ANONYMOUS,
-                    ADDRESS_TYPE_UNKNOWN,
+                    BluetoothDevice.ADDRESS_TYPE_PUBLIC,
+                    BluetoothDevice.ADDRESS_TYPE_RANDOM,
+                    BluetoothDevice.ADDRESS_TYPE_ANONYMOUS,
+                    BluetoothDevice.ADDRESS_TYPE_UNKNOWN,
             })
     public @interface AddressType {}
 
     /**
-     * Register a {@link TimesyncCallback} to listen for timesync callbacks.
-     * The provided callback will be invoked by the given {@link Executor}.
+     * Register a {@link TimesyncCallback} to listen for timesync callbacks from a peer UWB device.
+     *
+     * This method is used to synchronize the UWB time base with a peer device's Bluetooth clock.
+     *
+     * <p> The service listens for specific Bluetooth LMP events, associated with the provided
+     * macAddress and addressType. When these events occur, the system captures timestamps and clock
+     * offsets, providing them to the caller via the {@link TimesyncCallback#onTimesyncEvent}
+     * method.
+     *
+     * <p>This enables applications to receive precise timing information. Intended clients are
+     * applications that need to perform time-sensitive ranging or communication with other UWB
+     * devices.
+     *
+     * <p> The provided callback will be invoked by the given {@link Executor}.
      *
      * @param executor an {@link Executor} to execute given callback
      * @param callback the {@link TimesyncCallback} to be registered
      * @param macAddress the mac address of the peer device for time synchronization
      * @param addressType the {@link AddressType} of the peer device
-     *
-     * @hide
      */
     @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     @RequiresPermission(permission.UWB_PRIVILEGED)
@@ -1399,8 +1386,6 @@ public final class UwbManager {
      * <p> Callbacks are automatically unregistered when an application process goes away.
      *
      * @param callback the {@link TimesyncCallback} to be unregistered
-     *
-     * @hide
      */
     @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     @RequiresPermission(permission.UWB_PRIVILEGED)
@@ -1410,8 +1395,6 @@ public final class UwbManager {
 
     /**
      * Interfaces for receiving timesync responses and notifications
-     *
-     * @hide
      */
     @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public interface TimesyncCallback {
