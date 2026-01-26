@@ -74,10 +74,8 @@ import com.android.server.ranging.oob.packets.UwbConfiguration;
 import com.android.server.ranging.oob.packets.UwbDeviceRole;
 import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV4;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV4;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilities;
+import com.android.server.ranging.oob.packets.WifiNanRttConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
 import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
@@ -158,17 +156,12 @@ public class OobResponderProtocol {
         RttRangingCapabilities wifiNan = myCapabilities.getRttRangingCapabilities();
         if (request.getRequestedTechnologies().getWifiNanRtt() && wifiNan != null) {
             supported.setWifiNanRtt(true);
-            if (mVersion.toByte() <= 2) {
-                capabilities.add(new WifiNanRttCapabilitiesV1.Builder()
-                        .setPeriodic(wifiNan.hasPeriodicRangingHardwareFeature())
-                        .setBandwidth(WifiBandwidth.fromByte(
-                                (byte) wifiNan.getMaxSupportedBandwidth()))
-                        .setNumRxChains((byte) wifiNan.getMaxSupportedRxChain())
-                        .build());
-            } else {
-                // TODO: Correctly handle version 3
-                capabilities.add(new WifiNanRttCapabilitiesV4.Builder().build());
-            }
+            capabilities.add(new WifiNanRttCapabilities.Builder()
+                    .setPeriodic(wifiNan.hasPeriodicRangingHardwareFeature())
+                    .setBandwidth(WifiBandwidth.fromByte(
+                            (byte) wifiNan.getMaxSupportedBandwidth()))
+                    .setNumRxChains((byte) wifiNan.getMaxSupportedRxChain())
+                    .build());
         }
 
         BleRssiRangingCapabilities rssi = myCapabilities.getBleRssiCapabilities();
@@ -284,16 +277,7 @@ public class OobResponderProtocol {
                 case BleRssiConfiguration unused -> {
                     // Skip: BLE RSSI does not need to be configured on responder.
                 }
-                case WifiNanRttConfigurationV1 wifiNan -> configsBuilder.add(new RttConfig(
-                        Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
-                        new RttRangingParams.Builder(
-                                new String(wifiNan.getServiceName(), StandardCharsets.UTF_8))
-                                .setPeriodicRangingHwFeatureEnabled(wifiNan.getPeriodic())
-                                .build(),
-                        new SessionConfig.Builder().build(),
-                        handle.getRangingDevice()));
-                case WifiNanRttConfigurationV4 wifiNan -> configsBuilder.add(new RttConfig(
-                        // TODO: Correctly handle V2
+                case WifiNanRttConfiguration wifiNan -> configsBuilder.add(new RttConfig(
                         Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
                         new RttRangingParams.Builder(
                                 new String(wifiNan.getServiceName(), StandardCharsets.UTF_8))

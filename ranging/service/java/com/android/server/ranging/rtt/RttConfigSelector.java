@@ -38,10 +38,8 @@ import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.WifiDeviceRole;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
-import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV4;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
-import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV4;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilities;
+import com.android.server.ranging.oob.packets.WifiNanRttConfiguration;
 import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
@@ -111,23 +109,18 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
             @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities,
             @NonNull com.android.server.ranging.oob.packets.DeviceType deviceType
     ) throws ConfigSelectionException {
-        switch (baseCapabilities) {
-            case WifiNanRttCapabilitiesV1 capabilities -> mRangingDevices.put(
-                    peer,
-                    new RttDeviceConfig(getServiceName(peer),
-                            sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
-                            1));
-            // TODO: Correctly handle V4
-            case WifiNanRttCapabilitiesV4 capabilities -> mRangingDevices.put(
-                    peer,
-                    new RttDeviceConfig(getServiceName(peer),
-                            sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
-                            2));
-            default -> throw new ConfigSelectionException(
+        if (!(baseCapabilities instanceof WifiNanRttCapabilities)) {
+            throw new ConfigSelectionException(
                     "Peer " + peer + " expected Wifi RTT capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
+        }
+        WifiNanRttCapabilities capabilities = (WifiNanRttCapabilities) baseCapabilities;
+        mRangingDevices.put(
+                peer,
+                new RttDeviceConfig(getServiceName(peer),
+                        sLocalPeriodicRangingSupport && capabilities.getPeriodic(),
+                        1));
 
-        };
     }
 
     @Override
@@ -176,22 +169,12 @@ public class RttConfigSelector extends ConfigurationManager.ConfigSelector {
         @NonNull
         public Configuration getPeerConfig(RangingDevice peer) {
             RttDeviceConfig config = mRangingDevices.get(peer);
-            if (config.mOobVersion == 1) {
-                return new WifiNanRttConfigurationV1.Builder()
-                        .setDeviceRole(WifiDeviceRole.Responder)
-                        .setServiceName(
-                                config.mServiceName.getBytes(StandardCharsets.UTF_8))
-                        .setPeriodic(config.mUsePeriodicRangingFeature)
-                        .build();
-            } else {
-                // TODO: Correctly handle V4
-                return new WifiNanRttConfigurationV4.Builder()
-                        .setDeviceRole(WifiDeviceRole.Responder)
-                        .setServiceName(
-                                config.mServiceName.getBytes(StandardCharsets.UTF_8))
-                        .setPeriodic(config.mUsePeriodicRangingFeature)
-                        .build();
-            }
+            return new WifiNanRttConfiguration.Builder()
+                    .setDeviceRole(WifiDeviceRole.Responder)
+                    .setServiceName(
+                            config.mServiceName.getBytes(StandardCharsets.UTF_8))
+                    .setPeriodic(config.mUsePeriodicRangingFeature)
+                    .build();
         }
     }
 

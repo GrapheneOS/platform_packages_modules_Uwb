@@ -29,10 +29,10 @@ import org.junit.runners.JUnit4;
 import java.util.Arrays;
 
 @RunWith(JUnit4.class)
-public class WifiNanRttCapabilitiesV1Test {
+public class WifiNanRttCapabilitiesTest {
 
-    private static final WifiNanRttCapabilitiesV1 RTT_OOB_CAPABILITIES =
-            new WifiNanRttCapabilitiesV1.Builder()
+    private static final WifiNanRttCapabilities RTT_OOB_CAPABILITIES =
+            new WifiNanRttCapabilities.Builder()
                     .setFeatures((byte) 1)
                     .setPeriodic(false)
                     .setBandwidth(WifiBandwidth.Mhz320)
@@ -70,7 +70,7 @@ public class WifiNanRttCapabilitiesV1Test {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(WifiNanRttCapabilitiesV1.fromBytes(mRttCapabilityWithHeaderBytes))
+        assertThat(WifiNanRttCapabilities.fromBytes(mRttCapabilityWithHeaderBytes))
                 .isEqualTo(RTT_OOB_CAPABILITIES);
     }
 
@@ -80,7 +80,7 @@ public class WifiNanRttCapabilitiesV1Test {
 
         assertThrows(
                 Exception.class,
-                () -> WifiNanRttCapabilitiesV1.fromBytes(invalidCapabilities)
+                () -> WifiNanRttCapabilities.fromBytes(invalidCapabilities)
         );
 
         byte[] invalidTechnology = Arrays.copyOf(mRttCapabilityWithHeaderBytes,
@@ -89,7 +89,7 @@ public class WifiNanRttCapabilitiesV1Test {
 
         assertThrows(
                 Exception.class,
-                () -> WifiNanRttCapabilitiesV1.fromBytes(invalidTechnology)
+                () -> WifiNanRttCapabilities.fromBytes(invalidTechnology)
         );
     }
 

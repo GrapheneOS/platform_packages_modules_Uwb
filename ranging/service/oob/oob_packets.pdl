@@ -130,22 +130,12 @@ struct WifiBandInfo {
     num_rx_chains: 8,
 }
 
-struct WifiNanRttCapabilitiesV1: Capabilities(technology = WIFI_NAN_RTT) {
+struct WifiNanRttCapabilities: Capabilities(technology = WIFI_NAN_RTT) {
     features: 8,
     periodic: 1,
     _reserved_: 7,
     bandwidth: WifiBandwidth,
     num_rx_chains: 8,
-}
-
-// Version 4(In-Development)
-struct WifiNanRttCapabilitiesV4: Capabilities(technology = WIFI_NAN_RTT) {
-    features: 8,
-    periodic: 1,
-    _reserved_: 23,
-    _count_(band_info): 8,
-    security_method: WiFiSecurityMethod,
-    band_info: WifiBandInfo[]
 }
 
 struct BleRssiCapabilities: Capabilities(technology = BLE_RSSI) {
@@ -195,24 +185,12 @@ enum WifiDeviceRole: 8 {
     INITIATOR = 0x1,
 }
 
-struct WifiNanRttConfigurationV1: Configuration(technology = WIFI_NAN_RTT) {
+struct WifiNanRttConfiguration: Configuration(technology = WIFI_NAN_RTT) {
     _size_(service_name): 8,
     service_name: 8[],
     device_role: WifiDeviceRole,
     periodic: 1,
     _reserved_: 7,
-}
-
-// Version 4(In-Development)
-struct WifiNanRttConfigurationV4: Configuration(technology = WIFI_NAN_RTT) {
-    _size_(service_name): 8,
-    service_name: 8[],
-    device_role: WifiDeviceRole,
-    periodic: 1,
-    _reserved_: 7,
-    format_and_bandwidth: 8,
-    cfreq0: 8,
-    cfreq1: 8,
 }
 
 struct BleRssiConfiguration: Configuration(technology = BLE_RSSI) {
