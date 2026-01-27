@@ -122,9 +122,9 @@ public class OobInitiatorProtocol {
      * @param peer The remote device to which this request is being sent.
      * @param configurations The set of technology-specific configurations.
      * @param supportedMotion Indicates if the local device supports motion detection.
-     * @return A byte array representing the {@link ConfigurationRequestV3} message.
+     * @return A {@link ConfigurationRequestV3} message.
      */
-    public byte[] getConfigurationRequest(
+    public ConfigurationRequestV3 getConfigurationRequest(
             RangingDevice peer, Set<Configuration> configurations, MotionIndicator supportedMotion
     ) {
         TechnologySet technologies = technologyBitset(configurations.stream().map(
@@ -135,8 +135,7 @@ public class OobInitiatorProtocol {
                 .setTechnologiesToStart(technologies)
                 .setConfigs(configurations.toArray(new Configuration[0]))
                 .setSupportedMotion(supportedMotion)
-                .build()
-                .toBytes();
+                .build();
     }
 
     public byte[] getStopRequest(RangingDevice peer, Set<RangingTechnology> technologies) {
