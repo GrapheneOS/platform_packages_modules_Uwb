@@ -56,6 +56,7 @@ import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.MotionIndicator;
 import com.android.server.ranging.oob.packets.MotionNotification;
@@ -76,7 +77,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -172,10 +172,10 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                         + "failed to agree on a configuration");
                 return;
             }
-            byte[] request = mProtocol.getConfigurationRequest(
+            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
                     mDevice, remote, MotionIndicator.Supported);
-            Log.v(TAG, "Sending " + Arrays.toString(request));
-            var unused = mConnection.sendData(request)
+            Log.v(TAG, "Sending " + request);
+            var unused = mConnection.sendData(request.toBytes())
                     .transform(unused1 -> {
                         OobInitiatorRangingSession.super.start(local);
                         return null;
@@ -325,13 +325,13 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             Peer peer = mPeers.get(peerDevice);
             Set<RangingTechnology> starting = peer.mEngine.getTechnologiesToStart();
 
-            byte[] request = mProtocol.getConfigurationRequest(
+            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
                     peerDevice,
                     mConfigManager.getRemoteConfigs(peerDevice, starting),
                     MotionIndicator.Supported); // TODO: Read the configuration instead of hard-code
             pendingSends.put(
                     peerDevice,
-                    peer.mConnection.sendData(request)
+                    peer.mConnection.sendData(request.toBytes())
                             .transformAsync(unused -> {
                                 peer.mOobCompleted.set(null);
                                 // TODO: Exchange OOB capability and enabling param.
