@@ -1080,7 +1080,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setIsDiagnosticsEnabled(bundle.getBoolean(KEY_IS_DIAGNOSTICS_ENABLED, false))
                 .setDiagramsFrameReportsFieldsFlags((byte)
                         bundle.getInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, 0))
-                .setAntennaMode((byte) bundle.getInt(KEY_ANTENNA_MODE, ANTENNA_MODE_OMNI))
+                .setAntennaMode((byte) bundle.getInt(KEY_ANTENNA_MODE, ANTENNA_MODE_UNSET))
                 .setIsKeyRotationEnabled(bundle.getBoolean(KEY_IS_KEY_ROTATION_ENABLED))
                 .setKeyRotationRate(bundle.getInt(KEY_KEY_ROTATION_RATE))
                 .setAoaResultRequest(bundle.getInt(KEY_AOA_RESULT_REQUEST))
@@ -1304,7 +1304,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private byte mDiagramsFrameReportsFieldsFlags = 0;
 
         /** Defaults to omni mode **/
-        @AntennaMode private byte mAntennaMode = ANTENNA_MODE_OMNI;
+        @AntennaMode private byte mAntennaMode = (byte) ANTENNA_MODE_UNSET;
 
         /** UCI spec default: no key rotation */
         private boolean mIsKeyRotationEnabled = false;

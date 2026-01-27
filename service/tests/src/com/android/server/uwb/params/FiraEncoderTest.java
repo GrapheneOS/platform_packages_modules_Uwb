@@ -18,6 +18,7 @@ package com.android.server.uwb.params;
 
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.ANTENNA_MODE_OMNI;
 import static com.google.uwb.support.fira.FiraParams.CONTENTION_BASED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
@@ -97,7 +98,8 @@ public class FiraEncoderTest {
                     .setRangeDataNtfAoaAzimuthLower(-1.5)
                     .setRangeDataNtfAoaAzimuthUpper(2.5)
                     .setRangeDataNtfAoaElevationLower(-1.5)
-                    .setRangeDataNtfAoaElevationUpper(1.2);
+                    .setRangeDataNtfAoaElevationUpper(1.2)
+                    .setAntennaMode((byte) ANTENNA_MODE_OMNI);
 
     private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1 =
             new FiraOpenSessionParams.Builder(TEST_FIRA_OPEN_SESSION_COMMON_PARAMS);
@@ -146,7 +148,8 @@ public class FiraEncoderTest {
                     .setUlTdoaRandomWindowMs(30)
                     .setUlTdoaDeviceIdType(UL_TDOA_DEVICE_ID_16_BIT)
                     .setUlTdoaDeviceId(new byte[]{0x0B, 0x0A})
-                    .setUlTdoaTxTimestampType(TX_TIMESTAMP_40_BIT);
+                    .setUlTdoaTxTimestampType(TX_TIMESTAMP_40_BIT)
+                    .setAntennaMode((byte) ANTENNA_MODE_OMNI);
 
     private static final String DEVICE_TYPE_CONTROLEE_TLV = "000100";
     private static final String DEVICE_TYPE_CONTROLLER_TLV = "000101";
@@ -240,7 +243,6 @@ public class FiraEncoderTest {
 
         // Test antenna mode param.
         DeviceConfigFacade mockDeviceConfig = mock(DeviceConfigFacade.class);
-        when(mockDeviceConfig.isAntennaModeConfigSupported()).thenReturn(true);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mockDeviceConfig);
 
         mFiraEncoder = new FiraEncoder(mUwbInjector);
@@ -476,6 +478,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaAzimuthUpper(2.5)
                         .setRangeDataNtfAoaElevationLower(-1.5)
                         .setRangeDataNtfAoaElevationUpper(1.2)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         byte[] expected_data;
@@ -534,6 +537,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaAzimuthUpper(2.5)
                         .setRangeDataNtfAoaElevationLower(-1.5)
                         .setRangeDataNtfAoaElevationUpper(1.2)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         byte[] expected_data;
@@ -606,6 +610,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaAzimuthUpper(2.5)
                         .setRangeDataNtfAoaElevationLower(-1.5)
                         .setRangeDataNtfAoaElevationUpper(1.2)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         String STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY_TLV = "020102";
@@ -670,6 +675,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaAzimuthUpper(2.5)
                         .setRangeDataNtfAoaElevationLower(-1.5)
                         .setRangeDataNtfAoaElevationUpper(1.2)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         String STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY_TLV = "020104";
@@ -734,6 +740,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaAzimuthUpper(2.5)
                         .setRangeDataNtfAoaElevationLower(-1.5)
                         .setRangeDataNtfAoaElevationUpper(1.2)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         String STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY_TLV = "020104";
@@ -791,6 +798,7 @@ public class FiraEncoderTest {
                         .setRframeConfig(RFRAME_CONFIG_SP1)
                         .setVendorId(new byte[]{0x5, 0x78})
                         .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         byte[] expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_Dl_TDOA_TLV
@@ -836,6 +844,7 @@ public class FiraEncoderTest {
                         .setVendorId(new byte[]{0x5, 0x78})
                         .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
                         .setDlTdoaBlockStriding(01)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         String DL_TDOA_BLOCK_STRIDING_TLV = "430101";
@@ -891,6 +900,7 @@ public class FiraEncoderTest {
                     .setHasControlMessage(true)
                     .setHasRangingControlPhase(true)
                     .setMeasurementReportPhase(FiraParams.MEASUREMENT_REPORT_PHASE_SET)
+                    .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                     .build();
         byte[] expected_data = UwbUtil.getByteArray(
                 RANGING_ROUND_USAGE_SS_TWR_TLV
@@ -973,6 +983,7 @@ public class FiraEncoderTest {
                         .setRangeDataNtfAoaElevationUpper(1.2)
                         .setInitiationTime(1000)
                         .setSessionTimeBase(1, 1, 200)
+                        .setAntennaMode((byte) ANTENNA_MODE_OMNI)
                         .build();
 
         byte[] expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV

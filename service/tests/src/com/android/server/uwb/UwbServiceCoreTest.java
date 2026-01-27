@@ -139,6 +139,7 @@ import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1177,6 +1178,8 @@ public class UwbServiceCoreTest {
                 .thenReturn(firaSpecificationParams);
         when(firaSpecificationParams.hasRssiReportingSupport())
                 .thenReturn(true);
+        when(genericSpecificationParams.getAntennaModeCapabilities())
+                .thenReturn(EnumSet.noneOf(GenericParams.AntennaModeCapabilityFlag.class));
         mUwbServiceCore.openRanging(
                 attributionSource, sessionHandle, cb, params.toBundle(), TEST_DEFAULT_CHIP_ID);
 

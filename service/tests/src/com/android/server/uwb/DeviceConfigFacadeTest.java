@@ -159,8 +159,6 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(false);
         when(mResources.getBoolean(R.bool.fused_country_code_provider_enabled))
                 .thenReturn(false);
-        when(mResources.getBoolean(R.bool.is_antenna_mode_config_supported))
-                .thenReturn(false);
 
         when(mContext.getResources()).thenReturn(mResources);
 
@@ -242,7 +240,6 @@ public class DeviceConfigFacadeTest {
         assertEquals(false, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
         assertEquals(false, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
         assertEquals(false, mDeviceConfigFacade.isFusedCountryCodeProviderEnabled());
-        assertEquals(false, mDeviceConfigFacade.isAntennaModeConfigSupported());
     }
 
     /**
@@ -359,8 +356,6 @@ public class DeviceConfigFacadeTest {
                 anyBoolean())).thenReturn(true);
         when(DeviceConfig.getBoolean(anyString(), eq("fused_country_code_provider_enabled"),
                 anyBoolean())).thenReturn(true);
-        when(DeviceConfig.getBoolean(anyString(), eq("is_antenna_mode_config_supported"),
-                anyBoolean())).thenReturn(true);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
@@ -383,7 +378,6 @@ public class DeviceConfigFacadeTest {
         assertEquals(true, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
         assertEquals(true, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
         assertEquals(true, mDeviceConfigFacade.isFusedCountryCodeProviderEnabled());
-        assertEquals(true, mDeviceConfigFacade.isAntennaModeConfigSupported());
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
                 anyString())).thenReturn("NONE");
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
@@ -498,7 +492,6 @@ public class DeviceConfigFacadeTest {
         assertEquals(false, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
         assertEquals(false, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
         assertEquals(false, mDeviceConfigFacade.isFusedCountryCodeProviderEnabled());
-        assertEquals(false, mDeviceConfigFacade.isAntennaModeConfigSupported());
         assertEquals(0, mDeviceConfigFacade.getMccMncOemOverrideList().length);
         assertEquals(false, mDeviceConfigFacade.isRandomHopmodekeySupported());
         assertEquals(false, mDeviceConfigFacade.isFiraSupportedExtensionForCCC());

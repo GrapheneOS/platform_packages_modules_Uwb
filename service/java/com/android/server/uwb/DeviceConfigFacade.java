@@ -102,7 +102,6 @@ public class DeviceConfigFacade {
     private boolean mPersistentCacheUseForCountryCodeEnabled;
     private boolean mHwIdleTurnOffEnabled;
     private boolean mFusedCountryCodeProviderEnabled;
-    private boolean mIsAntennaModeConfigSupported;
     private String[] mMccMncOemOverrideList;
     private boolean mIsRandomHopmodekeySupported;
     private boolean mFiraExtensionForCCCSupported;
@@ -330,12 +329,6 @@ public class DeviceConfigFacade {
                     mContext.getResources().getBoolean(R.bool.fused_country_code_provider_enabled)
             );
 
-            mIsAntennaModeConfigSupported = DeviceConfig.getBoolean(
-                    DeviceConfig.NAMESPACE_UWB,
-                    "is_antenna_mode_config_supported",
-                    mContext.getResources().getBoolean(R.bool.is_antenna_mode_config_supported)
-            );
-
             // device config override with array is not supported, so just read the resource.
             mMccMncOemOverrideList = mContext.getResources()
                     .getStringArray(R.array.mcc_mcc_oem_override_list);
@@ -403,7 +396,6 @@ public class DeviceConfigFacade {
             mPersistentCacheUseForCountryCodeEnabled = false;
             mHwIdleTurnOffEnabled = false;
             mFusedCountryCodeProviderEnabled = false;
-            mIsAntennaModeConfigSupported = false;
 
             // device config override with array is not supported, so just read the resource.
             mMccMncOemOverrideList = new String[] {};
@@ -725,11 +717,6 @@ public class DeviceConfigFacade {
     public boolean isFusedCountryCodeProviderEnabled() {
         return mFusedCountryCodeProviderEnabled;
     }
-
-    /**
-     * Returns whether antenna mode configuration is supported or not.
-     */
-    public boolean isAntennaModeConfigSupported() { return mIsAntennaModeConfigSupported; }
 
     /**
      * Returns array of mcc/mnc where oem override country code should be used.
