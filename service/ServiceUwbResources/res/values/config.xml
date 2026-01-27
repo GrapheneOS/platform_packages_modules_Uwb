@@ -247,6 +247,10 @@
     If false, never sets hopmodekey randomly-->
     <bool name = "enable_random_hopmodekey">false</bool>
 
+    <!-- Whether hopmodekey should be 4-byte or 16-byte. Random hopmodekey must also
+    be enabled. If true, 16-byte. -->
+    <bool name = "enable_16_byte_hopmodekey">false</bool>
+
     <!-- Whether FIRa CCC capability UCI Specification applied or not.
     If enabled, FIRa CCC capability UCI Specification used -->
     <bool name = "fira_supported_extension_ccc">false</bool>

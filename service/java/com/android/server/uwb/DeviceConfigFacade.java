@@ -17,7 +17,6 @@
 package com.android.server.uwb;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.os.Handler;
 import android.provider.DeviceConfig;
 import android.util.Log;
@@ -107,6 +106,7 @@ public class DeviceConfigFacade {
     private String[] mMccMncOemOverrideList;
     private boolean mIsRandomHopmodekeySupported;
     private boolean mFiraExtensionForCCCSupported;
+    private boolean mIs16ByteHopmodekeyEnabled;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -343,6 +343,9 @@ public class DeviceConfigFacade {
             mIsRandomHopmodekeySupported = mContext.getResources()
                     .getBoolean(R.bool.enable_random_hopmodekey);
 
+            mIs16ByteHopmodekeyEnabled = mContext.getResources()
+                    .getBoolean(R.bool.enable_16_byte_hopmodekey);
+
             // A little parsing and cleanup:
             mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
             mBackAzimuthRadiansPerSecond = (float) Math.toRadians(backAzimuthDegreesPerSecond);
@@ -405,6 +408,7 @@ public class DeviceConfigFacade {
             // device config override with array is not supported, so just read the resource.
             mMccMncOemOverrideList = new String[] {};
             mIsRandomHopmodekeySupported = false;
+            mIs16ByteHopmodekeyEnabled = false;
 
             // A little parsing and cleanup:
             mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
@@ -747,5 +751,12 @@ public class DeviceConfigFacade {
      */
     public boolean isFiraSupportedExtensionForCCC() {
         return mFiraExtensionForCCCSupported;
+    }
+
+    /**
+     * Returns whether hopmodekey should be 16-byte or not.
+     */
+    public boolean is16ByteHopmodekeyEnabled() {
+        return mIs16ByteHopmodekeyEnabled;
     }
 }

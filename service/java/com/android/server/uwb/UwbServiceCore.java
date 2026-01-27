@@ -616,7 +616,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             BluetoothAddress address)
             throws RemoteException {
         mUwbInjector.getTimesyncManager().registerEventCallback(callback, address);
-
     }
 
     public synchronized void unregisterTimesyncCallback(ITimesyncCallbackListener callback,
@@ -788,6 +787,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 builder.setHopModeKey(new Random().nextInt());
                 cccOpenRangingParams = builder.build();
             }
+
             sessionId = cccOpenRangingParams.getSessionId();
             sessionType = cccOpenRangingParams.getSessionType();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,

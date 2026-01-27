@@ -33,6 +33,9 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.fira.FiraParams;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * Encoder for Aliro UCI SET_APP_CONFIG CMD parameters.
  *
@@ -146,7 +149,16 @@ public class AliroEncoder extends TlvEncoder {
         }
         if (params.getHoppingConfigMode() != AliroParams.HOPPING_CONFIG_MODE_NONE
                 && params.getHopModeKey() != AliroParams.HOP_MODE_KEY_UNSET) {
-            tlvBufferBuilder.putInt(ConfigParam.HOP_MODE_KEY, params.getHopModeKey());
+            if (mUwbInjector.getDeviceConfigFacade().is16ByteHopmodekeyEnabled()
+                    && mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()) {
+                ByteBuffer hopModeBuff = ByteBuffer.allocate(16);
+                hopModeBuff.order(ByteOrder.LITTLE_ENDIAN);
+                hopModeBuff.putInt(params.getHopModeKey());
+                tlvBufferBuilder.putByteArray(ConfigParam.HOP_MODE_KEY,
+                        16, hopModeBuff.array());
+            } else {
+                tlvBufferBuilder.putInt(ConfigParam.HOP_MODE_KEY, params.getHopModeKey());
+            }
         }
         if (params.getAbsoluteInitiationTimeUs() > 0) {
             tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
