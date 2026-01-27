@@ -1363,17 +1363,17 @@ public final class UwbManager {
      * <p> The provided callback will be invoked by the given {@link Executor}.
      *
      * @param executor an {@link Executor} to execute given callback
-     * @param callback the {@link TimesyncCallback} to be registered
      * @param macAddress the mac address of the peer device for time synchronization
      * @param addressType the {@link AddressType} of the peer device
+     * @param callback the {@link TimesyncCallback} to be registered
      */
     @FlaggedApi(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void registerTimesyncCallback(
             @NonNull @CallbackExecutor Executor executor,
-            @NonNull TimesyncCallback callback,
             @NonNull String macAddress,
-            @AddressType int addressType) {
+            @AddressType int addressType,
+            @NonNull TimesyncCallback callback) {
         mTimesyncCallbackListener.register(executor, callback, macAddress, addressType);
     }
 

@@ -60,14 +60,17 @@ public final class TimesyncEvent implements Parcelable {
     }
 
     /**
-     * LMP event id to be monitored CONNECT_IND indicator for initiating connection, timestamp will
-     * be at the anchor point LL_PHY_UPDATE_IND indicator for PHY update
+     * LMP event id to be monitored BLE_LMP_EVENT_CONNECT_IND indicator for initiating connection,
+     * timestamp will be at the anchor point BLE_LMP_EVENT_LL_PHY_UPDATE_IND indicator for PHY
+     * update.
+     *
+     * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({CONNECT_IND, LL_PHY_UPDATE_IND})
+    @IntDef({BLE_LMP_EVENT_CONNECT_IND, BLE_LMP_EVENT_LL_PHY_UPDATE_IND})
     private @interface BleLmpEvent {}
-    public static final int CONNECT_IND = 0;
-    public static final int LL_PHY_UPDATE_IND = 1;
+    public static final int BLE_LMP_EVENT_CONNECT_IND = 0;
+    public static final int BLE_LMP_EVENT_LL_PHY_UPDATE_IND = 1;
 
     /** Direction of the LMP event */
     @Retention(RetentionPolicy.SOURCE)
