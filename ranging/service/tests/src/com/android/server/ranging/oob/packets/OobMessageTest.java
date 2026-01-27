@@ -29,7 +29,7 @@ public final class OobMessageTest {
 
     @Test
     public void parseBytes_validHeader_parsesCorrectly() throws Exception {
-        byte[] requestMessageHeader1 = new byte[]{0x2, 0x0};
+        byte[] requestMessageHeader1 = new byte[]{0x3, 0x0};
         byte[] requestMessageHeader2 = new byte[]{(byte) 0xff, 0x3};
 
         assertThat(OobMessage.fromBytes(requestMessageHeader1)).isEqualTo(
@@ -67,11 +67,12 @@ public final class OobMessageTest {
     @Test
     public void toBytes_convertsCorrectly() throws Exception {
         OobMessage header1 =
-                new ConfigurationRequest.Builder()
+                new ConfigurationRequestV3.Builder()
                         .setVersion(Version.Current)
                         .setTechnologiesToConfigure(new TechnologySet.Builder().build())
                         .setTechnologiesToStart(new TechnologySet.Builder().build())
                         .setConfigs(new Configuration[]{})
+                        .setSupportedMotion(MotionIndicator.Supported)
                         .build();
         OobMessage header2 =
                 new StopResponse.Builder()
@@ -79,7 +80,7 @@ public final class OobMessageTest {
                         .setStoppedTechnologies(new TechnologySet.Builder().build())
                         .build();
 
-        assertThat(header1.toBytes()).isEqualTo(new byte[]{0x2, 0x2, 0, 0, 0, 0});
+        assertThat(header1.toBytes()).isEqualTo(new byte[]{0x3, 0x2, 0, 0, 0, 0, 1});
         assertThat(header2.toBytes()).isEqualTo(new byte[]{(byte) 0xff, 0x7, 0, 0});
     }
 }

@@ -27,10 +27,10 @@ import org.junit.runners.JUnit4;
 import java.nio.charset.StandardCharsets;
 
 @RunWith(JUnit4.class)
-public class WifiNanRttConfigurationV1Test {
+public class WifiNanRttConfigurationTest {
 
-    private static final WifiNanRttConfigurationV1 RTT_OOB_CONFIG =
-            new WifiNanRttConfigurationV1.Builder()
+    private static final WifiNanRttConfiguration RTT_OOB_CONFIG =
+            new WifiNanRttConfiguration.Builder()
                     .setPeriodic(false)
                     .setServiceName("rttConfigTest".getBytes(StandardCharsets.UTF_8))
                     .setDeviceRole(WifiDeviceRole.Initiator)
@@ -57,16 +57,16 @@ public class WifiNanRttConfigurationV1Test {
     public void rttOobConfigValidate_tests() throws Exception {
         assertThat(RTT_OOB_CONFIG.toBytes()).isEqualTo(mRttConfigBytes);
 
-        assertThat(WifiNanRttConfigurationV1.fromBytes(mRttConfigBytes)).isEqualTo(RTT_OOB_CONFIG);
+        assertThat(WifiNanRttConfiguration.fromBytes(mRttConfigBytes)).isEqualTo(RTT_OOB_CONFIG);
 
         byte[] shortMessage = new byte[]{0x0A};
         assertThrows(Exception.class,
-                () -> WifiNanRttConfigurationV1.fromBytes(shortMessage));
+                () -> WifiNanRttConfiguration.fromBytes(shortMessage));
 
         byte[] unknownConfigBytes = new byte[]{0x09, 0x02};
 
         assertThrows(Exception.class,
-                () -> WifiNanRttConfigurationV1.fromBytes(unknownConfigBytes));
+                () -> WifiNanRttConfiguration.fromBytes(unknownConfigBytes));
     }
 
 }

@@ -6,7 +6,8 @@ little_endian_packets
 
 enum Version: 8 {
     V1 = 1,
-    CURRENT = 2,
+    V2 = 2,
+    CURRENT = 3,
     FUTURE = ..,
 }
 
@@ -33,7 +34,7 @@ enum Technology: 8 {
     BLE_CS = 0x1,
     WIFI_NAN_RTT = 0x2,
     BLE_RSSI = 0x3,
-    // Version 3(In-Development)
+    // Version 4(In-Development)
     WIFI_PD = 0x5,
     RESERVED = ..,
 }
@@ -43,7 +44,7 @@ struct TechnologySet {
     ble_cs: 1,
     wifi_nan_rtt: 1,
     ble_rssi: 1,
-    // Version 3(In-Development)
+    // Version 4(In-Development)
     _reserved_: 1,
     wifi_pd: 1,
     _reserved_: 10,
@@ -52,6 +53,12 @@ struct TechnologySet {
 enum TechnologyTransitioning: 8 {
     NOT_SUPPORTED = 0x0,
     MAKE_BEFORE_BREAK = 0x1,
+    RESERVED = ..,
+}
+
+enum MotionIndicator: 8 {
+    NOT_SUPPORTED = 0x0,
+    SUPPORTED = 0x1,
     RESERVED = ..,
 }
 
@@ -123,22 +130,12 @@ struct WifiBandInfo {
     num_rx_chains: 8,
 }
 
-struct WifiNanRttCapabilitiesV1: Capabilities(technology = WIFI_NAN_RTT) {
+struct WifiNanRttCapabilities: Capabilities(technology = WIFI_NAN_RTT) {
     features: 8,
     periodic: 1,
     _reserved_: 7,
     bandwidth: WifiBandwidth,
     num_rx_chains: 8,
-}
-
-// Version 3(In-Development)
-struct WifiNanRttCapabilitiesV3: Capabilities(technology = WIFI_NAN_RTT) {
-    features: 8,
-    periodic: 1,
-    _reserved_: 23,
-    _count_(band_info): 8,
-    security_method: WiFiSecurityMethod,
-    band_info: WifiBandInfo[]
 }
 
 struct BleRssiCapabilities: Capabilities(technology = BLE_RSSI) {
@@ -188,24 +185,12 @@ enum WifiDeviceRole: 8 {
     INITIATOR = 0x1,
 }
 
-struct WifiNanRttConfigurationV1: Configuration(technology = WIFI_NAN_RTT) {
+struct WifiNanRttConfiguration: Configuration(technology = WIFI_NAN_RTT) {
     _size_(service_name): 8,
     service_name: 8[],
     device_role: WifiDeviceRole,
     periodic: 1,
     _reserved_: 7,
-}
-
-// Version 3(In-Development)
-struct WifiNanRttConfigurationV3: Configuration(technology = WIFI_NAN_RTT) {
-    _size_(service_name): 8,
-    service_name: 8[],
-    device_role: WifiDeviceRole,
-    periodic: 1,
-    _reserved_: 7,
-    format_and_bandwidth: 8,
-    cfreq0: 8,
-    cfreq1: 8,
 }
 
 struct BleRssiConfiguration: Configuration(technology = BLE_RSSI) {
@@ -295,10 +280,17 @@ packet CapabilitiesResponseV2: OobMessage(id = CAPABILITIES_RESPONSE) {
     device_type: DeviceType,
 }
 
-packet ConfigurationRequest: OobMessage(id = CONFIGURATION_REQUEST) {
+packet ConfigurationRequestV1: OobMessage(version=V1, id = CONFIGURATION_REQUEST) {
     technologies_to_configure: TechnologySet,
     technologies_to_start: TechnologySet,
     configs: Configuration[],
+}
+
+packet ConfigurationRequestV3: OobMessage(id = CONFIGURATION_REQUEST) {
+    technologies_to_configure: TechnologySet,
+    technologies_to_start: TechnologySet,
+    configs: Configuration[],
+    supported_motion : MotionIndicator,
 }
 
 packet ConfigurationResponse: OobMessage(id = CONFIGURATION_RESPONSE) {

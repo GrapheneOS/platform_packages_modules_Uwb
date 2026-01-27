@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 public final class StopRequestTest {
     private static final byte[] UWB_CS_TECH_BITMAP = new byte[]{0x3, 0x00};
     private static final byte[] UWB_TECH_ONLY_BITMAP = new byte[]{0x01, 0x00};
-    private static final byte[] HEADER_BYTES = new byte[]{0x2, 0x6};
+    private static final byte[] HEADER_BYTES = new byte[]{0x3, 0x6};
     private static final byte[] UWB_CS_TECH_MESSAGE =
             Bytes.concat(HEADER_BYTES, UWB_CS_TECH_BITMAP);
     private static final byte[] UWB_ONLY_MESSAGE = Bytes.concat(HEADER_BYTES, UWB_TECH_ONLY_BITMAP);
