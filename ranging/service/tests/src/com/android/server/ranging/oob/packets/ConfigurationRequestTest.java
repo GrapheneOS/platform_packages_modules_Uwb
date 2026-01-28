@@ -49,18 +49,19 @@ public final class ConfigurationRequestTest {
                     .setDeviceMode(UwbDeviceMode.Controller)
                     .build();
 
-    private static final ConfigurationRequest SET_CONFIGURATION_MESSAGE =
-            new ConfigurationRequest.Builder()
+    private static final ConfigurationRequestV3 SET_CONFIGURATION_MESSAGE =
+            new ConfigurationRequestV3.Builder()
                     .setVersion(Version.Current)
                     .setTechnologiesToConfigure(new TechnologySet.Builder().setUwb(true).build())
                     .setTechnologiesToStart(new TechnologySet.Builder().setUwb(true).build())
                     .setConfigs(new Configuration[]{ UWB_CONFIG })
+                    .setSupportedMotion(MotionIndicator.Supported)
                     .build();
 
     private static final byte[] oobHeaderBytes =
             new byte[]{
                     // Version
-                    0x02,
+                    0x03,
                     // Message type
                     0x02,
             };
@@ -72,7 +73,7 @@ public final class ConfigurationRequestTest {
                     0x0,
                     // Ranging technologies to start ranging
                     0x1,
-                    0x0
+                    0x0,
             };
 
     private static final byte[] uwbConfigBytes =
@@ -120,8 +121,10 @@ public final class ConfigurationRequestTest {
                     0x1,
             };
 
+    private static final byte[] MOTION_SUPPORTED = {0x1};
     private static final byte[] setConfigurationMessageBytes =
-            Bytes.concat(oobHeaderBytes, setConfigurationMessageMissingConfigBytes, uwbConfigBytes);
+            Bytes.concat(oobHeaderBytes,
+                    setConfigurationMessageMissingConfigBytes, uwbConfigBytes, MOTION_SUPPORTED);
 
     @Test
     public void toBytes_convertsCorrectly() throws Exception {
@@ -130,19 +133,20 @@ public final class ConfigurationRequestTest {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(ConfigurationRequest.fromBytes(setConfigurationMessageBytes))
+        assertThat(OobMessage.fromBytes(setConfigurationMessageBytes))
                 .isEqualTo(SET_CONFIGURATION_MESSAGE);
     }
 
     @Test
     public void toBytes_noConfigPresent_convertsCorrectly() throws Exception {
-        ConfigurationRequest message = new ConfigurationRequest.Builder()
+        ConfigurationRequestV3 message = new ConfigurationRequestV3.Builder()
                 .setVersion(Version.Current)
                 .setTechnologiesToConfigure(new TechnologySet.Builder().build())
                 .setTechnologiesToStart(new TechnologySet.Builder().build())
                 .setConfigs(new Configuration[]{})
+                .setSupportedMotion(MotionIndicator.Supported)
                 .build();
-        byte[] expectedBytes = new byte[]{0x2, 0x2, 0x0, 0x0, 0x0, 0x0};
+        byte[] expectedBytes = new byte[]{0x3, 0x2, 0x0, 0x0, 0x0, 0x0, 0x1};
 
         assertThat(message.toBytes()).isEqualTo(expectedBytes);
     }
@@ -151,7 +155,7 @@ public final class ConfigurationRequestTest {
     public void parseBytes_invalidMessageSize_throws() throws Exception {
         assertThrows(
                 Exception.class,
-                () -> ConfigurationRequest.fromBytes(new byte[]{0x01}));
+                () -> ConfigurationRequestV3.fromBytes(new byte[]{0x01}));
     }
 
     @Test

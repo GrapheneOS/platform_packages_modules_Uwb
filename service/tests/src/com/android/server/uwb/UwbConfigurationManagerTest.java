@@ -168,7 +168,6 @@ public class UwbConfigurationManagerTest {
                 any(byte[].class), anyString())).thenReturn(appConfig);
 
         DeviceConfigFacade mockDeviceConfig = mock(DeviceConfigFacade.class);
-        when(mockDeviceConfig.isAntennaModeConfigSupported()).thenReturn(false);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mockDeviceConfig);
 
         int status = mUwbConfigurationManager

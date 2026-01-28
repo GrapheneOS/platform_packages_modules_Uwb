@@ -56,8 +56,9 @@ import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DeviceType;
+import com.android.server.ranging.oob.packets.MotionIndicator;
 import com.android.server.ranging.oob.packets.MotionNotification;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.Technology;
@@ -171,7 +172,8 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                         + "failed to agree on a configuration");
                 return;
             }
-            ConfigurationRequest request = mProtocol.getConfigurationRequest(mDevice, remote);
+            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
+                    mDevice, remote, MotionIndicator.Supported);
             Log.v(TAG, "Sending " + request);
             var unused = mConnection.sendData(request.toBytes())
                     .transform(unused1 -> {
@@ -323,9 +325,10 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             Peer peer = mPeers.get(peerDevice);
             Set<RangingTechnology> starting = peer.mEngine.getTechnologiesToStart();
 
-            ConfigurationRequest request = mProtocol.getConfigurationRequest(
+            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
                     peerDevice,
-                    mConfigManager.getRemoteConfigs(peerDevice, starting));
+                    mConfigManager.getRemoteConfigs(peerDevice, starting),
+                    MotionIndicator.Supported); // TODO: Read the configuration instead of hard-code
             pendingSends.put(
                     peerDevice,
                     peer.mConnection.sendData(request.toBytes())

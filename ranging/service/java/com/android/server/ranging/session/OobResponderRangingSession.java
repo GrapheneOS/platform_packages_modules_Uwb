@@ -35,7 +35,8 @@ import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobResponderProtocol;
 import com.android.server.ranging.oob.packets.CapabilitiesRequest;
-import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV1;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.OobMessage;
 import com.android.server.ranging.oob.packets.StopRequest;
 
@@ -119,9 +120,14 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
             Log.v(TAG, "Received " + message);
             (switch (message) {
                 case CapabilitiesRequest request ->
-                        sendCapabilityResponse(request).transformAsync(
-                                unused -> mOobConnection.receiveData(), mOobExecutor);
-                case ConfigurationRequest request -> {
+                    sendCapabilityResponse(request).transformAsync(
+                            unused -> mOobConnection.receiveData(), mOobExecutor);
+                case ConfigurationRequestV1 request -> {
+                    OobResponderRangingSession.super.start(
+                            mProtocol.getConfigurations(mPeer, request));
+                    yield mOobConnection.receiveData();
+                }
+                case ConfigurationRequestV3 request -> {
                     OobResponderRangingSession.super.start(
                             mProtocol.getConfigurations(mPeer, request));
                     yield mOobConnection.receiveData();
