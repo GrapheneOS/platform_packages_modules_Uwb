@@ -19,9 +19,12 @@ package com.android.ranging.uwb.backend.internal;
 import static android.content.pm.PackageManager.FEATURE_UWB;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 
+import static com.android.ranging.uwb.backend.internal.RangingCapabilities.DEFAULT_SUPPORTED_ANTENNA_MODES;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.DEFAULT_SUPPORTED_RANGING_UPDATE_RATE;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.DEFAULT_SUPPORTED_SLOT_DURATIONS;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CONFIG_IDS;
+import static com.android.ranging.uwb.backend.internal.Utils.ANTENNA_MODE_DIRECTIONAL;
+import static com.android.ranging.uwb.backend.internal.Utils.ANTENNA_MODE_OMNI;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
@@ -47,6 +50,8 @@ import androidx.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericParams.AntennaModeCapabilityFlag;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
 import java.util.ArrayList;
@@ -194,7 +199,8 @@ public class UwbServiceImpl {
                     SUPPORTED_BPRF_PREAMBLE_INDEX,
                     /* hasBackgroundRangingSupport */ false,
                     "00",
-                    false);
+                    false,
+                    DEFAULT_SUPPORTED_ANTENNA_MODES);
         }
 
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
@@ -255,7 +261,23 @@ public class UwbServiceImpl {
         if (minSlotDurationUs <= 1000) {
             supportedSlotDurations.add(Utils.DURATION_1_MS);
         }
-
+        List<Integer> supportedAntennaModes = new ArrayList<>();
+        if (GenericSpecificationParams.isCorrectProtocol(bundle)) {
+            GenericSpecificationParams genericParams =
+                    GenericSpecificationParams.fromBundle(bundle);
+            EnumSet<AntennaModeCapabilityFlag> antennaCapabilities =
+                    genericParams.getAntennaModeCapabilities();
+            if (!antennaCapabilities.isEmpty()) {
+                supportedAntennaModes.clear();
+                if (antennaCapabilities.contains(AntennaModeCapabilityFlag.HAS_OMNI_MODE_SUPPORT)) {
+                    supportedAntennaModes.add(ANTENNA_MODE_OMNI);
+                }
+                if (antennaCapabilities.contains(
+                        AntennaModeCapabilityFlag.HAS_DIRECTIONAL_MODE_SUPPORT)) {
+                    supportedAntennaModes.add(ANTENNA_MODE_DIRECTIONAL);
+                }
+            }
+        }
         return new RangingCapabilities(
                 true,
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
@@ -270,6 +292,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedPreambleIndexes),
                 specificationParams.hasBackgroundRangingSupport(),
                 specificationParams.getCountryCode(),
-                dlTdoaSupported);
+                dlTdoaSupported,
+                supportedAntennaModes);
     }
 }

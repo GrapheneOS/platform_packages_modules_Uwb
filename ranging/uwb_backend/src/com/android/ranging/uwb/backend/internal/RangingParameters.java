@@ -42,6 +42,8 @@ public class RangingParameters {
     private final boolean mIsAoaDisabled;
     @Nullable
     private final UwbRangeLimitsConfig mRangeLimitsConfig;
+    @Utils.AntennaMode
+    private final int mAntennaMode;
 
     public RangingParameters(
             @Utils.UwbConfigId int uwbConfigId,
@@ -56,6 +58,25 @@ public class RangingParameters {
             @Utils.SlotDuration int slotDuration,
             boolean isAoaDisabled,
             @Nullable UwbRangeLimitsConfig rangeLimitsConfig) {
+        this(uwbConfigId, sessionId, subSessionId, sessionKeyInfo, subSessionKeyInfo,
+                complexChannel, peerAddresses, rangingUpdateRate, uwbRangeDataNtfConfig,
+                slotDuration, isAoaDisabled, rangeLimitsConfig, Utils.ANTENNA_MODE_UNSET);
+    }
+
+    public RangingParameters(
+            @Utils.UwbConfigId int uwbConfigId,
+            int sessionId,
+            int subSessionId,
+            byte[] sessionKeyInfo,
+            byte[] subSessionKeyInfo,
+            UwbComplexChannel complexChannel,
+            List<UwbAddress> peerAddresses,
+            @Utils.RangingUpdateRate int rangingUpdateRate,
+            @NonNull UwbRangeDataNtfConfig uwbRangeDataNtfConfig,
+            @Utils.SlotDuration int slotDuration,
+            boolean isAoaDisabled,
+            @Nullable UwbRangeLimitsConfig rangeLimitsConfig,
+            @Utils.AntennaMode int antennaMode) {
         mUwbConfigId = uwbConfigId;
         mSessionId = sessionId;
         mSubSessionId = subSessionId;
@@ -68,6 +89,7 @@ public class RangingParameters {
         mSlotDuration = slotDuration;
         mIsAoaDisabled = isAoaDisabled;
         mRangeLimitsConfig = rangeLimitsConfig;
+        mAntennaMode = antennaMode;
     }
 
     public int getSessionId() {
@@ -119,5 +141,10 @@ public class RangingParameters {
     @Nullable
     public UwbRangeLimitsConfig getUwbRangeLimitsConfig() {
         return mRangeLimitsConfig;
+    }
+
+    @Utils.AntennaMode
+    public int getAntennaMode() {
+        return mAntennaMode;
     }
 }

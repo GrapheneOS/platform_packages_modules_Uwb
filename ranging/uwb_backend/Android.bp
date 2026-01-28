@@ -31,6 +31,7 @@ java_library {
     static_libs: [
         "androidx.concurrent_concurrent-futures",
         "com.uwb.support.fira",
+        "com.uwb.support.generic",
         "com.uwb.support.multichip",
         "com.uwb.support.dltdoa",
         "guava",
