@@ -555,6 +555,7 @@ public abstract class RangingDevice {
                     () -> requireNonNull(mRangingSession).stop(), "Stop Ranging");
         } else {
             Log.i(TAG, "UWB stopRanging called but isRanging is false.");
+            return STATUS_OK;
         }
 
         boolean success =
