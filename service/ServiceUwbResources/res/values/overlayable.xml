@@ -64,6 +64,7 @@
             <item name="ccc_two_byte_config_id_little_endian_supported" type="bool" />
             <item name="enable_random_hopmodekey" type="bool" />
             <item name="fira_supported_extension_ccc" type="bool" />
+            <item name="enable_16_byte_hopmodekey" type="bool" />
           <!-- ===== End of UWB stack overlay definitions ===== -->
 
           <!-- ===== Start of ranging stack overlay definitions ===== -->
