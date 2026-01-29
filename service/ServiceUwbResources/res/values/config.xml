@@ -250,6 +250,23 @@
     <!-- Whether FIRa CCC capability UCI Specification applied or not.
     If enabled, FIRa CCC capability UCI Specification used -->
     <bool name = "fira_supported_extension_ccc">false</bool>
+
+    <!-- Whether android proprietary timesync is supported,
+     ANDROID_GID (0x0c) and ANDROID_TIMESTAMP_ANCHOR_TO_UWBS(0x03)-->
+    <bool name = "android_specific_timesync_supported">false</bool>
+
+    <!-- Device with high uncertainty for timesync. 255 is max, set it to 0 if timesync is reliable.
+    Value [µsec] = 2^(timesync_uncertainty_override/8)
+    -->
+    <integer name = "timesync_uncertainty_override">255</integer>
+
+    <!-- Static offset between system time and uwb time if they are in different time domain.
+    This value will be used in case there was an error getting or for fira 1.0 devices which does
+    not support uci query uwb timestamp -->
+    <integer name = "timesync_static_device_offset_us">-36000</integer>
+
+    <!-- Max clock skew ppm -->
+    <integer name = "timesync_clock_skew_ppm">100</integer>
     <!-- ===== End of UWB stack overlay definitions ===== -->
 
     <!-- ===== Start of ranging stack overlay definitions ===== -->
