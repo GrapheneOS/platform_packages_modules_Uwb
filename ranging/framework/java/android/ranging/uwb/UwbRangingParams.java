@@ -286,7 +286,6 @@ public final class UwbRangingParams implements Parcelable {
         return mSlotDurationMillis;
     }
 
-
     /**
      * Builder class for creating instances of {@link UwbRangingParams}
      */

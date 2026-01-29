@@ -39,6 +39,7 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 
 import java.time.Duration;
+import java.util.ArrayList;
 
 public class UwbCapabilitiesAdapter extends CapabilitiesAdapter {
     private static final String TAG = UwbCapabilitiesAdapter.class.getSimpleName();
@@ -108,6 +109,7 @@ public class UwbCapabilitiesAdapter extends CapabilitiesAdapter {
                         capabilities.hasBackgroundRangingSupport())
                 .setCountryCode(capabilities.getCountryCode())
                 .setDlTdoaSupported(capabilities.supportsDlTdoa())
+                .setSupportedAntennaModes(new ArrayList<>(capabilities.getSupportedAntennaModes()))
                 .build();
     }
 

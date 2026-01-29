@@ -31,6 +31,7 @@ import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
@@ -74,8 +75,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -101,6 +102,7 @@ public class UwbAdapter implements RangingAdapter {
 
     private AttributionSource mNonPrivilegedAttributionSource;
     boolean mIsBackgroundRangingSupported;
+    private List<Integer> mSupportedAntennaModes;
 
     private final AttributionSource mAttributionSource;
 
@@ -158,18 +160,39 @@ public class UwbAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
-        mIsBackgroundRangingSupported = Optional.ofNullable(mRangingInjector)
+        UwbRangingCapabilities uwbCapabilities = Optional.ofNullable(mRangingInjector)
                 .map(RangingInjector::getCapabilitiesProvider)
                 .map(CapabilitiesProvider::getCapabilities)
                 .map(RangingCapabilities::getUwbCapabilities)
+                .orElse(null);
+        mIsBackgroundRangingSupported = Optional.ofNullable(uwbCapabilities)
                 .map(UwbRangingCapabilities::isBackgroundRangingSupported)
                 .orElse(true); // Defaults to true;
+        mSupportedAntennaModes = Optional.ofNullable(uwbCapabilities)
+                .map(UwbRangingCapabilities::getSupportedAntennaModes)
+                .orElse(List.of()); // Defaults to empty;
         mAttributionSource = attributionSource;
     }
 
     @Override
     public @NonNull RangingTechnology getTechnology() {
         return RangingTechnology.UWB;
+    }
+
+    /**
+     * Use this method to do some service side validation of params
+     * {@link android.ranging.RangingSession#start(RangingPreference)}.
+     */
+    public boolean isConfigValid(ConfigurationManager.TechnologyConfig config) {
+        if (config instanceof UwbConfig uwbConfig) {
+            int antennaMode = uwbConfig.getSessionConfig().getAntennaMode();
+            if (antennaMode != SessionConfig.ANTENNA_MODE_UNSET
+                && !mSupportedAntennaModes.contains(antennaMode)) {
+                Log.e(TAG,  "Invalid antenna mode: " + antennaMode);
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -184,6 +207,11 @@ public class UwbAdapter implements RangingAdapter {
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
             closeForReason(InternalReason.INTERNAL_ERROR);
+            return;
+        }
+        if (!isConfigValid(config)) {
+            Log.v(TAG, "Invalid session config passed to start");
+            closeForReason(InternalReason.UNSUPPORTED);
             return;
         }
 

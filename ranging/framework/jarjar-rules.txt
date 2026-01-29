@@ -12,6 +12,7 @@ rule com.google.uwb.** com.android.x.ranging.@0
 rule com.android.internal.util.** com.android.x.ranging.@0
 # Statically linked third party library
 rule com.google.thirdparty.** com.android.x.ranging.@0
-# Statically included androidx.concurrent_concurrent-futures
+# Statically included androidx libraries
 rule androidx.concurrent.futures.** com.android.x.ranging.@0
+rule androidx.annotation.** com.android.x.ranging.@0
 rule android.net.wifi.WifiAnnotations* com.android.x.ranging.WifiAnnotations@1

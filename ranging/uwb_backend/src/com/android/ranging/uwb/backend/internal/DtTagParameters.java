@@ -50,7 +50,8 @@ public class DtTagParameters extends RangingParameters {
                 new UwbRangeDataNtfConfig.Builder().build(),
                 slotDuration,
                 true,
-                rangeLimitsConfig);
+                rangeLimitsConfig,
+                Utils.ANTENNA_MODE_UNSET);
         mRangingIntervalMs = rangingIntervalMs;
         mSlotsPerRangingRound = slotsPerRangingRound;
         mRangingRoundIndexes = rangingRoundIndexes;

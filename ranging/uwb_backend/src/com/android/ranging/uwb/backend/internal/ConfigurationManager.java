@@ -359,7 +359,10 @@ public final class ConfigurationManager {
                         .setMaxNumberOfMeasurements(rangingParameters
                                 .getUwbRangeLimitsConfig().getRangeMaxNumberOfMeasurements())
                         .setMaxRangingRoundRetries(rangingParameters
-                                .getUwbRangeLimitsConfig().getRangeMaxRangingRoundRetries());
+                                .getUwbRangeLimitsConfig().getRangeMaxRangingRoundRetries())
+                        .setAntennaMode(
+                            (byte) Utils.convertToFiraAntennaMode(
+                                rangingParameters.getAntennaMode()));
         // Turn off RRRM if the client does not want data notification.
         if (rangingParameters
                 .getUwbRangeDataNtfConfig()

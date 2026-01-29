@@ -17,6 +17,7 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.IntDef;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.os.Parcel;
@@ -24,6 +25,8 @@ import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
 
 /**
@@ -38,12 +41,15 @@ public final class SessionConfig implements Parcelable {
     private final DataNotificationConfig mDataNotificationConfig;
     private final boolean mIsAngleOfArrivalNeeded;
     private final int mRangingMeasurementsLimit;
+    @AntennaMode
+    private final int mAntennaMode;
 
     private SessionConfig(Builder builder) {
         mFusionParams = builder.mFusionParams;
         mDataNotificationConfig = builder.mDataNotificationConfig;
         mIsAngleOfArrivalNeeded = builder.mIsAngleOfArrivalNeeded;
         mRangingMeasurementsLimit = builder.mRangingMeasurementsLimit;
+        mAntennaMode = builder.mAntennaMode;
     }
 
     private SessionConfig(Parcel in) {
@@ -53,6 +59,7 @@ public final class SessionConfig implements Parcelable {
                 DataNotificationConfig.class);
         mIsAngleOfArrivalNeeded = in.readBoolean();
         mRangingMeasurementsLimit = in.readInt();
+        mAntennaMode = in.readInt();
     }
 
     @Override
@@ -61,6 +68,7 @@ public final class SessionConfig implements Parcelable {
         dest.writeParcelable(mDataNotificationConfig, flags);
         dest.writeBoolean(mIsAngleOfArrivalNeeded);
         dest.writeInt(mRangingMeasurementsLimit);
+        dest.writeInt(mAntennaMode);
     }
 
     @Override
@@ -118,6 +126,37 @@ public final class SessionConfig implements Parcelable {
     }
 
     /**
+     * Antenna Mode configuration.
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+            ANTENNA_MODE_OMNI,
+            ANTENNA_MODE_DIRECTIONAL,
+    })
+    public @interface AntennaMode {}
+
+    /** The "ranging" antenna is used for both Tx and Rx. **/
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int ANTENNA_MODE_OMNI = 0;
+    /** The "patch" antenna is used for both Tx and Rx. **/
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public static final int ANTENNA_MODE_DIRECTIONAL = 1;
+    /** @hide The antenna mode is not set. **/
+    public static final int ANTENNA_MODE_UNSET = 2;
+
+    /**
+     * Returns antenna mode of the session.
+     *
+     * @return the antenna mode.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @AntennaMode
+    public int getAntennaMode() {
+        return mAntennaMode;
+    }
+
+    /**
      * Builder for creating instances of {@link SessionConfig}.
      */
     public static final class Builder {
@@ -126,6 +165,8 @@ public final class SessionConfig implements Parcelable {
         private SensorFusionParams mFusionParams = new SensorFusionParams.Builder().build();
         private boolean mIsAngleOfArrivalNeeded = false;
         private int mRangingMeasurementsLimit = 0;
+        @AntennaMode
+        private int mAntennaMode = ANTENNA_MODE_UNSET;
 
         /**
          * Sets the sensor fusion parameters for this preference.
@@ -195,6 +236,37 @@ public final class SessionConfig implements Parcelable {
         }
 
         /**
+         * Sets the antenna mode for the ranging session which helps in
+         * determining the optimal antennas to use for Tx and Rx.
+         * <p>
+         * <li>This should be set to {@link #ANTENNA_MODE_DIRECTIONAL} for
+         * foreground use-cases like Finder where the user is actively using
+         * the device to find another device (longer range in a particular direction).
+         * </li>
+         * <li>This should be set to {@link #ANTENNA_MODE_OMNI} for background use-cases like
+         * background use-cases like passive unlock when the user is passively using the device to
+         * unlock another device (shorter range in all directions).
+         * </li>
+         *
+         * Check {@link android.ranging.uwb.UwbRangingCapabilities#getSupportedAntennaModes()} for
+         * supported antenna modes on the device. If the mode requested here is not supported, the
+         * session will be immediately closed - {@link RangingSession#onClosed(int)}.
+         *
+         * @param antennaMode the antenna mode {@link AntennaMode}
+         * @return this Builder instance.
+         * @throws IllegalArgumentException if the provided mode is out of range.
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+        public Builder setAntennaMode(@AntennaMode int antennaMode) {
+            if (antennaMode != ANTENNA_MODE_OMNI && antennaMode != ANTENNA_MODE_DIRECTIONAL) {
+                throw new IllegalArgumentException("Invalid antenna mode");
+            }
+            mAntennaMode = antennaMode;
+            return this;
+        }
+
+        /**
          * Builds a new {@link SessionConfig} instance.
          *
          * @return the new {@link SessionConfig} instance.
@@ -216,6 +288,8 @@ public final class SessionConfig implements Parcelable {
                 + mIsAngleOfArrivalNeeded
                 + ", mRangingMeasurementsLimit="
                 + mRangingMeasurementsLimit
+                + ", mAntennaMode="
+                + mAntennaMode
                 + "}";
     }
 
@@ -228,6 +302,7 @@ public final class SessionConfig implements Parcelable {
         if (!(o instanceof SessionConfig that)) return false;
         return mIsAngleOfArrivalNeeded == that.mIsAngleOfArrivalNeeded
                 && mRangingMeasurementsLimit == that.mRangingMeasurementsLimit
+                && mAntennaMode == that.mAntennaMode
                 && Objects.equals(mFusionParams, that.mFusionParams)
                 && Objects.equals(mDataNotificationConfig, that.mDataNotificationConfig);
     }
@@ -238,6 +313,6 @@ public final class SessionConfig implements Parcelable {
     @Override
     public int hashCode() {
         return Objects.hash(mFusionParams, mDataNotificationConfig, mIsAngleOfArrivalNeeded,
-                mRangingMeasurementsLimit);
+                mRangingMeasurementsLimit, mAntennaMode);
     }
 }

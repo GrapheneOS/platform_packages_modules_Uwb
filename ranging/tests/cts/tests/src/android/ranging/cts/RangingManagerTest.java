@@ -24,6 +24,8 @@ import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.SessionConfig.ANTENNA_MODE_DIRECTIONAL;
+import static android.ranging.SessionConfig.ANTENNA_MODE_OMNI;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
@@ -125,6 +127,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -139,6 +142,8 @@ public class RangingManagerTest {
     private RangingManager mRangingManager;
 
     private final Set<Integer> mSupportedTechnologies = new HashSet<>();
+    // Latest capabilities received from the RangingManager.
+    private static final AtomicReference<RangingCapabilities> sRangingCapabilities = new AtomicReference<>();
 
     @Before
     public void setup() throws Exception {
@@ -298,6 +303,17 @@ public class RangingManagerTest {
 
     private RangingPreference getGenericUwbRangingPreference(int sessionId) {
         // Generic ranging preference, Improve this method based on future needs.
+        SessionConfig.Builder sessionConfigBuilder = new SessionConfig.Builder()
+                .setRangingMeasurementsLimit(100);
+        if (Flags.rangingStackUpdates26Q2()) {
+            List<Integer> supportedAntennaModes =
+                    sRangingCapabilities.get().getUwbCapabilities().getSupportedAntennaModes();
+            if (supportedAntennaModes.contains(ANTENNA_MODE_DIRECTIONAL)) {
+                sessionConfigBuilder.setAntennaMode(ANTENNA_MODE_DIRECTIONAL);
+            } else if (supportedAntennaModes.contains(ANTENNA_MODE_OMNI)) {
+                sessionConfigBuilder.setAntennaMode(ANTENNA_MODE_OMNI);
+            }
+        }
         return new RangingPreference.Builder(RangingPreference.DEVICE_ROLE_INITIATOR,
                 new RawInitiatorRangingConfig.Builder()
                         .addRawRangingDevice(new RawRangingDevice.Builder()
@@ -308,9 +324,7 @@ public class RangingManagerTest {
                                                 new byte[]{3, 4}))
                                 .build())
                         .build())
-                .setSessionConfig(new SessionConfig.Builder()
-                        .setRangingMeasurementsLimit(100)
-                        .build())
+                .setSessionConfig(sessionConfigBuilder.build())
                 .build();
     }
 
@@ -742,6 +756,7 @@ public class RangingManagerTest {
             assertThat(uwbRangingCapabilities.getSupportedSlotDurations()).isNotNull();
             assertThat(uwbRangingCapabilities.getSupportedRangingUpdateRates()).isNotNull();
             assertTrue(uwbRangingCapabilities.isDistanceMeasurementSupported());
+            assertThat(uwbRangingCapabilities.getSupportedAntennaModes()).isNotNull();
 
             boolean unused = uwbRangingCapabilities.isAzimuthalAngleSupported();
             unused = uwbRangingCapabilities.isElevationAngleSupported();
@@ -1670,6 +1685,7 @@ public class RangingManagerTest {
         public void onRangingCapabilities(@NonNull RangingCapabilities capabilities) {
             mOnCapabilitiesReceived = true;
             mRangingCapabilities = capabilities;
+            sRangingCapabilities.set(capabilities);
             mCountDownLatch.countDown();
         }
 
