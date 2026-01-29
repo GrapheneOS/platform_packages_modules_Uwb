@@ -30,6 +30,12 @@ class DeviceRole(enum.IntEnum):
   RESPONDER = 0
   INITIATOR = 1
 
+@enum.unique
+class MotionState(enum.IntEnum):
+  MOTION_NOT_DETECTED = 0
+  MOTION_SLIGHT = 1
+  MOTION_MODERATE = 2
+  MOTION_LARGE = 3
 
 @enum.unique
 class RangingSessionType(enum.IntEnum):
