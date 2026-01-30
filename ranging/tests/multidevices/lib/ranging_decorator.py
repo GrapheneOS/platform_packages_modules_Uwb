@@ -6,6 +6,7 @@ from uuid import uuid4
 from lib.params import RangingPreference
 from lib.params import RawResponderRangingParams
 from lib.params import DeviceParams
+from lib.params import MotionState
 from mobly.controllers.android_device import AndroidDevice
 from mobly.controllers.android_device_lib.callback_handler_v2 import (
     CallbackHandlerV2,
@@ -28,6 +29,7 @@ class Event(StrEnum):
   OPEN_FAILED = "OPEN_FAILED"
   STARTED = "STARTED"
   DATA = "DATA"
+  MOTION_RECEIVED = "MOTION_RECEIVED"
   STOPPED = "STOPPED"
   CLOSED = "CLOSED"
   OOB_SEND_CAPABILITIES_REQUEST = "OOB_SEND_CAPABILITIES_REQUEST",
@@ -154,6 +156,22 @@ class RangingDecorator:
     """
     handler = self._callback_events[session_handle]
     return handler.waitAndGet(event, timeout=timeout_s)
+
+  def assert_motion_event_received(
+          self,
+          session_handle: str,
+          expected_state: MotionState,
+          timeout_s: float = CALLBACK_WAIT_TIME_SEC,
+  ) -> CallbackEvent:
+    """Asserts that the motion event is received before a timeout."""
+    event = self.assert_ranging_event_received(
+      session_handle, Event.MOTION_RECEIVED, timeout_s
+    )
+    if event.data["motionState"] != expected_state:
+      raise ValueError(
+        f"Expected motion state {expected_state}, but got {event.data['motionState']}"
+      )
+    return event
 
   def verify_received_data_from_peer_using_technologies(
       self,

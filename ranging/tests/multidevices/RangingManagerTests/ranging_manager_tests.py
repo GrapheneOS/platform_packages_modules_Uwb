@@ -54,6 +54,7 @@ _TEST_CASES = [
     "test_uwb_ranging_app_switch_to_bg_and_fg",
     "test_ble_rssi_ranging_app_switch_to_bg_and_fg",
     "test_ble_cs_ranging_app_switch_to_bg_and_fg",
+    "test_on_motion_received",
 ]
 
 
@@ -1456,6 +1457,45 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     session.start_and_assert_opened(start_responders=False, check_responders=False)
     session.assert_received_data()
+    session.stop_and_assert_closed()
+
+  @ApiTest(apis=[
+      'android.ranging.MotionState#getMotionState()',
+      'android.ranging.RangingSession.Callback#onMotionReceived(android.ranging.RangingDevice, android.ranging.MotionState)',
+  ])
+  def test_on_motion_received(self):
+    """Verifies onMotionReceived callback is triggered."""
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+        "UWB not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+        "UWB not supported by initiator",
+    )
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=OobInitiatorRangingParams(
+            peer_ids=[self.responder.id], ranging_mode=RangingMode.HIGH_ACCURACY
+        ),
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+    )
+
+    session = RangingSession()
+    session.set_initiator(self.initiator, initiator_preference)
+    session.add_responder(self.responder, responder_preference)
+
+    session.start_and_assert_opened()
+    session.assert_received_data()
+
+    # Verify responder can send motion event to initiator.
+    session.send_motion_event_and_assert_received(self.responder.id, self.initiator.id)
+
     session.stop_and_assert_closed()
 
 if __name__ == "__main__":

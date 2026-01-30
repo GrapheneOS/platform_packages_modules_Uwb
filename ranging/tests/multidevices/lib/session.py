@@ -86,6 +86,17 @@ class RangingSession:
       for responder_id in self.responder_ids:
         self.devices[responder_id].assert_closed(self.handle)
 
+  def send_motion_event_and_assert_received(self, sending_device_id: str, receiving_device_id: str):
+    """Sends a motion event from one device to another and asserts receipt."""
+    # Simulate a motion event with MOTION_MODERATE.
+    self.devices[receiving_device_id].ad.ranging.handleMotionReceived(
+        self.handle, sending_device_id, MotionState.MOTION_MODERATE
+    )
+    self.devices[receiving_device_id].assert_motion_event_received(
+        self.handle, MotionState.MOTION_MODERATE
+    )
+    return self
+
   def _assert_received_data_using_any_technologies(self, check_responders: bool = True):
     for responder_id in self.responder_ids:
       self.devices[self.initiator_id].verify_received_data_from_peer(
