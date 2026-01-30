@@ -383,9 +383,9 @@ public class TimesyncManager {
 
         private static int eventFromHal(int event) {
             switch (event) {
-                case TimesyncEvent.CONNECT_IND:
+                case TimesyncEvent.BLE_LMP_EVENT_CONNECT_IND:
                     return 0;
-                case TimesyncEvent.LL_PHY_UPDATE_IND:
+                case TimesyncEvent.BLE_LMP_EVENT_LL_PHY_UPDATE_IND:
                     return 1;
                 default:
                     return 0;
