@@ -8,6 +8,7 @@ from lib.cs import CsRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
 from lib.rssi import BleRssiRangingParams
+from lib.wifipd import WifiPdRangingParams
 
 ADVERTISE_SETTINGS = MappingProxyType(
     {
@@ -49,6 +50,7 @@ class RangingTechnology(enum.IntEnum):
   BLE_CS = 1
   WIFI_RTT = 2
   BLE_RSSI = 3
+  WIFI_PD = 5
 
 
 @enum.unique
@@ -72,6 +74,7 @@ class DeviceParams:
   cs_params: CsRangingParams | None = None
   rtt_params: RttRangingParams | None = None
   rssi_params: BleRssiRangingParams | None = None
+  wifi_pd_params: WifiPdRangingParams | None = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

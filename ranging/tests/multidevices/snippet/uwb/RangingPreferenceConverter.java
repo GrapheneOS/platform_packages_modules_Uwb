@@ -20,6 +20,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
 import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
 
+import android.net.MacAddress;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
@@ -37,6 +38,7 @@ import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.pd.WifiPdRangingParams;
 import android.ranging.wifi.rtt.RttRangingParams;
 
 import com.google.android.mobly.snippet.SnippetObjectConverter;
@@ -189,6 +191,28 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         if (!j.isNull("rssi_params")) {
             builder.setBleRssiRangingParams(getBleRssiRangingParams(
                     j.getJSONObject("rssi_params")));
+        }
+        if (!j.isNull("wifi_pd_params")) {
+            builder.setWifiPdRangingParams(getWifiPdParams(j.getJSONObject("wifi_pd_params")));
+        }
+        return builder.build();
+    }
+
+    private WifiPdRangingParams getWifiPdParams(JSONObject j) throws JSONException {
+        WifiPdRangingParams.Builder builder = new WifiPdRangingParams.Builder(
+                MacAddress.fromString(j.getString("peer_address")))
+                .setRangingUpdateRate(j.getInt("ranging_update_rate"))
+                .setDiscoveryChannelFrequencyMhz(j.getInt("discovery_channel_frequency_mhz"))
+                .setPasnMode(j.getInt("pasn_mode"))
+                .setPreambleType(j.getInt("preamble_type"))
+                .setResponder80211azNtbSupported(j.getBoolean("is_responder_80211az_ntb_supported"))
+                .setChannelWidth(j.getInt("channel_width"));
+
+        if (!j.isNull("device_ik")) {
+            builder.setDeviceIk(toBytes(j.getJSONArray("device_ik")));
+        }
+        if (!j.isNull("password")) {
+            builder.setPassword(j.getString("password"));
         }
         return builder.build();
     }
