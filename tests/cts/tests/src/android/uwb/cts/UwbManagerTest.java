@@ -3111,9 +3111,9 @@ public class UwbManagerTest {
         }
     }
 
-    //    @Test
-//    @SdkSuppress(minSdkVersion = 36)
-//    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testTimesyncCallback() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         String macAddress = "00:11:22:AA:BB:CC";
@@ -3121,29 +3121,20 @@ public class UwbManagerTest {
 
         CountDownLatch registeredLatch = new CountDownLatch(1);
         CountDownLatch failedLatch = new CountDownLatch(1);
-        Log.e(">>>>>", "early stuff");
         UwbManager.TimesyncCallback cb = new TimesyncCallback(registeredLatch, failedLatch);
 
         try {
             //Get UWB permission
             uiAutomation.adoptShellPermissionIdentity();
 
-            Log.e(">>>>>", "Registering TimesyncCallback");
             mUwbManager.registerTimesyncCallback(Executors.newSingleThreadExecutor(),
-                    cb, macAddress, BluetoothDevice.ADDRESS_TYPE_PUBLIC);
-            Log.e(">>>>>", "after register before assert");
+                    macAddress, BluetoothDevice.ADDRESS_TYPE_PUBLIC, cb);
             assertThat(registeredLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(failedLatch.await(1, TimeUnit.SECONDS)).isFalse();
 
-            Thread.sleep(1000);
-
-            Log.e(">>>>>", "Unregistering TimesyncCallback");
             mUwbManager.unregisterTimesyncCallback(cb);
 
-            Thread.sleep(1000);
-
         } catch (Exception e) {
-            Log.e(">>>>>", "Exception e: " + e);
             fail("Test failed due to exception: " + e.getMessage());
         }
     }
