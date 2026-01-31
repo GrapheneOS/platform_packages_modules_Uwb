@@ -359,6 +359,7 @@ public class RttRangingDevice {
             @Override
             public void onSessionTerminated() {
                 Log.i(TAG, "onSession Terminated. ");
+                stopRanging();
                 // TODO: Check whether we can get the reason code.
                 mRttListener.onRangingSuspended(mRttDevice, REASON_STOP_RANGING_CALLED);
                 mRttListener = null;
@@ -367,6 +368,7 @@ public class RttRangingDevice {
             @Override
             public void onServiceLost(PeerHandle peerHandle, int reason) {
                 Log.v(TAG, "onServiceLost peerHandle " + peerHandle + " reason " + reason);
+                stopRanging();
                 mRttListener.onRangingSuspended(mRttDevice, REASON_UNKNOWN);
             }
         };
