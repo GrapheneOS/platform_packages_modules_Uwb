@@ -56,7 +56,6 @@ import com.android.server.ranging.oob.OobInitiatorProtocol.PeerCapabilities;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
-import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.MotionIndicator;
 import com.android.server.ranging.oob.packets.MotionNotification;
@@ -172,7 +171,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                         + "failed to agree on a configuration");
                 return;
             }
-            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
+            OobMessage request = mProtocol.getConfigurationRequest(
                     mDevice, remote, MotionIndicator.Supported);
             Log.v(TAG, "Sending " + request);
             var unused = mConnection.sendData(request.toBytes())
@@ -325,7 +324,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             Peer peer = mPeers.get(peerDevice);
             Set<RangingTechnology> starting = peer.mEngine.getTechnologiesToStart();
 
-            ConfigurationRequestV3 request = mProtocol.getConfigurationRequest(
+            OobMessage request = mProtocol.getConfigurationRequest(
                     peerDevice,
                     mConfigManager.getRemoteConfigs(peerDevice, starting),
                     MotionIndicator.Supported); // TODO: Read the configuration instead of hard-code
