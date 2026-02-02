@@ -21,10 +21,8 @@ import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.fusion.DataFusers;
@@ -35,7 +33,7 @@ import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeur
 import com.android.server.ranging.heuristic.StreakCounter;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
-
+import com.android.server.ranging.telemetry.SessionTelemetryLogger;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -137,16 +135,16 @@ class Peer implements AutoCloseable {
         Log.w(TAG, "Peer " + mDevice + " went " + PEER_DISCONNECT_STREAK
                 + " ranging intervals with no data from " + technology);
         RangingData lastData = mTechnologies.get(technology).mLastData;
-        if (lastData != null) {
-            mInjector.getTelemetryManager()
-                    .getLogger(mSessionHandle)
-                    .logPeerDisconnected(mDeviceType, lastData);
+        SessionTelemetryLogger logger = mInjector.getTelemetryManager().getLogger(mSessionHandle);
+        if (lastData != null && logger != null) {
+            logger.logPeerDisconnected(mDeviceType, lastData);
         }
     }
 
     @Override
     public void close() {
         mTechnologies.values().forEach(info -> info.mDisconnectEvent.cancel());
+        mTechnologies.clear();
         mFusionEngine.stop();
     }
 
