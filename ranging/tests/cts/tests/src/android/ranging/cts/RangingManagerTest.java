@@ -306,7 +306,8 @@ public class RangingManagerTest {
         // Generic ranging preference, Improve this method based on future needs.
         SessionConfig.Builder sessionConfigBuilder = new SessionConfig.Builder()
                 .setRangingMeasurementsLimit(100);
-        if (Flags.rangingStackUpdates26Q2()) {
+        if (Flags.rangingStackUpdates26Q2()
+                && sRangingCapabilities.get().getUwbCapabilities() != null) {
             List<Integer> supportedAntennaModes =
                     sRangingCapabilities.get().getUwbCapabilities().getSupportedAntennaModes();
             if (supportedAntennaModes.contains(ANTENNA_MODE_DIRECTIONAL)) {
