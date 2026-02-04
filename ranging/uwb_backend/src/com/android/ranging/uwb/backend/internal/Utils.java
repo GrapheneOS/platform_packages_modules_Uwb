@@ -230,13 +230,10 @@ public final class Utils {
                 return FiraParams.ANTENNA_MODE_OMNI;
             case ANTENNA_MODE_DIRECTIONAL:
                 return FiraParams.ANTENNA_MODE_DIRECTIONAL;
-            // TODO(rpius): Fix This.
-            // case ANTENNA_MODE_UNSET:
-            //    return FiraParams.ANTENNA_MODE_UNSET;
-            // default:
-            //    return FiraParams.ANTENNA_MODE_UNSET;
+            case ANTENNA_MODE_UNSET:
+               return FiraParams.ANTENNA_MODE_UNSET;
             default:
-               return FiraParams.ANTENNA_MODE_OMNI;
+               return FiraParams.ANTENNA_MODE_UNSET;
         }
     }
 

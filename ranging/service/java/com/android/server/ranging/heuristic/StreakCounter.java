@@ -17,6 +17,7 @@
 package com.android.server.ranging.heuristic;
 
 import android.app.AlarmManager;
+import android.app.AlarmManager.OnAlarmListener;
 import android.os.SystemClock;
 import android.ranging.RangingData;
 
@@ -108,6 +109,13 @@ public class StreakCounter {
     private final Executor mExecutor;
     private final RangingInjector mInjector;
     private final CopyOnWriteArrayList<Streak> mStreaks;
+    private final OnAlarmListener mFailureListener = new OnAlarmListener() {
+        @Override
+        public void onAlarm() {
+            mStreaks.forEach(
+                    streak -> streak.onHeuristicUpdated(streak.nextStreak(Streak::failure)));
+        }
+    };
 
     public StreakCounter(TechnologyConfig config, Executor executor, RangingInjector injector) {
         mFailureTimeoutMs = config.getRangingInterval().toMillis();
@@ -157,20 +165,15 @@ public class StreakCounter {
 
     private void stopFailureListener() {
         if (mIsListeningForFailure.compareAndSet(true, false)) {
-            mAlarmManager.cancel(this::handleFailure);
+            mAlarmManager.cancel(mFailureListener);
         }
     }
 
     private void startFailureListener() {
         if (mIsListeningForFailure.compareAndSet(false, true)) {
             mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    SystemClock.elapsedRealtime() + mFailureTimeoutMs, null, this::handleFailure,
+                    SystemClock.elapsedRealtime() + mFailureTimeoutMs, null, mFailureListener,
                     mInjector.getAlarmHandler());
         }
-    }
-
-    private void handleFailure() {
-        mStreaks.forEach(streak ->
-                streak.onHeuristicUpdated(streak.nextStreak(Streak::failure)));
     }
 }

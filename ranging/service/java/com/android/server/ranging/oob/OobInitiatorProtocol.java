@@ -22,6 +22,8 @@ import android.ranging.RangingCapabilities;
 import android.ranging.RangingDevice;
 import android.util.Log;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.oob.packets.Capabilities;
@@ -29,6 +31,7 @@ import com.android.server.ranging.oob.packets.CapabilitiesRequest;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV1;
 import com.android.server.ranging.oob.packets.CapabilitiesResponseV2;
 import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.ConfigurationRequestV1;
 import com.android.server.ranging.oob.packets.ConfigurationRequestV3;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.MotionIndicator;
@@ -42,6 +45,7 @@ import com.android.server.ranging.oob.packets.Version;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class OobInitiatorProtocol {
@@ -49,7 +53,8 @@ public class OobInitiatorProtocol {
     private static final String TAG = OobInitiatorProtocol.class.getSimpleName();
 
     private final RangingInjector mInjector;
-    private final Map<RangingDevice, Version> mPeerVersions;
+    @VisibleForTesting
+    public final Map<RangingDevice, Version> mPeerVersions;
     private final Map<RangingDevice, DeviceType> mPeerTypes;
 
     public OobInitiatorProtocol(RangingInjector injector) {
@@ -122,20 +127,30 @@ public class OobInitiatorProtocol {
      * @param peer The remote device to which this request is being sent.
      * @param configurations The set of technology-specific configurations.
      * @param supportedMotion Indicates if the local device supports motion detection.
-     * @return A {@link ConfigurationRequestV3} message.
+     * @return A {@link OobMessage} message.
      */
-    public ConfigurationRequestV3 getConfigurationRequest(
+    public OobMessage getConfigurationRequest(
             RangingDevice peer, Set<Configuration> configurations, MotionIndicator supportedMotion
     ) {
         TechnologySet technologies = technologyBitset(configurations.stream().map(
                 c -> RangingTechnology.fromByte(c.getTechnology().toByte())).toList());
-        return new ConfigurationRequestV3.Builder()
-                .setVersion(mPeerVersions.get(peer))
-                .setTechnologiesToConfigure(technologies)
-                .setTechnologiesToStart(technologies)
-                .setConfigs(configurations.toArray(new Configuration[0]))
-                .setSupportedMotion(supportedMotion)
-                .build();
+        Version peerVersion = mPeerVersions.get(peer);
+        // V3 adds motion indicator support.
+        if (Objects.equals(peerVersion, Version.Current)) {
+            return new ConfigurationRequestV3.Builder()
+                    .setVersion(peerVersion)
+                    .setTechnologiesToConfigure(technologies)
+                    .setTechnologiesToStart(technologies)
+                    .setConfigs(configurations.toArray(new Configuration[0]))
+                    .setSupportedMotion(supportedMotion)
+                    .build();
+        } else {
+            return new ConfigurationRequestV1.Builder()
+                    .setTechnologiesToConfigure(technologies)
+                    .setTechnologiesToStart(technologies)
+                    .setConfigs(configurations.toArray(new Configuration[0]))
+                    .build();
+        }
     }
 
     public byte[] getStopRequest(RangingDevice peer, Set<RangingTechnology> technologies) {
