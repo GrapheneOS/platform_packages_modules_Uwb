@@ -111,6 +111,7 @@ public class DeviceConfigFacade {
     private int mTimesyncUncertainty;
     private int mTimesyncDeviceOffset;
     private int mTimesyncClockSkewPpm;
+    private int mTimesyncBleTimeUncertainty;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -347,24 +348,30 @@ public class DeviceConfigFacade {
             mIsAndroidSpecificTimesyncSupported = DeviceConfig.getBoolean(
                     DeviceConfig.NAMESPACE_UWB,
                     "android_specific_timesync_supported",
-                    mContext.getResources().getBoolean(R.bool.hw_idle_turn_off_enabled)
+                    mContext.getResources().getBoolean(R.bool.android_specific_timesync_supported)
             );
             mTimesyncUncertainty = DeviceConfig.getInt(
                     DeviceConfig.NAMESPACE_UWB,
                     "timesync_uncertainty_override",
-                    mContext.getResources().getInteger(R.integer.advertise_trusted_variance_value)
+                    mContext.getResources().getInteger(R.integer.timesync_uncertainty_override)
             );
 
             mTimesyncDeviceOffset = DeviceConfig.getInt(
                     DeviceConfig.NAMESPACE_UWB,
                     "timesync_static_device_offset_us",
-                    mContext.getResources().getInteger(R.integer.advertise_trusted_variance_value)
+                    mContext.getResources().getInteger(R.integer.timesync_static_device_offset_us)
             );
 
             mTimesyncClockSkewPpm = DeviceConfig.getInt(
                     DeviceConfig.NAMESPACE_UWB,
                     "timesync_clock_skew_ppm",
-                    mContext.getResources().getInteger(R.integer.advertise_trusted_variance_value)
+                    mContext.getResources().getInteger(R.integer.timesync_clock_skew_ppm)
+            );
+
+            mTimesyncBleTimeUncertainty = DeviceConfig.getInt(
+                    DeviceConfig.NAMESPACE_UWB,
+                    "timesync_ble_time_uncertainty_us",
+                    mContext.getResources().getInteger(R.integer.timesync_ble_time_uncertainty_us)
             );
 
             // A little parsing and cleanup:
@@ -434,6 +441,7 @@ public class DeviceConfigFacade {
             mTimesyncUncertainty = 255;
             mTimesyncDeviceOffset = -36000;
             mTimesyncClockSkewPpm = 100;
+            mTimesyncBleTimeUncertainty = 1000;
 
             // A little parsing and cleanup:
             mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
@@ -806,5 +814,9 @@ public class DeviceConfigFacade {
      */
     public boolean isAndroidSpecificTimesyncSupported() {
         return mIsAndroidSpecificTimesyncSupported;
+    }
+
+    public int getTimesyncBleTimeUncertainty() {
+        return mTimesyncBleTimeUncertainty;
     }
 }

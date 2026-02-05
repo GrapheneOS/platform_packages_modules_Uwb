@@ -267,6 +267,9 @@
 
     <!-- Max clock skew ppm -->
     <integer name = "timesync_clock_skew_ppm">100</integer>
+
+    <!-- Uncertainty in Bluetooth HAL's system time calculation in microseconds -->
+    <integer name= "timesync_ble_time_uncertainty_us">1000</integer>
     <!-- ===== End of UWB stack overlay definitions ===== -->
 
     <!-- ===== Start of ranging stack overlay definitions ===== -->

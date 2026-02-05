@@ -204,6 +204,7 @@ public class TimesyncManager {
             systemTimeBuffer.putLong(timestamp.systemTimeUs);
             systemTimeBuffer.putLong(timestamp.bluetoothTimeUs);
 
+            // The uncertainty for ble hal's system time calculation will be accounted by uwb HAL.
             FutureTask<UwbVendorUciResponse> sendVendorCmdTask = new FutureTask<>(
                     () -> mNativeUwbManager.sendRawVendorCmd(MESSAGE_TYPE_COMMAND,
                             ANDROID_GID, ANDROID_TIMESTAMP_ANCHOR_TO_UWBS,
@@ -348,21 +349,24 @@ public class TimesyncManager {
                     bestTimeOffsetUs = uwbTimeOffsetUs;
                 }
             }
-
+            long uncertaintyUs = (bestElapsedTime) / 2
+                    + mUwbInjector.getDeviceConfigFacade().getTimesyncBleTimeUncertainty();
             return new BleTimestamp(
                     timestamp.systemTimeUs + bestTimeOffsetUs,
-                    Math.max(encodeTimeUncertainty((int) (bestElapsedTime / 2)),
+                    Math.max(encodeTimeUncertainty((int) uncertaintyUs),
                             mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs()),
                     mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm()
             );
         }
 
         private BleTimestamp defaultTimestamp(Timestamp timestamp) {
+            long uncertaintyUs = DEVICE_TIME_UNCERTAINTY
+                    + mUwbInjector.getDeviceConfigFacade().getTimesyncBleTimeUncertainty();
             return new BleTimestamp(
                     // Shift the system time by a pre-configured device-specific offset
                     timestamp.systemTimeUs
                             + mUwbInjector.getDeviceConfigFacade().getTimesyncDeviceOffset(),
-                    Math.max(encodeTimeUncertainty(DEVICE_TIME_UNCERTAINTY),
+                    Math.max(encodeTimeUncertainty((int) uncertaintyUs),
                             mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs()),
                     mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm()
             );
@@ -415,8 +419,8 @@ public class TimesyncManager {
                 throws RemoteException {
             Log.i(TAG, "Received system timestamp: "
                     + String.format("systemTime=%d, bluetoothTime=%d,",
-                            timestamp.systemTimeUs,
-                            timestamp.bluetoothTimeUs));
+                    timestamp.systemTimeUs,
+                    timestamp.bluetoothTimeUs));
             BleTimestamp mBleTimestamp = timestampFromHal(timestamp);
             Log.i(TAG, "Calculated uwb timestamp: " + String.format(
                     "mUwbTimestamp=%d, mDeviceTimeUncertainty=%d, mMaxClockSkewPpm=%d us",

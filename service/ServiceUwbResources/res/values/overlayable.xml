@@ -69,6 +69,7 @@
             <item name="timesync_uncertainty_override" type="integer"/>
             <item name="timesync_static_device_offset_us" type="integer"/>
             <item name="timesync_clock_skew_ppm" type="integer"/>
+            <item name="timesync_ble_time_uncertainty_us" type="integer"/>
           <!-- ===== End of UWB stack overlay definitions ===== -->
 
           <!-- ===== Start of ranging stack overlay definitions ===== -->
