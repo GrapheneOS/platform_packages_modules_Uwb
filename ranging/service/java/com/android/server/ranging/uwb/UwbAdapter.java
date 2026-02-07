@@ -21,8 +21,10 @@ import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFID
 import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
 import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
+import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.SystemClock;
 import android.ranging.DataNotificationConfig;
 import android.ranging.DlTdoaMeasurement;
 import android.ranging.RangingCapabilities;
@@ -83,6 +85,7 @@ import java.util.Optional;
 /** Ranging adapter for Ultra-wideband (UWB). */
 public class UwbAdapter implements RangingAdapter {
     private static final String TAG = UwbAdapter.class.getSimpleName();
+    private static final int DL_TDOA_BG_TIMEOUT_MILLIS = 120_000;
     private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final com.android.ranging.uwb.backend.internal.RangingDevice mUwbClient;
@@ -105,6 +108,10 @@ public class UwbAdapter implements RangingAdapter {
     private List<Integer> mSupportedAntennaModes;
 
     private final AttributionSource mAttributionSource;
+
+    private final AlarmManager mAlarmManager;
+
+    private AlarmManager.OnAlarmListener mDlTdoaTimeoutListener;
 
     public UwbAdapter(
             @NonNull Context context,
@@ -172,6 +179,8 @@ public class UwbAdapter implements RangingAdapter {
                 .map(UwbRangingCapabilities::getSupportedAntennaModes)
                 .orElse(List.of()); // Defaults to empty;
         mAttributionSource = attributionSource;
+        mAlarmManager = context.getSystemService(AlarmManager.class);
+        Objects.requireNonNull(mAlarmManager);
     }
 
     @Override
@@ -241,12 +250,24 @@ public class UwbAdapter implements RangingAdapter {
             }
         } else if (config instanceof DlTdoaConfig dlTdoaConfig) {
             mIsDlTdoaSession = true;
-            // TODO: Handle DataNotificationManager for DL-TDOA.
+            if (mNonPrivilegedAttributionSource != null
+                    && !mRangingInjector.isForegroundAppOrService(
+                            mNonPrivilegedAttributionSource.getUid(),
+                            mNonPrivilegedAttributionSource.getPackageName())) {
+                if (!mIsBackgroundRangingSupported) {
+                    Log.w(TAG, "Background ranging is not supported");
+                    closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+                    return;
+                }
+                Log.e(TAG, "Starting Dl-tdoa ranging session in background, timing out in "
+                        + (DL_TDOA_BG_TIMEOUT_MILLIS / 1000) + " seconds");
+                setDlTdoaBackgroundSessionTimeout();
+            }
             mUwbClient.setLocalAddress(
                     toBackend(dlTdoaConfig.getDeviceAddress()));
             if (mUwbClient instanceof com.android.ranging.uwb.backend.internal.RangingTag) {
                 ((com.android.ranging.uwb.backend.internal.RangingTag) mUwbClient)
-                    .setComplexChannel(toBackend(dlTdoaConfig.getParams().getComplexChannel()));
+                        .setComplexChannel(toBackend(dlTdoaConfig.getParams().getComplexChannel()));
             }
             mUwbClient.setRangingParameters(
                     dlTdoaAsBackendParameters(dlTdoaConfig));
@@ -264,6 +285,25 @@ public class UwbAdapter implements RangingAdapter {
         }
         var future = Futures.submit(() -> mUwbClient.startRanging(mUwbListener), mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.startRanging, mExecutorService);
+    }
+
+    private void setDlTdoaBackgroundSessionTimeout() {
+        if (mDlTdoaTimeoutListener != null) {
+            mAlarmManager.cancel(mDlTdoaTimeoutListener);
+        }
+
+        mDlTdoaTimeoutListener = () -> {
+            Log.i(TAG, "Dl-TDoA background session timed out");
+            mExecutorService.execute(this::stop);
+        };
+
+        mAlarmManager.setExact(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + DL_TDOA_BG_TIMEOUT_MILLIS,
+                "DlTdoaBgTimeout",
+                mDlTdoaTimeoutListener,
+                null
+        );
     }
 
     @Override
@@ -315,7 +355,8 @@ public class UwbAdapter implements RangingAdapter {
 
     @Override
     public void appMovedToBackground() {
-        if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null) {
+        if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null
+                && !mIsDlTdoaSession) {
             mDataNotificationManager.updateConfigAppMovedToBackground();
             var unused = Futures.submit(
                     () -> mUwbClient.reconfigureRangeDataNtfConfig(
@@ -326,7 +367,11 @@ public class UwbAdapter implements RangingAdapter {
 
     @Override
     public void appMovedToForeground() {
-        if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null) {
+        if (mIsDlTdoaSession && mDlTdoaTimeoutListener != null) {
+            mAlarmManager.cancel(mDlTdoaTimeoutListener);
+            mDlTdoaTimeoutListener = null;
+        } else if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null) {
+
             mDataNotificationManager.updateConfigAppMovedToForeground();
             var unused = Futures.submit(
                     () -> mUwbClient.reconfigureRangeDataNtfConfig(

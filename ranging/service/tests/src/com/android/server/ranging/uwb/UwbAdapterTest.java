@@ -20,6 +20,8 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -29,34 +31,31 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.ranging.RangingDevice;
+import android.ranging.SessionConfig;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.ranging.uwb.backend.internal.DtTagParameters;
 import com.android.ranging.uwb.backend.internal.RangingController;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
+import com.android.ranging.uwb.backend.internal.RangingTag;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfig;
-import android.ranging.SessionConfig;
-import android.ranging.uwb.DlTdoaRangingParams;
-import com.android.ranging.uwb.backend.internal.DtTagParameters;
-import com.android.ranging.uwb.backend.internal.RangingParameters;
-import com.android.ranging.uwb.backend.internal.RangingTag;
-import static com.google.common.truth.Truth.assertThat;
 
-import com.android.server.ranging.uwb.UwbAdapter;
-import com.android.server.ranging.uwb.UwbConfig;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -100,6 +99,8 @@ public class UwbAdapterTest {
 
     @Mock
     private UwbDevice mMockLocalDevice;
+    @Mock
+    private AlarmManager mMockAlarmManager;
 
     /** Class under test */
     private UwbAdapter mUwbAdapter;
@@ -128,6 +129,7 @@ public class UwbAdapterTest {
                 .thenReturn(true);
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
+        when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
         mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
                 MoreExecutors.newDirectExecutorService(), new Object(), mMockUwbClient);
     }
