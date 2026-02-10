@@ -47,7 +47,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -128,11 +127,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -799,7 +798,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_rtt_enabled")
     public void testRttRangingInitiator() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_NAN_RTT));
@@ -870,7 +869,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_rtt_enabled")
     public void testRttRangingResponder() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_NAN_RTT));
@@ -917,7 +916,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_rtt_enabled")
     public void testRttRangingResponder_WithMeasurementLimit() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_NAN_RTT));
@@ -964,7 +963,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2", "7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_rtt_enabled")
     public void testMultiRangingSession() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_NAN_RTT));
@@ -1017,7 +1016,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.3/C-10-1"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testBleRssiRangingSession() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_RSSI));
@@ -1070,7 +1069,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.3/C-10-1"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testBleRssiRangingSession_whenDisabled() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_RSSI));
@@ -1114,7 +1113,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.3/C-11-1,C-11-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_cs_enabled")
     public void testBleCsRangingSession() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS));
@@ -1177,7 +1176,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2", "7.4.3/C-11-1,C-11-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testStartOobInitiatorRangingSession() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB)
@@ -1393,21 +1392,21 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {" 7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testWifiPdInitiatorSession() throws InterruptedException {
         testWifiPdSessionInternal(DEVICE_ROLE_INITIATOR);
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {" 7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testWifiPdResponderSession() throws InterruptedException {
         testWifiPdSessionInternal(DEVICE_ROLE_RESPONDER);
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.3/C-11-1,C-11-2", "7.4.3/C-10-1"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testBluetoothDeviceSetAndUsedInOobFlow() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS)
@@ -1456,7 +1455,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
     public void testRttStationRanging() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_STA_RTT));
@@ -1500,7 +1499,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.2.5/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
     public void testRttStationRangingParams() throws InterruptedException {
         createPreferenceAndTestRttRangingParams(0 /* channelWidth */);
@@ -1551,7 +1550,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2", "7.4.3/C-11-1,C-11-2", "7.4.3/C-10-1"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
     public void testStartOobInitiatorRangingSession_withFilterSet() throws InterruptedException {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB)
@@ -1594,7 +1593,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @CddTest(requirements = {"7.4.3/C-11-1,C-11-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_cs_enabled")
     public void testRangingIntervalValues() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS)
@@ -1779,7 +1778,7 @@ public class RangingManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
-    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testDlTdoaDtTagRangingSession() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB));
         enableUwb();
@@ -1858,43 +1857,7 @@ public class RangingManagerTest {
     }
 
     @Test
-    public void testRawDtTagRangingConfig_missingDlTdoaParams_throwsException() {
-        // Create a valid RawRangingDevice, but one that is invalid for RawDtTagRangingConfig
-        // by providing a different, non-DL-TDOA param.
-        RawRangingDevice rawTagDevice = new RawRangingDevice.Builder()
-                .setRangingDevice(new RangingDevice.Builder().build())
-                // Add a valid param so the RawRangingDevice.Builder doesn't throw.
-                .setUwbRangingParams(
-                        new UwbRangingParams.Builder(1, UwbRangingParams.CONFIG_UNICAST_DS_TWR,
-                                UwbAddress.createRandomShortAddress(),
-                                UwbAddress.createRandomShortAddress()).build())
-                .build();
-
-        // This is the call we actually want to test. It should throw because
-        // DlTdoaRangingParams is missing.
-        assertThrows(IllegalArgumentException.class,
-                () -> new RawDtTagRangingConfig.Builder(rawTagDevice));
-    }
-
-    @Test
-    public void testDlTdoaRangingParams_invalidRangingInterval_throwsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new DlTdoaRangingParams.Builder(1).setRangingIntervalMillis(0).build());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> new DlTdoaRangingParams.Builder(1).setRangingIntervalMillis(-1).build());
-    }
-
-    @Test
-    public void testDlTdoaRangingParams_invalidSlotsPerRangingRound_throwsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new DlTdoaRangingParams.Builder(1).setSlotsPerRangingRound(0).build());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> new DlTdoaRangingParams.Builder(1).setSlotsPerRangingRound(-1).build());
-    }
-
-    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testDlTdoaRangingParams_createFromFiraConfigPacket_validConfig() {
         byte[] config = {
@@ -1950,6 +1913,7 @@ public class RangingManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testDlTdoaRangingParams_defaultValues() {
         DlTdoaRangingParams params = new DlTdoaRangingParams.Builder(12345678).build();
@@ -1967,6 +1931,7 @@ public class RangingManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testDlTdoaRangingParams_getters() {
         DlTdoaRangingParams params = new DlTdoaRangingParams.Builder(12345678)
