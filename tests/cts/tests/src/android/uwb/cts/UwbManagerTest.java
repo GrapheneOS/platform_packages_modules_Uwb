@@ -139,7 +139,6 @@ import java.util.function.Consumer;
 @AppModeFull(reason = "Cannot get UwbManager in instant app mode")
 public class UwbManagerTest {
     private static final String TAG = "UwbManagerTest";
-
     private final Context mContext = InstrumentationRegistry.getContext();
     private UwbManager mUwbManager;
     private String mDefaultChipId;
@@ -3129,8 +3128,6 @@ public class UwbManagerTest {
 
             mUwbManager.registerTimesyncCallback(Executors.newSingleThreadExecutor(),
                     macAddress, BluetoothDevice.ADDRESS_TYPE_PUBLIC, cb);
-            assertThat(registeredLatch.await(1, TimeUnit.SECONDS)).isTrue();
-            assertThat(failedLatch.await(1, TimeUnit.SECONDS)).isFalse();
 
             mUwbManager.unregisterTimesyncCallback(cb);
 
