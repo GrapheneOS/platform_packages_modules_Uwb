@@ -53,10 +53,12 @@ impl
         let is_multicast_list_rsp_v2_supported = pair.3;
         let fira_logical_link_version = pair.4;
         match packet.specialize() {
-            uwb_uci_packets::UciControlPacketChild::UciResponse(evt) => Ok(UciMessage::Response(
-                (evt, uci_fira_major_ver, is_multicast_list_rsp_v2_supported).try_into()?,
-            )),
-            uwb_uci_packets::UciControlPacketChild::UciNotification(evt) => {
+            Ok(uwb_uci_packets::UciControlPacketChild::UciResponse(evt)) => {
+                Ok(UciMessage::Response(
+                    (evt, uci_fira_major_ver, is_multicast_list_rsp_v2_supported).try_into()?,
+                ))
+            }
+            Ok(uwb_uci_packets::UciControlPacketChild::UciNotification(evt)) => {
                 Ok(UciMessage::Notification(
                     (
                         evt,

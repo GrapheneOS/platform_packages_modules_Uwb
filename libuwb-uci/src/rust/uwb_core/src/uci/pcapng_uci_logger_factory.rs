@@ -483,7 +483,7 @@ mod tests {
 
     use tempfile::tempdir;
     use tokio::runtime::Builder;
-    use uwb_uci_packets::UciVendor_A_NotificationBuilder;
+    use uwb_uci_packets::UciVendor_A_Notification;
 
     use crate::uci::uci_logger::UciLogger;
 
@@ -559,8 +559,8 @@ mod tests {
             .build()
             .unwrap();
         let mut logger_0 = file_manager.build_logger("logger 0").unwrap();
-        let packet_0 = UciVendor_A_NotificationBuilder { opcode: 0, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_0.into());
+        let packet_0 = UciVendor_A_Notification { opcode: 0, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_0.try_into().unwrap());
 
         // Flush all the loggers so that the files are created and all packets written.
         runtime.block_on(flush_loggers(vec![logger_0]));
@@ -585,13 +585,13 @@ mod tests {
             .build()
             .unwrap();
         let mut logger_0 = file_manager.build_logger("logger 0").unwrap();
-        let packet_0 = UciVendor_A_NotificationBuilder { opcode: 0, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_0.into());
+        let packet_0 = UciVendor_A_Notification { opcode: 0, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_0.try_into().unwrap());
         let mut logger_1 = file_manager.build_logger("logger 1").unwrap();
-        let packet_1 = UciVendor_A_NotificationBuilder { opcode: 1, payload: None }.build();
-        logger_1.log_uci_control_packet(packet_1.into());
-        let packet_2 = UciVendor_A_NotificationBuilder { opcode: 2, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_2.into());
+        let packet_1 = UciVendor_A_Notification { opcode: 1, payload: vec![] };
+        logger_1.log_uci_control_packet(packet_1.try_into().unwrap());
+        let packet_2 = UciVendor_A_Notification { opcode: 2, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_2.try_into().unwrap());
 
         // Flush all the loggers so that the files are created and all packets written.
         runtime.block_on(flush_loggers(vec![logger_0, logger_1]));
@@ -624,13 +624,13 @@ mod tests {
             .build()
             .unwrap();
         let mut logger_0 = file_manager_140.build_logger("logger 0").unwrap();
-        let packet_0 = UciVendor_A_NotificationBuilder { opcode: 0, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_0.into());
+        let packet_0 = UciVendor_A_Notification { opcode: 0, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_0.try_into().unwrap());
         let mut logger_1 = file_manager_140.build_logger("logger 1").unwrap();
-        let packet_1 = UciVendor_A_NotificationBuilder { opcode: 1, payload: None }.build();
-        logger_1.log_uci_control_packet(packet_1.into());
-        let packet_2 = UciVendor_A_NotificationBuilder { opcode: 2, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_2.into());
+        let packet_1 = UciVendor_A_Notification { opcode: 1, payload: vec![] };
+        logger_1.log_uci_control_packet(packet_1.try_into().unwrap());
+        let packet_2 = UciVendor_A_Notification { opcode: 2, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_2.try_into().unwrap());
 
         // Flush all the loggers so that the files are created and all packets written.
         runtime.block_on(flush_loggers(vec![logger_0, logger_1]));
@@ -681,13 +681,13 @@ mod tests {
             .build()
             .unwrap();
         let mut logger_0 = file_manager_144.build_logger("logger 0").unwrap();
-        let packet_0 = UciVendor_A_NotificationBuilder { opcode: 0, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_0.into());
-        let packet_2 = UciVendor_A_NotificationBuilder { opcode: 2, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_2.into());
+        let packet_0 = UciVendor_A_Notification { opcode: 0, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_0.try_into().unwrap());
+        let packet_2 = UciVendor_A_Notification { opcode: 2, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_2.try_into().unwrap());
         let mut logger_1 = file_manager_144.build_logger("logger 1").unwrap();
-        let packet_1 = UciVendor_A_NotificationBuilder { opcode: 1, payload: None }.build();
-        logger_1.log_uci_control_packet(packet_1.into());
+        let packet_1 = UciVendor_A_Notification { opcode: 1, payload: vec![] };
+        logger_1.log_uci_control_packet(packet_1.try_into().unwrap());
 
         // Flush all the loggers so that the files are created and all packets written.
         runtime.block_on(flush_loggers(vec![logger_0, logger_1]));
@@ -729,13 +729,13 @@ mod tests {
             .build()
             .unwrap();
         let mut logger_0 = file_manager_96.build_logger("logger 0").unwrap();
-        let packet_0 = UciVendor_A_NotificationBuilder { opcode: 0, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_0.into());
-        let packet_2 = UciVendor_A_NotificationBuilder { opcode: 2, payload: None }.build();
-        logger_0.log_uci_control_packet(packet_2.into());
+        let packet_0 = UciVendor_A_Notification { opcode: 0, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_0.try_into().unwrap());
+        let packet_2 = UciVendor_A_Notification { opcode: 2, payload: vec![] };
+        logger_0.log_uci_control_packet(packet_2.try_into().unwrap());
         let mut logger_1 = file_manager_96.build_logger("logger 1").unwrap();
-        let packet_1 = UciVendor_A_NotificationBuilder { opcode: 1, payload: None }.build();
-        logger_1.log_uci_control_packet(packet_1.into());
+        let packet_1 = UciVendor_A_Notification { opcode: 1, payload: vec![] };
+        logger_1.log_uci_control_packet(packet_1.try_into().unwrap());
 
         // Flush all the loggers so that the files are created and all packets written.
         runtime.block_on(flush_loggers(vec![logger_0, logger_1]));

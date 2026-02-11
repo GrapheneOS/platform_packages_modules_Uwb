@@ -52,6 +52,9 @@ pub enum Error {
     /// Country code regulation UWB Off
     #[error("The country code command failed with a UWB regulatory error")]
     RegulationUwbOff,
+    /// Encoding error returned when input parameters break the PDL range limits.
+    #[error("Encoding error")]
+    Encode,
     /// The unknown error.
     #[error("The unknown error")]
     Unknown,
@@ -66,3 +69,9 @@ pub enum Error {
 ///
 /// This type is broadly used by the methods in this library which may produce an error.
 pub type Result<T> = std::result::Result<T, Error>;
+
+impl From<pdl_runtime::EncodeError> for Error {
+    fn from(_: pdl_runtime::EncodeError) -> Error {
+        Error::Encode
+    }
+}
