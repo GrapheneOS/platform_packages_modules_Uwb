@@ -58,16 +58,31 @@ public final class DlTdoaRangingParams implements Parcelable {
     })
     public @interface MeasurementVersion {}
 
+    // Vendor Specific Element
+    private static final int FIRA_OOB_BLE_VSE_MINIMUM_TOTAL_LENGTH = 5;
     private static final int FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH = 6;
-    private static final int FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH = 2;
 
+    // BLE Specific Header
+    private static final int FIRA_OOB_BLE_DATA_TYPE_UUID_16BITS = 0x16;
+    private static final int FIRA_OOB_BLE_CP_UUID_0 = 0xF3;  // Connector Primary
+    private static final int FIRA_OOB_BLE_CP_UUID_1 = 0xFF;  // Connector Primary
+    private static final int FIRA_OOB_BLE_CS_UUID_0 = 0xF4;  // Connector Secondary
+    private static final int FIRA_OOB_BLE_CS_UUID_1 = 0xFF;  // Connector Secondary
+
+    // WiFi Specific Header
     private static final int FIRA_OOB_WIFI_VSE_ID = 0xDD;
     private static final int FIRA_OOB_WIFI_OUI_0 = 0x5A;
     private static final int FIRA_OOB_WIFI_OUI_1 = 0x18;
     private static final int FIRA_OOB_WIFI_OUI_2 = 0xFF;
-    private static final int FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG = 0x05;
-    private static final int FIRA_UWB_PROFILE_ID = 0x02;
 
+    // UWB Configuration Sub-Element
+    private static final int FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG = 0x05;
+    private static final int FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH = 2;
+
+    // UWB Configuration ID for Untracked Navigation Profile
+    private static final int FIRA_UWB_UNTRACKED_NAVIGATION_PROFILE_ID = 0x02;
+
+    // UWB Configuration Parameter Tags
     private static final int TAG_CHANNEL_NUMBER = 0x04;
     private static final int TAG_DEVICE_MAC_ADDRESS = 0x06;
     private static final int TAG_SLOT_DURATION = 0x08;
@@ -150,31 +165,41 @@ public final class DlTdoaRangingParams implements Parcelable {
             @NonNull byte[] config, @Nullable byte [] rangingRoundIndexes) {
         Objects.requireNonNull(config);
 
-        // Validate header
-        if (config.length < FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH) {
-            throw new IllegalArgumentException("Not enough bytes for a valid FiRa OOB WiFi VSE.");
+        int subElementHeaderOffset = 0;
+        int totalLength = 0;
+
+        // Validate technology specific header
+        if (config.length >= FIRA_OOB_BLE_VSE_MINIMUM_TOTAL_LENGTH
+                && config.length >= (config[0] & 0xFF) + 1
+                && (config[1] & 0xFF) == FIRA_OOB_BLE_DATA_TYPE_UUID_16BITS
+                && (((config[2] & 0xFF) == FIRA_OOB_BLE_CP_UUID_0
+                        && (config[3] & 0xFF) == FIRA_OOB_BLE_CP_UUID_1)
+                                || ((config[2] & 0xFF) == FIRA_OOB_BLE_CS_UUID_0
+                                        && (config[3] & 0xFF) == FIRA_OOB_BLE_CS_UUID_1))) {
+            // BLE technology specific header
+            subElementHeaderOffset = 4;
+            totalLength = (config[0] & 0xFF) + 1;
+        } else if (config.length >= FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH
+                && (config[0] & 0xFF) == FIRA_OOB_WIFI_VSE_ID
+                && config.length >= (config[1] & 0xFF) + 2
+                && (config[2] & 0xFF) == FIRA_OOB_WIFI_OUI_0
+                && (config[3] & 0xFF) == FIRA_OOB_WIFI_OUI_1
+                && (config[4] & 0xFF) == FIRA_OOB_WIFI_OUI_2) {
+            // WiFi technology specific header
+            subElementHeaderOffset = 5;
+            totalLength = (config[1] & 0xFF) + 2;
+        } else {
+            throw new IllegalArgumentException("Unsupported or malformed OOB VSE.");
         }
-        int vseLength = config[1] & 0xFF;
-        int totalLength = 2 + vseLength;
-        if (totalLength < FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH) {
-            throw new IllegalArgumentException("Invalid FiRa OOB WiFi VSE length.");
-        }
-        if (config.length < totalLength) {
-            throw new IllegalArgumentException("Not enough bytes for FiRa OOB WiFi VSE content.");
-        }
-        if ((config[0] & 0xFF) != FIRA_OOB_WIFI_VSE_ID
-                || (config[2] & 0xFF) != FIRA_OOB_WIFI_OUI_0
-                || (config[3] & 0xFF) != FIRA_OOB_WIFI_OUI_1
-                || (config[4] & 0xFF) != FIRA_OOB_WIFI_OUI_2) {
-            throw new IllegalArgumentException("Invalid FiRa OOB WiFi VSE header.");
-        }
-        if (((config[5] & 0xF0) >> 4) != FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG) {
+
+        // Validate sub-element type
+        if (((config[subElementHeaderOffset] & 0xF0) >> 4) != FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG) {
             throw new IllegalArgumentException("Unsupported FiRa Sub-Element type.");
         }
 
-        // Validate sub-element
-        int subElementLength = config[5] & 0x0F;
-        int subElementDataOffset = 6;
+        // Validate sub-element length
+        int subElementLength = config[subElementHeaderOffset] & 0x0F;
+        int subElementDataOffset = subElementHeaderOffset + 1;
         if (subElementLength == 0x0F) {
             // parse extra bytes for length extension
             int lengthExtensionOffset = subElementDataOffset;
@@ -194,7 +219,9 @@ public final class DlTdoaRangingParams implements Parcelable {
         if (subElementLength < FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH) {
             throw new IllegalArgumentException("Invalid UWB Configuration Sub-Element length.");
         }
-        if ((config[subElementDataOffset] & 0xFF) != FIRA_UWB_PROFILE_ID) {
+
+        // Validate UWB configuration data header
+        if ((config[subElementDataOffset] & 0xFF) != FIRA_UWB_UNTRACKED_NAVIGATION_PROFILE_ID) {
             throw new IllegalArgumentException("Invalid UWB Configuration Sub-Element header.");
         }
 

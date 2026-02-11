@@ -1896,7 +1896,121 @@ public class RangingManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
-    public void testDlTdoaRangingParams_createFromFiraConfigPacket_validConfig() {
+    public void testDlTdoaRangingParams_createFromFiraConfigPacket_validBleCpConfig() {
+        byte[] config = {
+            // BLE Specific Header
+            (byte) 0x2D, (byte) 0x16, (byte) 0xF3, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x5F, (byte) 0x19,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for DEVICE_MAC_ADDRESS
+            (byte) 0x06, (byte) 0x02, (byte) 0x20, (byte) 0x08,
+            // Tag-Length-Value for PREAMBLE_CODE_INDEX
+            (byte) 0x14, (byte) 0x01, (byte) 0x0C,
+            // Tag-Length-Value for VENDOR_ID
+            (byte) 0x27, (byte) 0x02, (byte) 0x08, (byte) 0x07,
+            // Tag-Length-Value for STATIC_STS_IV
+            (byte) 0x28, (byte) 0x06, (byte) 0xCA, (byte) 0xC8,
+            (byte) 0xA6, (byte) 0xF7, (byte) 0x6F, (byte) 0x08,
+            // Tag-Length-Value for SLOT_DURATION
+            (byte) 0x08, (byte) 0x02, (byte) 0x60, (byte) 0x09,
+            // Tag-Length-Value for SLOTS_PER_RR
+            (byte) 0x1B, (byte) 0x01, (byte) 0x0A,
+            // Tag-Length-Value for RANGING_DURATION
+            (byte) 0x09, (byte) 0x04, (byte) 0xE8, (byte) 0x03, (byte) 0x00, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+        };
+        DlTdoaRangingParams params = DlTdoaRangingParams.createFromFiraConfigPacket(config, null);
+
+        byte[] expectedDeviceAddress = new byte[] {(byte) 0x20, (byte) 0x08};
+        int expectedChannel = 9;
+        int expectedPreambleIndex = 12;
+        byte[] expectedSessionKeyInfo = new byte[] {
+            (byte) 0x08, (byte) 0x07, (byte) 0xCA, (byte) 0xC8,
+            (byte) 0xA6, (byte) 0xF7, (byte) 0x6F, (byte) 0x08};
+        int expectedSlotDuration = UwbRangingParams.DURATION_2_MS;
+        int expectedSlotsPerRangingRound = 10;
+        int expectedRangingIntervalMillis = 1000;
+        int expectedSessionId = 0x01234567;
+        byte[] expectedRangingRoundIndexes = new byte[] {(byte) 0x00};
+        int expectedMeasurementVersion = DlTdoaRangingParams.MEASUREMENT_VERSION_1;
+
+        assertThat(params).isNotNull();
+        assertThat(params.getDeviceAddress()).isEqualTo(
+                UwbAddress.fromBytes(expectedDeviceAddress));
+        assertThat(params.getComplexChannel().getChannel()).isEqualTo(expectedChannel);
+        assertThat(params.getComplexChannel().getPreambleIndex()).isEqualTo(expectedPreambleIndex);
+        assertThat(params.getSessionKeyInfo()).isEqualTo(expectedSessionKeyInfo);
+        assertThat(params.getSlotDuration()).isEqualTo(expectedSlotDuration);
+        assertThat(params.getSlotsPerRangingRound()).isEqualTo(expectedSlotsPerRangingRound);
+        assertThat(params.getRangingIntervalMillis()).isEqualTo(expectedRangingIntervalMillis);
+        assertThat(params.getSessionId()).isEqualTo(expectedSessionId);
+        assertThat(params.getRangingRoundIndexes()).isEqualTo(expectedRangingRoundIndexes);
+        assertThat(params.getMeasurementVersion()).isEqualTo(expectedMeasurementVersion);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public void testDlTdoaRangingParams_createFromFiraConfigPacket_validBleCsConfig() {
+        byte[] config = {
+            // BLE Specific Header
+            (byte) 0x2D, (byte) 0x16, (byte) 0xF4, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x5F, (byte) 0x19,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for DEVICE_MAC_ADDRESS
+            (byte) 0x06, (byte) 0x02, (byte) 0x20, (byte) 0x08,
+            // Tag-Length-Value for PREAMBLE_CODE_INDEX
+            (byte) 0x14, (byte) 0x01, (byte) 0x0C,
+            // Tag-Length-Value for VENDOR_ID
+            (byte) 0x27, (byte) 0x02, (byte) 0x08, (byte) 0x07,
+            // Tag-Length-Value for STATIC_STS_IV
+            (byte) 0x28, (byte) 0x06, (byte) 0xCA, (byte) 0xC8,
+            (byte) 0xA6, (byte) 0xF7, (byte) 0x6F, (byte) 0x08,
+            // Tag-Length-Value for SLOT_DURATION
+            (byte) 0x08, (byte) 0x02, (byte) 0x60, (byte) 0x09,
+            // Tag-Length-Value for SLOTS_PER_RR
+            (byte) 0x1B, (byte) 0x01, (byte) 0x0A,
+            // Tag-Length-Value for RANGING_DURATION
+            (byte) 0x09, (byte) 0x04, (byte) 0xE8, (byte) 0x03, (byte) 0x00, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+        };
+        DlTdoaRangingParams params = DlTdoaRangingParams.createFromFiraConfigPacket(config, null);
+
+        byte[] expectedDeviceAddress = new byte[] {(byte) 0x20, (byte) 0x08};
+        int expectedChannel = 9;
+        int expectedPreambleIndex = 12;
+        byte[] expectedSessionKeyInfo = new byte[] {
+            (byte) 0x08, (byte) 0x07, (byte) 0xCA, (byte) 0xC8,
+            (byte) 0xA6, (byte) 0xF7, (byte) 0x6F, (byte) 0x08};
+        int expectedSlotDuration = UwbRangingParams.DURATION_2_MS;
+        int expectedSlotsPerRangingRound = 10;
+        int expectedRangingIntervalMillis = 1000;
+        int expectedSessionId = 0x01234567;
+        byte[] expectedRangingRoundIndexes = new byte[] {(byte) 0x00};
+        int expectedMeasurementVersion = DlTdoaRangingParams.MEASUREMENT_VERSION_1;
+
+        assertThat(params).isNotNull();
+        assertThat(params.getDeviceAddress()).isEqualTo(
+                UwbAddress.fromBytes(expectedDeviceAddress));
+        assertThat(params.getComplexChannel().getChannel()).isEqualTo(expectedChannel);
+        assertThat(params.getComplexChannel().getPreambleIndex()).isEqualTo(expectedPreambleIndex);
+        assertThat(params.getSessionKeyInfo()).isEqualTo(expectedSessionKeyInfo);
+        assertThat(params.getSlotDuration()).isEqualTo(expectedSlotDuration);
+        assertThat(params.getSlotsPerRangingRound()).isEqualTo(expectedSlotsPerRangingRound);
+        assertThat(params.getRangingIntervalMillis()).isEqualTo(expectedRangingIntervalMillis);
+        assertThat(params.getSessionId()).isEqualTo(expectedSessionId);
+        assertThat(params.getRangingRoundIndexes()).isEqualTo(expectedRangingRoundIndexes);
+        assertThat(params.getMeasurementVersion()).isEqualTo(expectedMeasurementVersion);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public void testDlTdoaRangingParams_createFromFiraConfigPacket_validWifiConfig() {
         byte[] config = {
             // WiFi Specific Header
             (byte) 0xDD, (byte) 0x2D, (byte) 0x5A, (byte) 0x18, (byte) 0xFF,
@@ -1935,6 +2049,7 @@ public class RangingManagerTest {
         int expectedRangingIntervalMillis = 1000;
         int expectedSessionId = 0x01234567;
         byte[] expectedRangingRoundIndexes = new byte[] {(byte) 0x00};
+        int expectedMeasurementVersion = DlTdoaRangingParams.MEASUREMENT_VERSION_1;
 
         assertThat(params).isNotNull();
         assertThat(params.getDeviceAddress()).isEqualTo(
@@ -1947,6 +2062,7 @@ public class RangingManagerTest {
         assertThat(params.getRangingIntervalMillis()).isEqualTo(expectedRangingIntervalMillis);
         assertThat(params.getSessionId()).isEqualTo(expectedSessionId);
         assertThat(params.getRangingRoundIndexes()).isEqualTo(expectedRangingRoundIndexes);
+        assertThat(params.getMeasurementVersion()).isEqualTo(expectedMeasurementVersion);
     }
 
     @Test
