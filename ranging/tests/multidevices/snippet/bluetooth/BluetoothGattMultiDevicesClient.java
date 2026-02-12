@@ -81,9 +81,18 @@ public final class BluetoothGattMultiDevicesClient {
     }
 
     public BluetoothDevice connect(String uuid) {
+        mServer = scan(uuid);
+        if (mServer == null) {
+            return null;
+        }
+        return connectToAddress(mServer.getAddress());
+    }
+
+    public BluetoothDevice scan(String uuid) {
         // Scan for the peer
         var serverFoundBlocker = new CountDownLatch(1);
         var scanner = mBluetoothAdapter.getBluetoothLeScanner();
+        final BluetoothDevice[] foundDevice = new BluetoothDevice[1];
         var callback =
                 new ScanCallback() {
                     @Override
@@ -92,7 +101,7 @@ public final class BluetoothGattMultiDevicesClient {
                         Log.v(TAG, "Found uuids " + uuids);
                         if (uuids != null
                                 && uuids.contains(new ParcelUuid(UUID.fromString(uuid)))) {
-                            mServer = result.getDevice();
+                            foundDevice[0] = result.getDevice();
                             serverFoundBlocker.countDown();
                         }
                     }
@@ -117,12 +126,20 @@ public final class BluetoothGattMultiDevicesClient {
             Log.e(TAG, "Did not discover server");
             return null;
         }
+        return foundDevice[0];
+    }
 
+    public BluetoothDevice connectToAddress(String address) {
+        return connectToDevice(mBluetoothAdapter.getRemoteDevice(address));
+    }
+
+    public BluetoothDevice connectToDevice(BluetoothDevice device) {
+        mServer = device;
         // Connect to the peer
         mConnectionBlocker = new CountDownLatch(1);
         mWaitForConnectionState = BluetoothProfile.STATE_CONNECTED;
         mBluetoothGatt = mServer.connectGatt(mContext, false, mGattCallback, TRANSPORT_LE);
-        timeout = false;
+        boolean timeout = false;
         try {
             timeout = !mConnectionBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);
         } catch (InterruptedException e) {
@@ -157,6 +174,15 @@ public final class BluetoothGattMultiDevicesClient {
         }
 
         return mBluetoothGatt.getService(UUID.fromString(uuid)) != null;
+    }
+
+    public void setPreferredPhy(int txPhy, int rxPhy, int phyOptions) {
+        if (mBluetoothGatt == null) {
+            throw new IllegalStateException("BluetoothGatt is null");
+        }
+        Log.i(TAG, "setPreferredPhy: txPhy=" + txPhy + ", rxPhy=" + rxPhy + ", phyOptions="
+                + phyOptions);
+        mBluetoothGatt.setPreferredPhy(txPhy, rxPhy, phyOptions);
     }
 
     public boolean disconnect(String uuid) {

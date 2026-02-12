@@ -10,6 +10,7 @@ from lib import uwb_base_test
 from lib import uwb_ranging_decorator
 from lib import uwb_ranging_params
 from mobly import asserts
+from mobly.controllers import android_device
 from mobly import config_parser
 from mobly import signals
 from mobly import suite_runner
@@ -48,6 +49,7 @@ _TEST_CASES = (
     "test_ranging_device_tracker_profile_max_sessions_reject",
     "test_logical_link_mode_data_transfer_session",
     "test_bypass_mode_data_transfer_session",
+    "test_timesync_event",
 )
 
 class RangingTest(uwb_base_test.UwbBaseTest):
@@ -65,6 +67,11 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     """
     super().__init__(configs)
     self.tests = _TEST_CASES
+
+  def _is_emulator_device(self, ad: android_device.AndroidDevice) -> bool:
+    product_name = ad.adb.getprop("ro.product.name")
+    product_board = ad.adb.getprop("ro.product.board")
+    return ("cf_x86" in product_name) or ("goldfish" in product_board)
 
   def setup_class(self):
     super().setup_class()
@@ -2014,6 +2021,66 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     for i in range(max_fira_ranging_sessions):
       self.responder.stop_ranging(session=i)
       self.initiator.stop_ranging(session=i)
+
+  def test_timesync_event(self):
+    """Verifies timesync event callback.
+
+    Test Steps:
+    1. Responder (Server) starts advertising BLE GATT server.
+    2. Initiator (Client) scans for Responder and gets its address and type.
+    3. Initiator (Server) registers timesync callback for Responder's address.
+    4. Initiator (Server) verifies onRegistered callback.
+    5. Initiator (Client) connects to Responder via BLE GATT.
+    6. Initiator (Server) verifies onTimesyncEvent callback.
+    7. Responder (Server) calls serverSetPreferredPhy.
+    8. Initiator (Server) verifies another onTimesyncEvent callback.
+    """
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                          f"Skipping Timesync test on emulators")
+    asserts.skip_if(
+            self._get_uci_version(self.initiator) & 0xFF < 2
+            or self._get_uci_version(self.responder) & 0xFF < 2,
+            f"Skipping Timesync test on devices if Fira version is not at lease 2.0",
+        )
+    uuid = "00001101-0000-1000-8000-00805f9b34fb"
+    uwb_test_utils.set_bt_state_and_verify(self.responder.ad, True)
+    uwb_test_utils.set_bt_state_and_verify(self.initiator.ad, True)
+    self.responder.ad.bluetooth.reset()
+    self.initiator.ad.bluetooth.reset()
+
+    self.responder.log.info("Responder starting advertisement...")
+    self.responder.ad.bluetooth.createAndAdvertiseServer(uuid)
+
+    self.initiator.log.info("Initiator scanning for responder...")
+    device_info = self.initiator.ad.bluetooth.scanForDevice(uuid)
+    if not device_info:
+      raise RuntimeError("Failed to discover responder device via BLE scan")
+
+    server_address = device_info["address"]
+    address_type = device_info["address_type"]
+    self.initiator.log.info("Discovered server address: %s, type: %s" % (server_address, address_type))
+
+    self.initiator.log.info("Registering timesync callback on initiator...")
+    self.initiator.register_timesync_callback(server_address, address_type)
+    self.initiator.verify_timesync_callback_received("onRegistered")
+
+    self.initiator.log.info("Connecting initiator to responder...")
+    self.initiator.ad.bluetooth.connectToFoundDevice()
+
+    self.initiator.log.info("Waiting for first onTimesyncEvent on initiator...")
+    event = self.initiator.verify_timesync_callback_received("onTimesyncEvent", timeout=5)
+    self.initiator.log.info("Received first timesync event: %s" % event.data)
+
+    self.responder.log.info("Responder setting preferred PHY...")
+    # PHY_LE_2M = 2, PHY_OPTION_NO_PREFERRED = 0
+    self.responder.ad.bluetooth.serverSetPreferredPhy(2, 2, 0)
+
+    self.initiator.log.info("Waiting for second onTimesyncEvent on initiator...")
+    event = self.initiator.verify_timesync_callback_received("onTimesyncEvent", timeout=5)
+    self.initiator.log.info("Received second timesync event: %s" % event.data)
+
+    self.initiator.ad.bluetooth.disconnectGatt(uuid)
+    self.initiator.unregister_timesync_callback()
 
 
 if __name__ == "__main__":

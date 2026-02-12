@@ -31,6 +31,7 @@ class UwbRangingDecorator():
     self.ad = ad
     self._callback_keys = {}
     self._event_handlers = {}
+    self._timesync_event_handlers = {}
     self.log = self.ad.log
 
   def clear_ranging_session_callback_events(self, ranging_session_id: int = 0):
@@ -303,6 +304,52 @@ class UwbRangingDecorator():
                                                addr)
     except errors.ApiError as api_error:
       raise ValueError("Failed to get RSSI measurement.") from api_error
+
+  def register_timesync_callback(self, mac_address: str, address_type: int):
+    """Registers timesync callback.
+
+    Args:
+      mac_address: peer mac address.
+      address_type: peer address type.
+    """
+    key = "timesync_key"
+    handler = self.ad.uwb.registerTimesyncCallback(key, mac_address, address_type)
+    self._timesync_event_handlers[key] = handler
+
+  def unregister_timesync_callback(self):
+    """Unregisters timesync callback.
+    """
+    key = "timesync_key"
+    self.ad.uwb.unregisterTimesyncCallback(key)
+    self._timesync_event_handlers.pop(key, None)
+
+  def verify_timesync_callback_received(self,
+                                        timesync_event: str,
+                                        timeout: int = CALLBACK_WAIT_TIME_SEC):
+    """Verifies if the expected timesync callback is received.
+
+    Args:
+      timesync_event: Expected timesync event.
+      timeout: callback timeout.
+
+    Raises:
+      TimeoutError: if the expected timesync callback event is not received.
+    """
+    key = "timesync_key"
+    handler = self._timesync_event_handlers[key]
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+      try:
+        event = handler.waitAndGet("TimesyncCallback", timeout=timeout)
+        event_received = event.data["timesyncEvent"]
+        self.ad.log.debug("Received event - %s" % event_received)
+        if event_received == timesync_event:
+          self.ad.log.debug("Received the '%s' timesync callback in %ss" %
+                            (timesync_event, round(time.time() - start_time, 2)))
+          return event
+      except errors.CallbackHandlerTimeoutError as e:
+        self.log.warn("Failed to receive 'TimesyncCallback' event")
+    raise TimeoutError("Failed to receive '%s' timesync event" % timesync_event)
 
   def stop_ranging(self, session: int = 0, timeout: int = STOP_CALLBACK_WAIT_TIME_SEC):
     """Stops UWB ranging session.
