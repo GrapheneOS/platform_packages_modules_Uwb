@@ -22,6 +22,7 @@ from lib import rssi
 from lib import rtt
 from lib import utils
 from lib import uwb
+from lib import wifipd
 from lib.session import RangingSession
 from lib.params import *
 from lib.ranging_decorator import *
@@ -56,6 +57,7 @@ _TEST_CASES = [
     "test_ble_rssi_ranging_app_switch_to_bg_and_fg",
     "test_ble_cs_ranging_app_switch_to_bg_and_fg",
     "test_on_motion_received",
+    "test_one_to_one_wifi_pd_ranging",
 ]
 
 
@@ -1515,6 +1517,97 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.send_motion_event_and_assert_received(self.responder.id, self.initiator.id)
 
     session.stop_and_assert_closed()
+
+  @CddTest(requirements = ['7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"'])
+  def test_one_to_one_wifi_pd_ranging(self):
+    """Verifies wifi pd ranging with peer device, devices range for 10 seconds."""
+    SESSION_HANDLE = str(uuid4())
+    TECHNOLOGIES = {RangingTechnology.WIFI_PD}
+
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.WIFI_PD),
+        f"Wifi PD not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.WIFI_PD),
+        f"Wifi PD not supported by initiator",
+    )
+
+    initiator_caps = self.initiator.ad.ranging.getWifiPdCapabilities()
+    responder_caps = self.responder.ad.ranging.getWifiPdCapabilities()
+
+    asserts.assert_true(
+        initiator_caps, "Failed to get Wifi PD capabilities from initiator"
+    )
+    asserts.assert_true(
+        responder_caps, "Failed to get Wifi PD capabilities from responder"
+    )
+    responder_mac_address = responder_caps.get("mac_address")
+    asserts.assert_true(
+        responder_mac_address,
+        "Failed to get Wifi PD MAC address from responder caps",
+    )
+    initiator_mac_address = initiator_caps.get("mac_address")
+    asserts.assert_true(
+        initiator_mac_address,
+        "Failed to get Wifi PD MAC address from initiator caps",
+    )
+
+    wifi_pd_params = wifipd.get_best_wifi_pd_params(
+        initiator_caps, responder_caps, responder_mac_address
+    )
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=RawInitiatorRangingParams(
+            peer_params=[
+                DeviceParams(
+                    peer_id=self.responder.id,
+                    wifi_pd_params=wifi_pd_params,
+                )
+            ],
+        ),
+        enable_range_data_notifications=True,
+    )
+
+    responder_wifi_pd_params = wifipd.get_best_wifi_pd_params(
+        initiator_caps, responder_caps, initiator_mac_address
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=RawResponderRangingParams(
+            peer_params=DeviceParams(
+                peer_id=self.initiator.id,
+                wifi_pd_params=responder_wifi_pd_params,
+            ),
+        ),
+        enable_range_data_notifications=True,
+    )
+
+    self.responder.start_ranging_and_assert_opened(
+        SESSION_HANDLE, responder_preference
+    )
+    self.initiator.start_ranging_and_assert_opened(
+        SESSION_HANDLE, initiator_preference
+    )
+
+    time.sleep(10)
+    asserts.assert_true(
+        self.initiator.verify_received_data_from_peer_using_technologies(
+            SESSION_HANDLE, self.responder.id, TECHNOLOGIES
+        ),
+        "Initiator did not find responder",
+    )
+    asserts.assert_true(
+        self.responder.verify_received_data_from_peer_using_technologies(
+            SESSION_HANDLE, self.initiator.id, TECHNOLOGIES
+        ),
+        "Responder did not find initiator",
+    )
+
+    self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
+    self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
 if __name__ == "__main__":
   if "--" in sys.argv:
