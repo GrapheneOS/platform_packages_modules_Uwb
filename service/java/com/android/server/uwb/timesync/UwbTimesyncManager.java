@@ -123,6 +123,27 @@ public class UwbTimesyncManager {
         return result;
     }
 
+    /**
+     * Decodes the 1-byte time uncertainty back into microseconds.
+     * * @param encoded The 1-byte encoded uncertainty (0-255).
+     *
+     * @return The uncertainty in microseconds (us).
+     */
+    private static long decodeTimeUncertainty(int encoded) {
+        // Handling the base case: 0 maps to 0us (or 1us depending on strictness)
+        if (encoded <= 0) {
+            return 0;
+        }
+
+        // Reverse the formula: 2^(encoded / 8.0)
+        // We use 8.0 to ensure floating point division
+        double microseconds = Math.pow(2, (double) encoded / 8.0);
+
+        // Rounding to long then casting to int to prevent overflow issues
+        // though 0xFF yields ~2.3 billion, which fits in a signed int.
+        return Math.round(microseconds);
+    }
+
     private static class BluetoothCccCallback extends IBluetoothLmpEventCallback.Stub {
 
         private Object mClockLock = new Object();
@@ -177,7 +198,7 @@ public class UwbTimesyncManager {
                 // If the device has combo chip, use system time as uwb time is in the same domain.
                 return new BleTimestamp(
                         timestamp.systemTimeUs,
-                        mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs(),
+                        mUwbInjector.getDeviceConfigFacade().getTimesyncUncertainty(),
                         mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm()
                 );
             } else if (mUwbInjector.getDeviceConfigFacade().isAndroidSpecificTimesyncSupported()) {
@@ -311,7 +332,7 @@ public class UwbTimesyncManager {
             return new BleTimestamp(
                     timestamp.systemTimeUs + uwbsTimeOffsetUs,
                     Math.max(encodeTimeUncertainty(uwbsConversionUncertaintyUs),
-                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs()),
+                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertainty()),
                     mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm());
         }
 
@@ -355,7 +376,7 @@ public class UwbTimesyncManager {
             return new BleTimestamp(
                     timestamp.systemTimeUs + bestTimeOffsetUs,
                     Math.max(encodeTimeUncertainty((int) uncertaintyUs),
-                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs()),
+                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertainty()),
                     mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm()
             );
         }
@@ -368,7 +389,7 @@ public class UwbTimesyncManager {
                     timestamp.systemTimeUs
                             + mUwbInjector.getDeviceConfigFacade().getTimesyncDeviceOffset(),
                     Math.max(encodeTimeUncertainty((int) uncertaintyUs),
-                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertaintyUs()),
+                            mUwbInjector.getDeviceConfigFacade().getTimesyncUncertainty()),
                     mUwbInjector.getDeviceConfigFacade().getTimesyncClockSkewPpm()
             );
         }
@@ -440,7 +461,8 @@ public class UwbTimesyncManager {
                                         eventFromHal(lmpEventId),
                                         directionFromHal(direction),
                                         mBleTimestamp.getUwbTimestamp(),
-                                        mBleTimestamp.getDeviceTimeUncertainty(),
+                                        decodeTimeUncertainty(
+                                                mBleTimestamp.getDeviceTimeUncertainty()),
                                         mBleTimestamp.getMaxClockSkewPpm(),
                                         eventCounter)
                                         .build());
