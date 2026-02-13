@@ -217,8 +217,8 @@ impl LogWriterActor {
                     }
                 }
                 Some(PcapngLoggerMessage::Flush(flush_sender)) => {
-                    if self.current_file.is_some() {
-                        match self.current_file.as_mut().unwrap().flush_file() {
+                    if let Some(cf) = self.current_file.as_mut() {
+                        match cf.flush_file() {
                             Some(_) => {
                                 let _ = flush_sender.send(true);
                             }
