@@ -615,13 +615,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public synchronized void registerTimesyncCallback(ITimesyncCallbackListener callback,
             BluetoothAddress address)
             throws RemoteException {
-        mUwbInjector.getTimesyncManager().registerEventCallback(callback, address);
+        mUwbInjector.getUwbTimesyncManager().registerEventCallback(callback, address);
     }
 
     public synchronized void unregisterTimesyncCallback(ITimesyncCallbackListener callback,
             BluetoothAddress address)
             throws RemoteException {
-        mUwbInjector.getTimesyncManager().unregisterEventCallback(callback, address);
+        mUwbInjector.getUwbTimesyncManager().unregisterEventCallback(callback, address);
     }
 
     public void updateChannelStateIfNeeded() {

@@ -55,8 +55,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class TimesyncManager {
-    private static final String TAG = TimesyncManager.class.getSimpleName();
+public class UwbTimesyncManager {
+    private static final String TAG = UwbTimesyncManager.class.getSimpleName();
     private static final String HAL_INSTANCE_NAME = IBluetoothLmpEvent.DESCRIPTOR + "/default";
 
     // TODO (b/422469744):
@@ -185,7 +185,8 @@ public class TimesyncManager {
                 Log.i(TAG, "Android specific timesync calculation");
                 return androidUwbTimestamp(timestamp);
             } else if (mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                    null).getFiraSpecificationParams().getUciVersionSupported() >= 2) {
+                            mUwbInjector.getMultichipData().getDefaultChipId())
+                    .getFiraSpecificationParams().getUciVersionSupported() >= 2) {
                 // Fira based uci query uwbs timestamp
                 Log.i(TAG, "Fira 2.0 UCI query uwbs timestamp based timesync");
                 return uciUwbTimestamp(timestamp);
@@ -480,8 +481,8 @@ public class TimesyncManager {
             new ConcurrentHashMap<>();
 
 
-    public TimesyncManager(@NonNull UwbContext context, @NonNull NativeUwbManager nativeUwbManager,
-            @NonNull UwbInjector uwbInjector) {
+    public UwbTimesyncManager(@NonNull UwbContext context,
+            @NonNull NativeUwbManager nativeUwbManager, @NonNull UwbInjector uwbInjector) {
         mContext = context;
         mUwbInjector = uwbInjector;
         mNativeUwbManager = nativeUwbManager;
@@ -522,6 +523,8 @@ public class TimesyncManager {
             Log.e(TAG, "Unable to obtain mBtCccHal");
             return;
         }
+        Log.i(TAG, "Registering for  timesync events address xx:xx:xx:xx:"
+                + bluetoothAddress.getAddress().substring(12));
         mBtCccHal.registerForLmpEvents(
                 bluetoothCccCallback,
                 (byte) bluetoothAddress.getAddressType(),
@@ -535,6 +538,8 @@ public class TimesyncManager {
         if (sAddressCallbackMap.containsKey(bluetoothAddress.getAddress())
                 && sAddressCallbackMap.get(
                 bluetoothAddress.getAddress()).mCallbackListener == callback) {
+            Log.i(TAG, "Unregistering for  timesync events xx:xx:xx:xx:"
+                    + bluetoothAddress.getAddress().substring(12));
             mBtCccHal.unregisterLmpEvents(
                     (byte) bluetoothAddress.getAddressType(),
                     bluetoothAddressToBytes(bluetoothAddress.getAddress()));

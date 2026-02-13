@@ -53,7 +53,7 @@ import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
-import com.android.server.uwb.timesync.TimesyncManager;
+import com.android.server.uwb.timesync.UwbTimesyncManager;
 import com.android.uwb.flags.Flags;
 import com.android.uwb.fusion.UwbFilterEngine;
 import com.android.uwb.fusion.filtering.IFilter;
@@ -96,7 +96,7 @@ public class UwbInjector {
     private final UwbContext mContext;
     private final Looper mLooper;
     private final PermissionManager mPermissionManager;
-    private final TimesyncManager mTimesyncManager;
+    private final UwbTimesyncManager mUwbTimesyncManager;
     private final UserManager mUserManager;
     private final UwbConfigStore mUwbConfigStore;
     private final ProfileManager mProfileManager;
@@ -156,7 +156,7 @@ public class UwbInjector {
                 mUwbCountryCode, mUwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
-        mTimesyncManager = new TimesyncManager(mContext, mNativeUwbManager, this);
+        mUwbTimesyncManager = new UwbTimesyncManager(mContext, mNativeUwbManager, this);
     }
 
     public boolean dataTransferPhaseConfig() {
@@ -226,7 +226,9 @@ public class UwbInjector {
         return mUwbSessionManager;
     }
 
-    public TimesyncManager getTimesyncManager() { return mTimesyncManager; }
+    public UwbTimesyncManager getUwbTimesyncManager() {
+        return mUwbTimesyncManager;
+    }
 
     /**
      * Create a UwbShellCommand instance.
