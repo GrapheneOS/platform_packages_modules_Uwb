@@ -56,7 +56,7 @@ import android.uwb.timesync.ITimesyncCallbackListener;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbUciConstants;
-import com.android.server.uwb.timesync.TimesyncManager;
+import com.android.server.uwb.timesync.UwbTimesyncManager;
 import com.android.uwb.flags.Flags;
 
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -101,7 +101,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
     private final UwbServiceCore mUwbServiceCore;
-    private final TimesyncManager mTimesyncManager;
+    private final UwbTimesyncManager mUwbTimesyncManager;
 
     private boolean mUwbUserRestricted;
 
@@ -112,7 +112,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbInjector = uwbInjector;
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
-        mTimesyncManager = uwbInjector.getTimesyncManager();
+        mUwbTimesyncManager = uwbInjector.getUwbTimesyncManager();
         mInitializationFailureListener = () -> {
             Log.i(TAG, "Initialization failed, retry initialization after "
                     + INITIALIZATION_RETRY_TIMEOUT_MS + "ms");
