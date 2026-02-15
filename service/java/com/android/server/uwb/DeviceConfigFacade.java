@@ -805,7 +805,7 @@ public class DeviceConfigFacade {
      * Returns the Log2-encoded uncertainty floor for time synchronization measurements in
      * microseconds.
      */
-    public int getTimesyncUncertaintyUs() {
+    public int getTimesyncUncertainty() {
         return mTimesyncUncertainty;
     }
 

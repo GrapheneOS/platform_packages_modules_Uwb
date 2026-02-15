@@ -16,7 +16,7 @@
 
 package android.uwb.timesync;
 
-import android.annotation.DurationMillisLong;
+import android.annotation.DurationMicrosLong;
 import android.annotation.ElapsedRealtimeLong;
 import android.annotation.FlaggedApi;
 import android.annotation.Hide;
@@ -44,7 +44,7 @@ public final class TimesyncEvent implements Parcelable {
     @BleLmpEvent private int mEvent;
     @Direction private int mDirection;
     private long mUwbTimestamp;
-    private int mDeviceTimeUncertainty;
+    private long mDeviceTimeUncertainty;
     private int mMaxClockSkewPpm;
     private int mEventCounter;
 
@@ -130,7 +130,7 @@ public final class TimesyncEvent implements Parcelable {
      *
      * @return device time uncertainty in microseconds.
      */
-    public @DurationMillisLong long getDeviceTimeUncertaintyUs() {
+    public @DurationMicrosLong long getDeviceTimeUncertaintyUs() {
         return mDeviceTimeUncertainty;
     }
 
@@ -166,7 +166,7 @@ public final class TimesyncEvent implements Parcelable {
                             in.readInt(),
                             in.readInt(),
                             in.readLong(),
-                            in.readInt(),
+                            in.readLong(),
                             in.readInt(),
                             in.readInt());
 
@@ -186,7 +186,7 @@ public final class TimesyncEvent implements Parcelable {
         dest.writeInt(mEvent);
         dest.writeInt(mDirection);
         dest.writeLong(mUwbTimestamp);
-        dest.writeInt(mDeviceTimeUncertainty);
+        dest.writeLong(mDeviceTimeUncertainty);
         dest.writeInt(mMaxClockSkewPpm);
         dest.writeInt(mEventCounter);
     }
@@ -204,7 +204,7 @@ public final class TimesyncEvent implements Parcelable {
         @BleLmpEvent private int mEvent;
         @Direction private int mDirection;
         private long mUwbTimestamp;
-        private int mDeviceTimeUncertainty;
+        private long mDeviceTimeUncertainty;
         private int mMaxClockSkewPpm;
         private int mEventCounter;
 
@@ -214,7 +214,7 @@ public final class TimesyncEvent implements Parcelable {
                 @BleLmpEvent int event,
                 @Direction int direction,
                 long uwbTimestamp,
-                int deviceTimeUncertainty,
+                long deviceTimeUncertainty,
                 int maxClockSkewPpm,
                 int eventCounter) {
             mMacAddress = macAddress;
