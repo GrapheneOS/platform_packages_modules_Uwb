@@ -230,7 +230,8 @@ public class UwbTimesyncManager {
             FutureTask<UwbVendorUciResponse> sendVendorCmdTask = new FutureTask<>(
                     () -> mNativeUwbManager.sendRawVendorCmd(MESSAGE_TYPE_COMMAND,
                             ANDROID_GID, ANDROID_TIMESTAMP_ANCHOR_TO_UWBS,
-                            systemTimeBuffer.array(), null));
+                            systemTimeBuffer.array(),
+                            mUwbInjector.getMultichipData().getDefaultChipId()));
 
             UwbVendorUciResponse response = null;
             int uciStatus = UwbUciConstants.STATUS_CODE_FAILED;
