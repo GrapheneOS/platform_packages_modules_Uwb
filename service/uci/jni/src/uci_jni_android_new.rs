@@ -24,9 +24,6 @@ use crate::jclass_name::{
 };
 use crate::unique_jvm;
 
-use std::convert::TryInto;
-use std::iter::zip;
-
 use jni::errors::Error as JNIError;
 use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::signature::ReturnType;
@@ -35,6 +32,9 @@ use jni::sys::{
 };
 use jni::JNIEnv;
 use log::{debug, error};
+use pdl_runtime::Packet;
+use std::convert::TryInto;
+use std::iter::zip;
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AndroidRadarConfigResponse, AppConfigTlv, ControllerPhaseList, CountryCode,
@@ -336,21 +336,16 @@ fn native_get_session_state(
 }
 
 fn parse_app_config_tlv_vec(no_of_params: i32, mut byte_array: &[u8]) -> Result<Vec<AppConfigTlv>> {
-    let mut parsed_tlvs_len = 0;
-    let received_tlvs_len = byte_array.len();
     let mut tlvs = Vec::<AppConfigTlv>::new();
     for _ in 0..no_of_params {
-        // The tlv consists of the type of payload in 1 byte, the length of payload as u8
-        // in 1 byte, and the payload.
-        const TLV_HEADER_SIZE: usize = 2;
-        let tlv = RawAppConfigTlv::parse(byte_array).map_err(|_| Error::BadParameters)?;
-        byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
-        parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
+        let (tlv, remainder) =
+            RawAppConfigTlv::decode(byte_array).map_err(|_| Error::BadParameters)?;
+        byte_array = remainder;
         tlvs.push(tlv.into());
     }
-    if parsed_tlvs_len != received_tlvs_len {
+    if !byte_array.is_empty() {
         return Err(Error::BadParameters);
-    };
+    }
     Ok(tlvs)
 }
 
@@ -358,21 +353,16 @@ fn parse_radar_config_tlv_vec(
     no_of_params: i32,
     mut byte_array: &[u8],
 ) -> Result<Vec<RadarConfigTlv>> {
-    let mut parsed_tlvs_len = 0;
-    let received_tlvs_len = byte_array.len();
     let mut tlvs = Vec::<RadarConfigTlv>::new();
     for _ in 0..no_of_params {
-        // The tlv consists of the type of payload in 1 byte, the length of payload as u8
-        // in 1 byte, and the payload.
-        const TLV_HEADER_SIZE: usize = 2;
-        let tlv = RadarConfigTlv::parse(byte_array).map_err(|_| Error::BadParameters)?;
-        byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
-        parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
+        let (tlv, remainder) =
+            RadarConfigTlv::decode(byte_array).map_err(|_| Error::BadParameters)?;
+        byte_array = remainder;
         tlvs.push(tlv);
     }
-    if parsed_tlvs_len != received_tlvs_len {
+    if !byte_array.is_empty() {
         return Err(Error::BadParameters);
-    };
+    }
     Ok(tlvs)
 }
 
@@ -491,7 +481,7 @@ fn parse_rf_test_config_tlv_vec(
         // The tlv consists of the type of payload in 1 byte, the length of payload as u8
         // in 1 byte, and the payload.
         const TLV_HEADER_SIZE: usize = 2;
-        let tlv = RfTestConfigTlv::parse(byte_array).map_err(|_| Error::BadParameters)?;
+        let tlv = RfTestConfigTlv::decode_full(byte_array).map_err(|_| Error::BadParameters)?;
         byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
         parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
         tlvs.push(tlv);

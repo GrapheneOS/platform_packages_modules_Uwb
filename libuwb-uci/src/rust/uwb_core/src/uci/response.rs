@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::{TryFrom, TryInto};
-
 use log::error;
+use pdl_runtime::Packet;
+use std::convert::{TryFrom, TryInto};
 
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
@@ -129,18 +129,18 @@ impl TryFrom<(uwb_uci_packets::UciResponse, UCIMajorVersion, bool)> for UciRespo
         let is_multicast_list_rsp_v2_supported = pair.2;
         use uwb_uci_packets::UciResponseChild;
         match evt.specialize() {
-            UciResponseChild::CoreResponse(evt) => evt.try_into(),
-            UciResponseChild::SessionConfigResponse(evt) => {
+            Ok(UciResponseChild::CoreResponse(evt)) => evt.try_into(),
+            Ok(UciResponseChild::SessionConfigResponse(evt)) => {
                 (evt, uci_fira_major_ver, is_multicast_list_rsp_v2_supported).try_into()
             }
-            UciResponseChild::SessionControlResponse(evt) => evt.try_into(),
-            UciResponseChild::AndroidResponse(evt) => evt.try_into(),
-            UciResponseChild::TestResponse(evt) => evt.try_into(),
-            UciResponseChild::UciVendor_9_Response(evt) => raw_response(evt.into()),
-            UciResponseChild::UciVendor_A_Response(evt) => raw_response(evt.into()),
-            UciResponseChild::UciVendor_B_Response(evt) => raw_response(evt.into()),
-            UciResponseChild::UciVendor_E_Response(evt) => raw_response(evt.into()),
-            UciResponseChild::UciVendor_F_Response(evt) => raw_response(evt.into()),
+            Ok(UciResponseChild::SessionControlResponse(evt)) => evt.try_into(),
+            Ok(UciResponseChild::AndroidResponse(evt)) => evt.try_into(),
+            Ok(UciResponseChild::TestResponse(evt)) => evt.try_into(),
+            Ok(UciResponseChild::UciVendor_9_Response(evt)) => raw_response(evt.try_into()?),
+            Ok(UciResponseChild::UciVendor_A_Response(evt)) => raw_response(evt.try_into()?),
+            Ok(UciResponseChild::UciVendor_B_Response(evt)) => raw_response(evt.try_into()?),
+            Ok(UciResponseChild::UciVendor_E_Response(evt)) => raw_response(evt.try_into()?),
+            Ok(UciResponseChild::UciVendor_F_Response(evt)) => raw_response(evt.try_into()?),
             _ => Err(Error::Unknown),
         }
     }
@@ -151,35 +151,39 @@ impl TryFrom<uwb_uci_packets::CoreResponse> for UciResponse {
     fn try_from(evt: uwb_uci_packets::CoreResponse) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::CoreResponseChild;
         match evt.specialize() {
-            CoreResponseChild::GetDeviceInfoRsp(evt) => Ok(UciResponse::CoreGetDeviceInfo(
-                status_code_to_result(evt.get_status()).map(|_| GetDeviceInfoResponse {
-                    status: evt.get_status(),
-                    uci_version: evt.get_uci_version(),
-                    mac_version: evt.get_mac_version(),
-                    phy_version: evt.get_phy_version(),
-                    uci_test_version: evt.get_uci_test_version(),
-                    vendor_spec_info: evt.get_vendor_spec_info().clone(),
-                }),
-            )),
-            CoreResponseChild::GetCapsInfoRsp(evt) => Ok(UciResponse::CoreGetCapsInfo(
-                status_code_to_result(evt.get_status()).map(|_| evt.get_tlvs().clone()),
-            )),
-            CoreResponseChild::DeviceResetRsp(evt) => {
-                Ok(UciResponse::DeviceReset(status_code_to_result(evt.get_status())))
+            Ok(CoreResponseChild::GetDeviceInfoRsp(evt)) => {
+                Ok(UciResponse::CoreGetDeviceInfo(status_code_to_result(evt.status()).map(|_| {
+                    GetDeviceInfoResponse {
+                        status: evt.status(),
+                        uci_version: evt.uci_version(),
+                        mac_version: evt.mac_version(),
+                        phy_version: evt.phy_version(),
+                        uci_test_version: evt.uci_test_version(),
+                        vendor_spec_info: evt.vendor_spec_info().clone(),
+                    }
+                })))
             }
-            CoreResponseChild::SetConfigRsp(evt) => {
+            Ok(CoreResponseChild::GetCapsInfoRsp(evt)) => Ok(UciResponse::CoreGetCapsInfo(
+                status_code_to_result(evt.status()).map(|_| evt.tlvs().clone()),
+            )),
+            Ok(CoreResponseChild::DeviceResetRsp(evt)) => {
+                Ok(UciResponse::DeviceReset(status_code_to_result(evt.status())))
+            }
+            Ok(CoreResponseChild::SetConfigRsp(evt)) => {
                 Ok(UciResponse::CoreSetConfig(CoreSetConfigResponse {
-                    status: evt.get_status(),
-                    config_status: evt.get_cfg_status().clone(),
+                    status: evt.status(),
+                    config_status: evt.cfg_status().clone(),
                 }))
             }
 
-            CoreResponseChild::GetConfigRsp(evt) => Ok(UciResponse::CoreGetConfig(
-                status_code_to_result(evt.get_status()).map(|_| evt.get_tlvs().clone()),
+            Ok(CoreResponseChild::GetConfigRsp(evt)) => Ok(UciResponse::CoreGetConfig(
+                status_code_to_result(evt.status()).map(|_| evt.tlvs().clone()),
             )),
-            CoreResponseChild::CoreQueryTimeStampRsp(evt) => Ok(UciResponse::CoreQueryTimeStamp(
-                status_code_to_result(evt.get_status()).map(|_| evt.get_timeStamp()),
-            )),
+            Ok(CoreResponseChild::CoreQueryTimeStampRsp(evt)) => {
+                Ok(UciResponse::CoreQueryTimeStamp(
+                    status_code_to_result(evt.status()).map(|_| evt.timeStamp()),
+                ))
+            }
             _ => Err(Error::Unknown),
         }
     }
@@ -195,35 +199,35 @@ impl TryFrom<(uwb_uci_packets::SessionConfigResponse, UCIMajorVersion, bool)> fo
         let uci_fira_major_ver = pair.1;
         let is_multicast_list_rsp_v2_supported = pair.2;
         match evt.specialize() {
-            SessionConfigResponseChild::SessionInitRsp(evt) => {
-                Ok(UciResponse::SessionInit(status_code_to_result(evt.get_status()).map(|_| None)))
+            Ok(SessionConfigResponseChild::SessionInitRsp(evt)) => {
+                Ok(UciResponse::SessionInit(status_code_to_result(evt.status()).map(|_| None)))
             }
-            SessionConfigResponseChild::SessionInitRsp_V2(evt) => Ok(UciResponse::SessionInit(
-                status_code_to_result(evt.get_status()).map(|_| Some(evt.get_session_handle())),
+            Ok(SessionConfigResponseChild::SessionInitRsp_V2(evt)) => Ok(UciResponse::SessionInit(
+                status_code_to_result(evt.status()).map(|_| Some(evt.session_handle())),
             )),
-            SessionConfigResponseChild::SessionDeinitRsp(evt) => {
-                Ok(UciResponse::SessionDeinit(status_code_to_result(evt.get_status())))
+            Ok(SessionConfigResponseChild::SessionDeinitRsp(evt)) => {
+                Ok(UciResponse::SessionDeinit(status_code_to_result(evt.status())))
             }
-            SessionConfigResponseChild::SessionGetCountRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionGetCountRsp(evt)) => {
                 Ok(UciResponse::SessionGetCount(
-                    status_code_to_result(evt.get_status()).map(|_| evt.get_session_count()),
+                    status_code_to_result(evt.status()).map(|_| evt.session_count()),
                 ))
             }
-            SessionConfigResponseChild::SessionGetStateRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionGetStateRsp(evt)) => {
                 Ok(UciResponse::SessionGetState(
-                    status_code_to_result(evt.get_status()).map(|_| evt.get_session_state()),
+                    status_code_to_result(evt.status()).map(|_| evt.session_state()),
                 ))
             }
-            SessionConfigResponseChild::SessionUpdateControllerMulticastListRsp(evt)
+            Ok(SessionConfigResponseChild::SessionUpdateControllerMulticastListRsp(evt))
                 if uci_fira_major_ver == UCIMajorVersion::V1
                     || !is_multicast_list_rsp_v2_supported =>
             {
                 error!(
                     "Tryfrom: SessionConfigResponse:: SessionUpdateControllerMulticastListRspV1 "
                 );
-                let payload = evt.get_payload();
-                let multicast_update_list_rsp_payload_v1 =
-                    SessionUpdateControllerMulticastListRspV1Payload::parse(payload).map_err(
+                let payload = evt.payload();
+                let (multicast_update_list_rsp_payload_v1, _) =
+                    SessionUpdateControllerMulticastListRspV1Payload::decode(payload).map_err(
                         |e| {
                             error!(
                                 "Failed to parse Multicast list rsp v1 {:?}, payload: {:?}",
@@ -240,15 +244,15 @@ impl TryFrom<(uwb_uci_packets::SessionConfigResponse, UCIMajorVersion, bool)> fo
                     },
                 )))
             }
-            SessionConfigResponseChild::SessionUpdateControllerMulticastListRsp(evt)
+            Ok(SessionConfigResponseChild::SessionUpdateControllerMulticastListRsp(evt))
                 if uci_fira_major_ver >= UCIMajorVersion::V2 =>
             {
                 error!(
                     "Tryfrom: SessionConfigResponse:: SessionUpdateControllerMulticastListRspV2 "
                 );
-                let payload = evt.get_payload();
-                let multicast_update_list_rsp_payload_v2 =
-                    SessionUpdateControllerMulticastListRspV2Payload::parse(payload).map_err(
+                let payload = evt.payload();
+                let (multicast_update_list_rsp_payload_v2, _) =
+                    SessionUpdateControllerMulticastListRspV2Payload::decode(payload).map_err(
                         |e| {
                             error!(
                                 "Failed to parse Multicast list rsp v2 {:?}, payload: {:?}",
@@ -264,46 +268,39 @@ impl TryFrom<(uwb_uci_packets::SessionConfigResponse, UCIMajorVersion, bool)> fo
                     },
                 )))
             }
-            SessionConfigResponseChild::SessionUpdateDtTagRangingRoundsRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionUpdateDtTagRangingRoundsRsp(evt)) => {
                 Ok(UciResponse::SessionUpdateDtTagRangingRounds(Ok(
                     SessionUpdateDtTagRangingRoundsResponse {
-                        status: evt.get_status(),
-                        ranging_round_indexes: evt.get_ranging_round_indexes().to_vec(),
+                        status: evt.status(),
+                        ranging_round_indexes: evt.ranging_round_indexes().to_vec(),
                     },
                 )))
             }
-            SessionConfigResponseChild::SessionSetAppConfigRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionSetAppConfigRsp(evt)) => {
                 Ok(UciResponse::SessionSetAppConfig(SetAppConfigResponse {
-                    status: evt.get_status(),
-                    config_status: evt.get_cfg_status().clone(),
+                    status: evt.status(),
+                    config_status: evt.cfg_status().clone(),
                 }))
             }
-            SessionConfigResponseChild::SessionGetAppConfigRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionGetAppConfigRsp(evt)) => {
                 Ok(UciResponse::SessionGetAppConfig(
-                    status_code_to_result(evt.get_status()).map(|_| {
-                        evt.get_tlvs().clone().into_iter().map(|tlv| tlv.into()).collect()
-                    }),
+                    status_code_to_result(evt.status())
+                        .map(|_| evt.tlvs().clone().into_iter().map(|tlv| tlv.into()).collect()),
                 ))
             }
-            SessionConfigResponseChild::SessionQueryMaxDataSizeRsp(evt) => {
+            Ok(SessionConfigResponseChild::SessionQueryMaxDataSizeRsp(evt)) => {
                 Ok(UciResponse::SessionQueryMaxDataSize(
-                    status_code_to_result(evt.get_status()).map(|_| evt.get_max_data_size()),
+                    status_code_to_result(evt.status()).map(|_| evt.max_data_size()),
                 ))
             }
-            SessionConfigResponseChild::SessionSetHybridControllerConfigRsp(evt) => {
-                Ok(UciResponse::SessionSetHybridControllerConfig(status_code_to_result(
-                    evt.get_status(),
-                )))
-            }
-            SessionConfigResponseChild::SessionSetHybridControleeConfigRsp(evt) => {
-                Ok(UciResponse::SessionSetHybridControleeConfig(status_code_to_result(
-                    evt.get_status(),
-                )))
-            }
-            SessionConfigResponseChild::SessionDataTransferPhaseConfigRsp(evt) => {
-                Ok(UciResponse::SessionDataTransferPhaseConfig(status_code_to_result(
-                    evt.get_status(),
-                )))
+            Ok(SessionConfigResponseChild::SessionSetHybridControllerConfigRsp(evt)) => Ok(
+                UciResponse::SessionSetHybridControllerConfig(status_code_to_result(evt.status())),
+            ),
+            Ok(SessionConfigResponseChild::SessionSetHybridControleeConfigRsp(evt)) => Ok(
+                UciResponse::SessionSetHybridControleeConfig(status_code_to_result(evt.status())),
+            ),
+            Ok(SessionConfigResponseChild::SessionDataTransferPhaseConfigRsp(evt)) => {
+                Ok(UciResponse::SessionDataTransferPhaseConfig(status_code_to_result(evt.status())))
             }
             _ => Err(Error::Unknown),
         }
@@ -317,32 +314,32 @@ impl TryFrom<uwb_uci_packets::SessionControlResponse> for UciResponse {
     ) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::SessionControlResponseChild;
         match evt.specialize() {
-            SessionControlResponseChild::SessionStartRsp(evt) => {
-                Ok(UciResponse::SessionStart(status_code_to_result(evt.get_status())))
+            Ok(SessionControlResponseChild::SessionStartRsp(evt)) => {
+                Ok(UciResponse::SessionStart(status_code_to_result(evt.status())))
             }
-            SessionControlResponseChild::SessionStopRsp(evt) => {
-                Ok(UciResponse::SessionStop(status_code_to_result(evt.get_status())))
+            Ok(SessionControlResponseChild::SessionStopRsp(evt)) => {
+                Ok(UciResponse::SessionStop(status_code_to_result(evt.status())))
             }
-            SessionControlResponseChild::SessionGetRangingCountRsp(evt) => {
+            Ok(SessionControlResponseChild::SessionGetRangingCountRsp(evt)) => {
                 Ok(UciResponse::SessionGetRangingCount(
-                    status_code_to_result(evt.get_status()).map(|_| evt.get_count() as usize),
+                    status_code_to_result(evt.status()).map(|_| evt.count() as usize),
                 ))
             }
-            SessionControlResponseChild::CreateLogicalLinkRsp(evt) => {
+            Ok(SessionControlResponseChild::CreateLogicalLinkRsp(evt)) => {
                 Ok(UciResponse::CreateLogicalLink(Ok(CreateLogicalLinkResponse {
-                    status: evt.get_status(),
-                    connect_id: evt.get_connect_id(),
+                    status: evt.status(),
+                    connect_id: evt.connect_id(),
                 })))
             }
-            SessionControlResponseChild::CloseLogicalLinkRsp(evt) => {
-                Ok(UciResponse::CloseLogicalLink(status_code_to_result(evt.get_status())))
+            Ok(SessionControlResponseChild::CloseLogicalLinkRsp(evt)) => {
+                Ok(UciResponse::CloseLogicalLink(status_code_to_result(evt.status())))
             }
-            SessionControlResponseChild::GetLogicalLinkParamsRsp(evt) => {
-                Ok(UciResponse::GetLogicalLinkParams(status_code_to_result(evt.get_status()).map(
+            Ok(SessionControlResponseChild::GetLogicalLinkParamsRsp(evt)) => {
+                Ok(UciResponse::GetLogicalLinkParams(status_code_to_result(evt.status()).map(
                     |_| GetLogicalLinkParamResponse {
-                        status: evt.get_status(),
-                        control_field: evt.get_control_field(),
-                        logical_link_params: evt.get_logical_link_params().to_vec(),
+                        status: evt.status(),
+                        control_field: evt.control_field(),
+                        logical_link_params: evt.logical_link_params().to_vec(),
                     },
                 )))
             }
@@ -356,23 +353,23 @@ impl TryFrom<uwb_uci_packets::AndroidResponse> for UciResponse {
     fn try_from(evt: uwb_uci_packets::AndroidResponse) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::AndroidResponseChild;
         match evt.specialize() {
-            AndroidResponseChild::AndroidSetCountryCodeRsp(evt) => {
-                Ok(UciResponse::AndroidSetCountryCode(status_code_to_result(evt.get_status())))
+            Ok(AndroidResponseChild::AndroidSetCountryCodeRsp(evt)) => {
+                Ok(UciResponse::AndroidSetCountryCode(status_code_to_result(evt.status())))
             }
-            AndroidResponseChild::AndroidGetPowerStatsRsp(evt) => {
+            Ok(AndroidResponseChild::AndroidGetPowerStatsRsp(evt)) => {
                 Ok(UciResponse::AndroidGetPowerStats(
-                    status_code_to_result(evt.get_stats().status).map(|_| evt.get_stats().clone()),
+                    status_code_to_result(evt.stats().status).map(|_| evt.stats().clone()),
                 ))
             }
-            AndroidResponseChild::AndroidSetRadarConfigRsp(evt) => {
+            Ok(AndroidResponseChild::AndroidSetRadarConfigRsp(evt)) => {
                 Ok(UciResponse::AndroidSetRadarConfig(AndroidRadarConfigResponse {
-                    status: evt.get_status(),
-                    config_status: evt.get_cfg_status().clone(),
+                    status: evt.status(),
+                    config_status: evt.cfg_status().clone(),
                 }))
             }
-            AndroidResponseChild::AndroidGetRadarConfigRsp(evt) => {
+            Ok(AndroidResponseChild::AndroidGetRadarConfigRsp(evt)) => {
                 Ok(UciResponse::AndroidGetRadarConfig(
-                    status_code_to_result(evt.get_status()).map(|_| evt.get_tlvs().clone()),
+                    status_code_to_result(evt.status()).map(|_| evt.tlvs().clone()),
                 ))
             }
             _ => Err(Error::Unknown),
@@ -385,32 +382,32 @@ impl TryFrom<uwb_uci_packets::TestResponse> for UciResponse {
     fn try_from(evt: uwb_uci_packets::TestResponse) -> std::result::Result<Self, Self::Error> {
         use uwb_uci_packets::TestResponseChild;
         match evt.specialize() {
-            TestResponseChild::SessionSetRfTestConfigRsp(evt) => {
+            Ok(TestResponseChild::SessionSetRfTestConfigRsp(evt)) => {
                 Ok(UciResponse::SessionSetRfTestConfig(RfTestConfigResponse {
-                    status: evt.get_status(),
-                    config_status: evt.get_cfg_status().clone(),
+                    status: evt.status(),
+                    config_status: evt.cfg_status().clone(),
                 }))
             }
-            TestResponseChild::TestPeriodicTxRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestPeriodicTxRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::TestPerRxRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestPerRxRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::TestLoopbackRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestLoopbackRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::TestRxRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestRxRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::TestSrRxRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestSrRxRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::TestSsTwrRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::TestSsTwrRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
-            TestResponseChild::StopRfTestRsp(evt) => {
-                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            Ok(TestResponseChild::StopRfTestRsp(evt)) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.status())))
             }
             _ => Err(Error::Unknown),
         }
@@ -418,9 +415,9 @@ impl TryFrom<uwb_uci_packets::TestResponse> for UciResponse {
 }
 
 fn raw_response(evt: uwb_uci_packets::UciResponse) -> Result<UciResponse> {
-    let gid: u32 = evt.get_group_id().into();
-    let oid: u32 = evt.get_opcode().into();
-    let packet: UciControlPacket = evt.into();
+    let gid: u32 = evt.group_id().into();
+    let oid: u32 = evt.opcode().into();
+    let packet: UciControlPacket = evt.try_into()?;
     Ok(UciResponse::RawUciCmd(Ok(RawUciMessage { gid, oid, payload: packet.to_raw_payload() })))
 }
 
@@ -430,14 +427,12 @@ mod tests {
 
     #[test]
     fn test_uci_response_casting_from_uci_vendor_response_packet() {
-        let mut uci_vendor_rsp_packet = uwb_uci_packets::UciResponse::try_from(
-            uwb_uci_packets::UciVendor_9_ResponseBuilder {
+        let mut uci_vendor_rsp_packet =
+            uwb_uci_packets::UciResponse::try_from(uwb_uci_packets::UciVendor_9_Response {
                 opcode: 0x00,
-                payload: Some(vec![0x0, 0x1, 0x2, 0x3].into()),
-            }
-            .build(),
-        )
-        .unwrap();
+                payload: vec![0x0, 0x1, 0x2, 0x3],
+            })
+            .unwrap();
         let uci_fira_major_version = UCIMajorVersion::V1;
         let mut uci_response = UciResponse::try_from((
             uci_vendor_rsp_packet.clone(),
@@ -454,14 +449,12 @@ mod tests {
             }))
         );
 
-        uci_vendor_rsp_packet = uwb_uci_packets::UciResponse::try_from(
-            uwb_uci_packets::UciVendor_A_ResponseBuilder {
+        uci_vendor_rsp_packet =
+            uwb_uci_packets::UciResponse::try_from(uwb_uci_packets::UciVendor_A_Response {
                 opcode: 0x00,
-                payload: Some(vec![0x0, 0x1, 0x2, 0x3].into()),
-            }
-            .build(),
-        )
-        .unwrap();
+                payload: vec![0x0, 0x1, 0x2, 0x3],
+            })
+            .unwrap();
         uci_response = UciResponse::try_from((
             uci_vendor_rsp_packet.clone(),
             uci_fira_major_version.clone(),
@@ -477,14 +470,12 @@ mod tests {
             }))
         );
 
-        uci_vendor_rsp_packet = uwb_uci_packets::UciResponse::try_from(
-            uwb_uci_packets::UciVendor_B_ResponseBuilder {
+        uci_vendor_rsp_packet =
+            uwb_uci_packets::UciResponse::try_from(uwb_uci_packets::UciVendor_B_Response {
                 opcode: 0x00,
-                payload: Some(vec![0x0, 0x1, 0x2, 0x3].into()),
-            }
-            .build(),
-        )
-        .unwrap();
+                payload: vec![0x0, 0x1, 0x2, 0x3],
+            })
+            .unwrap();
         uci_response = UciResponse::try_from((
             uci_vendor_rsp_packet.clone(),
             uci_fira_major_version.clone(),
@@ -500,14 +491,12 @@ mod tests {
             }))
         );
 
-        uci_vendor_rsp_packet = uwb_uci_packets::UciResponse::try_from(
-            uwb_uci_packets::UciVendor_E_ResponseBuilder {
+        uci_vendor_rsp_packet =
+            uwb_uci_packets::UciResponse::try_from(uwb_uci_packets::UciVendor_E_Response {
                 opcode: 0x00,
-                payload: Some(vec![0x0, 0x1, 0x2, 0x3].into()),
-            }
-            .build(),
-        )
-        .unwrap();
+                payload: vec![0x0, 0x1, 0x2, 0x3],
+            })
+            .unwrap();
         uci_response = UciResponse::try_from((
             uci_vendor_rsp_packet.clone(),
             uci_fira_major_version.clone(),
@@ -523,14 +512,12 @@ mod tests {
             }))
         );
 
-        uci_vendor_rsp_packet = uwb_uci_packets::UciResponse::try_from(
-            uwb_uci_packets::UciVendor_F_ResponseBuilder {
+        uci_vendor_rsp_packet =
+            uwb_uci_packets::UciResponse::try_from(uwb_uci_packets::UciVendor_F_Response {
                 opcode: 0x00,
-                payload: Some(vec![0x0, 0x1, 0x2, 0x3].into()),
-            }
-            .build(),
-        )
-        .unwrap();
+                payload: vec![0x0, 0x1, 0x2, 0x3],
+            })
+            .unwrap();
         uci_response = UciResponse::try_from((
             uci_vendor_rsp_packet.clone(),
             uci_fira_major_version.clone(),

@@ -18,9 +18,8 @@ use std::convert::TryFrom;
 use pdl_runtime::Packet;
 use uwb_uci_packets::{
     AppConfigTlv, AppConfigTlvType, SessionConfigCommandChild, SessionConfigResponseChild,
-    SessionGetAppConfigRspBuilder, SessionSetAppConfigCmdBuilder, UciCommandChild,
-    UciControlPacket, UciControlPacketChild, UciDataPacket, UciResponse, UciResponseChild,
-    UCI_PACKET_HAL_HEADER_LEN,
+    SessionGetAppConfigRsp, SessionSetAppConfigCmd, UciCommandChild, UciControlPacket,
+    UciControlPacketChild, UciDataPacket, UciResponse, UciResponseChild, UCI_PACKET_HAL_HEADER_LEN,
 };
 
 use crate::error::{Error, Result};
@@ -72,18 +71,20 @@ fn filter_tlv(mut tlv: AppConfigTlv) -> AppConfigTlv {
 
 fn filter_uci_command(cmd: UciControlPacket) -> UciControlPacket {
     match cmd.specialize() {
-        UciControlPacketChild::UciCommand(control_cmd) => match control_cmd.specialize() {
-            UciCommandChild::SessionConfigCommand(session_cmd) => match session_cmd.specialize() {
-                SessionConfigCommandChild::SessionSetAppConfigCmd(set_config_cmd) => {
-                    let session_token = set_config_cmd.get_session_token();
-                    let tlvs = set_config_cmd.get_tlvs().to_owned();
-                    let filtered_tlvs = tlvs.into_iter().map(filter_tlv).collect();
-                    SessionSetAppConfigCmdBuilder { session_token, tlvs: filtered_tlvs }
-                        .build()
-                        .into()
+        Ok(UciControlPacketChild::UciCommand(control_cmd)) => match control_cmd.specialize() {
+            Ok(UciCommandChild::SessionConfigCommand(session_cmd)) => {
+                match session_cmd.specialize() {
+                    Ok(SessionConfigCommandChild::SessionSetAppConfigCmd(set_config_cmd)) => {
+                        let session_token = set_config_cmd.session_token();
+                        let tlvs = set_config_cmd.tlvs().to_owned();
+                        let filtered_tlvs = tlvs.into_iter().map(filter_tlv).collect();
+                        SessionSetAppConfigCmd { session_token, tlvs: filtered_tlvs }
+                            .try_into()
+                            .unwrap()
+                    }
+                    _ => cmd,
                 }
-                _ => session_cmd.into(),
-            },
+            }
             _ => cmd,
         },
         _ => cmd,
@@ -92,15 +93,17 @@ fn filter_uci_command(cmd: UciControlPacket) -> UciControlPacket {
 
 fn filter_uci_response(rsp: UciResponse) -> UciResponse {
     match rsp.specialize() {
-        UciResponseChild::SessionConfigResponse(session_rsp) => match session_rsp.specialize() {
-            SessionConfigResponseChild::SessionGetAppConfigRsp(rsp) => {
-                let status = rsp.get_status();
-                let tlvs = rsp.get_tlvs().to_owned();
-                let filtered_tlvs = tlvs.into_iter().map(filter_tlv).collect();
-                SessionGetAppConfigRspBuilder { status, tlvs: filtered_tlvs }.build().into()
+        Ok(UciResponseChild::SessionConfigResponse(session_rsp)) => {
+            match session_rsp.specialize() {
+                Ok(SessionConfigResponseChild::SessionGetAppConfigRsp(rsp)) => {
+                    let status = rsp.status();
+                    let tlvs = rsp.tlvs().to_owned();
+                    let filtered_tlvs = tlvs.into_iter().map(filter_tlv).collect();
+                    SessionGetAppConfigRsp { status, tlvs: filtered_tlvs }.try_into().unwrap()
+                }
+                _ => rsp,
             }
-            _ => session_rsp.into(),
-        },
+        }
         _ => rsp,
     }
 }
@@ -116,7 +119,7 @@ fn filter_uci_data(
     for (i, &b) in data_packet_bytes[..UCI_PACKET_HAL_HEADER_LEN].iter().enumerate() {
         filtered_data_packet_bytes[i] = b;
     }
-    UciDataPacket::parse(&filtered_data_packet_bytes)
+    UciDataPacket::decode_full(&filtered_data_packet_bytes)
 }
 
 /// Wrapper struct that filters messages feeded to UciLogger.
@@ -167,12 +170,12 @@ impl<T: UciLogger> UciLoggerWrapper<T> {
         match self.mode {
             UciLoggerMode::Disabled => (),
             UciLoggerMode::Unfiltered => self.logger.log_uci_control_packet(packet.clone()),
-            UciLoggerMode::Filtered => match packet.clone().specialize() {
-                uwb_uci_packets::UciControlPacketChild::UciResponse(packet) => {
-                    self.logger.log_uci_control_packet(filter_uci_response(packet).into())
-                }
-                uwb_uci_packets::UciControlPacketChild::UciNotification(packet) => {
-                    self.logger.log_uci_control_packet(packet.into())
+            UciLoggerMode::Filtered => match packet.specialize() {
+                Ok(uwb_uci_packets::UciControlPacketChild::UciResponse(packet)) => self
+                    .logger
+                    .log_uci_control_packet(filter_uci_response(packet).try_into().unwrap()),
+                Ok(uwb_uci_packets::UciControlPacketChild::UciNotification(packet)) => {
+                    self.logger.log_uci_control_packet(packet.try_into().unwrap())
                 }
                 _ => (),
             },
@@ -213,7 +216,7 @@ mod tests {
 
     use crate::params::uci_packets::StatusCode;
     use crate::uci::mock_uci_logger::{MockUciLogger, UciLogEvent};
-    use uwb_uci_packets::{DataPacketFormat, MessageType, UciDataPacketBuilder};
+    use uwb_uci_packets::{DataPacketFormat, MessageType, UciDataPacket};
 
     #[test]
     fn test_log_command_filter() -> Result<()> {
@@ -243,15 +246,15 @@ mod tests {
 
     #[test]
     fn test_log_response_filter() -> Result<()> {
-        let unfiltered_rsp: UciControlPacket = SessionGetAppConfigRspBuilder {
+        let unfiltered_rsp: UciControlPacket = SessionGetAppConfigRsp {
             status: StatusCode::UciStatusOk,
             tlvs: vec![
                 AppConfigTlv { cfg_id: AppConfigTlvType::StaticStsIv, v: vec![0, 1, 2] },
                 AppConfigTlv { cfg_id: AppConfigTlvType::AoaResultReq, v: vec![0, 1, 2, 3] },
             ],
         }
-        .build()
-        .into();
+        .try_into()
+        .unwrap();
         let (log_sender, mut log_receiver) = mpsc::unbounded_channel::<UciLogEvent>();
         let mut logger =
             UciLoggerWrapper::new(MockUciLogger::new(log_sender), UciLoggerMode::Filtered);
@@ -269,12 +272,11 @@ mod tests {
 
     #[test]
     fn test_log_data_filter() -> Result<()> {
-        let unfiltered_data_packet: UciDataPacket = UciDataPacketBuilder {
+        let unfiltered_data_packet: UciDataPacket = UciDataPacket {
             data_packet_format: DataPacketFormat::DataSnd,
             message_type: MessageType::Data,
-            payload: Some(vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8].into()),
-        }
-        .build();
+            payload: vec![0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8],
+        };
         let (log_sender, mut log_receiver) = mpsc::unbounded_channel::<UciLogEvent>();
         let mut logger =
             UciLoggerWrapper::new(MockUciLogger::new(log_sender), UciLoggerMode::Filtered);

@@ -705,22 +705,20 @@ impl UciManager for UciManagerImpl {
             LinkLayerMode::BypassMode => {
                 let dest_mac_address =
                     bytes_to_u64(dest_mac_address_bytes).ok_or(Error::BadParameters)?;
-                let data_snd_packet = uwb_uci_packets::UciDataSndBuilder {
+                let data_snd_packet = uwb_uci_packets::UciDataSnd {
                     session_token: self.get_session_token(&connect_id).await?,
                     dest_mac_address,
                     uci_sequence_number,
                     data,
-                }
-                .build();
+                };
                 DataPacket::Bypass(data_snd_packet)
             }
             LinkLayerMode::LogicalLinkMode => {
-                let data_snd_packet = uwb_uci_packets::UciLogicalLinkDataSendBuilder {
+                let data_snd_packet = uwb_uci_packets::UciLogicalLinkDataSend {
                     connect_id,
                     uci_sequence_number,
                     data,
-                }
-                .build();
+                };
                 DataPacket::LogicalLink(data_snd_packet)
             }
         };
@@ -1400,8 +1398,8 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
 
     async fn handle_data_snd_packet(&mut self, data_snd_packet: DataPacket) -> Result<UciResponse> {
         // Verify that there's an entry for the Session in the CreditAvailability map.
-        let data_packet_session_token = data_snd_packet.get_session_token();
-        let data_packet_sequence_number = data_snd_packet.get_uci_sequence_number();
+        let data_packet_session_token = data_snd_packet.session_token();
+        let data_packet_sequence_number = data_snd_packet.uci_sequence_number();
 
         if !self.data_credit_map.contains_key(&data_packet_session_token) {
             error!(
@@ -2003,12 +2001,11 @@ enum UciManagerCmd {
 mod tests {
     use super::*;
 
-    use bytes::Bytes;
     use pdl_runtime::Packet;
     use tokio::macros::support::Future;
     use uwb_uci_packets::{
-        Controlee_V2_0_16_Byte_Version, Controlee_V2_0_32_Byte_Version, SessionGetCountCmdBuilder,
-        SessionGetCountRspBuilder,
+        Controlee_V2_0_16_Byte_Version, Controlee_V2_0_32_Byte_Version, SessionGetCountCmd,
+        SessionGetCountRsp,
     };
 
     use crate::params::uci_packets::{
@@ -2027,10 +2024,13 @@ mod tests {
     use uwb_uci_packets::SessionUpdateControllerMulticastListRspV1Payload;
     use uwb_uci_packets::SessionUpdateControllerMulticastListRspV2Payload;
 
-    fn into_uci_hal_packets<T: Into<uwb_uci_packets::UciControlPacket>>(
-        builder: T,
+    fn into_uci_hal_packets<
+        E: std::fmt::Debug,
+        T: TryInto<uwb_uci_packets::UciControlPacket, Error = E>,
+    >(
+        packet: T,
     ) -> Vec<UciHalPacket> {
-        let packets: Vec<uwb_uci_packets::UciControlPacketHal> = builder.into().into();
+        let packets: Vec<uwb_uci_packets::UciControlPacketHal> = packet.try_into().unwrap().into();
         packets.into_iter().map(|packet| packet.encode_to_vec().unwrap()).collect()
     }
 
@@ -2055,14 +2055,14 @@ mod tests {
 
     fn setup_hal_for_open(hal: &mut MockUciHal) {
         // Setup Open the hal.
-        let notf = into_uci_hal_packets(uwb_uci_packets::DeviceStatusNtfBuilder {
+        let notf = into_uci_hal_packets(uwb_uci_packets::DeviceStatusNtf {
             device_state: uwb_uci_packets::DeviceState::DeviceStateReady,
         });
         hal.expected_open(Some(notf), Ok(()));
 
         // Setup Get the device info.
         let cmd = UciCommand::CoreGetDeviceInfo;
-        let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRspBuilder {
+        let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRsp {
             status: uwb_uci_packets::StatusCode::UciStatusOk,
             uci_version: 0x1234,
             mac_version: 0x5678,
@@ -2190,7 +2190,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::DeviceReset { reset_config: ResetConfig::UwbsReset };
-                let resp = into_uci_hal_packets(uwb_uci_packets::DeviceResetRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::DeviceResetRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
                 hal.expected_send_command(cmd, resp, Ok(()));
@@ -2236,10 +2236,9 @@ mod tests {
         let result = mock_hal.receive_packet(range_data_ntf_packet);
         assert!(result.is_ok());
 
-        let device_status_ntf_packet = uwb_uci_packets::DeviceStatusNtfBuilder {
+        let device_status_ntf_packet = uwb_uci_packets::DeviceStatusNtf {
             device_state: uwb_uci_packets::DeviceState::DeviceStateError,
-        }
-        .build();
+        };
         let core_notification =
             uwb_uci_packets::CoreNotification::try_from(device_status_ntf_packet).unwrap();
         let expected_uci_notification = CoreNotification::try_from(core_notification).unwrap();
@@ -2276,7 +2275,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::CoreGetDeviceInfo;
-                let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRsp {
                     status,
                     uci_version,
                     mac_version,
@@ -2316,7 +2315,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::CoreGetCapsInfo;
-                let resp = into_uci_hal_packets(uwb_uci_packets::GetCapsInfoRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::GetCapsInfoRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     tlvs: vec![tlv_clone],
                 });
@@ -2347,7 +2346,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::CoreSetConfig { config_tlvs: vec![tlv_clone] };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SetConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SetConfigRsp {
                     status,
                     cfg_status: config_status_clone,
                 });
@@ -2374,7 +2373,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::CoreGetConfig { cfg_id: vec![cfg_id] };
-                let resp = into_uci_hal_packets(uwb_uci_packets::GetConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::GetConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     tlvs: vec![tlv_clone],
                 });
@@ -2404,17 +2403,17 @@ mod tests {
         // Setup session init.
         let cmd = UciCommand::SessionInit { session_id, session_type };
         let mut resp = if session_id == session_token {
-            into_uci_hal_packets(uwb_uci_packets::SessionInitRspBuilder {
+            into_uci_hal_packets(uwb_uci_packets::SessionInitRsp {
                 status: uwb_uci_packets::StatusCode::UciStatusOk,
             })
         } else {
             // This is testing FIRA v2 flow where a session handle is provided by UWBS.
-            into_uci_hal_packets(uwb_uci_packets::SessionInitRsp_V2Builder {
+            into_uci_hal_packets(uwb_uci_packets::SessionInitRsp_V2 {
                 status: uwb_uci_packets::StatusCode::UciStatusOk,
                 session_handle: session_token,
             })
         };
-        let mut notf = into_uci_hal_packets(uwb_uci_packets::SessionStatusNtfBuilder {
+        let mut notf = into_uci_hal_packets(uwb_uci_packets::SessionStatusNtf {
             session_token,
             session_state: uwb_uci_packets::SessionState::SessionStateInit,
             reason_code: uwb_uci_packets::ReasonCode::StateChangeWithSessionManagementCommands
@@ -2529,7 +2528,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionDeinit { session_token };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionDeinitRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionDeinitRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
 
@@ -2555,7 +2554,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized_nop_logger(
             |mut hal| async move {
                 let cmd = UciCommand::SessionDeinit { session_token };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionDeinitRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionDeinitRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
 
@@ -2585,7 +2584,7 @@ mod tests {
                     session_token,
                     config_tlvs: vec![config_tlv_clone],
                 };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     cfg_status: vec![],
                 });
@@ -2620,7 +2619,7 @@ mod tests {
                     session_token,
                     config_tlvs: vec![config_tlv_clone],
                 };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     cfg_status: vec![],
                 });
@@ -2653,7 +2652,7 @@ mod tests {
             |mut hal| async move {
                 let cmd =
                     UciCommand::SessionGetAppConfig { session_token, app_cfg: vec![config_id] };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetAppConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     tlvs: vec![tlv_clone.into_inner()],
                 });
@@ -2720,11 +2719,10 @@ mod tests {
                     number_of_phases,
                     phase_list: phase_list_clone_short,
                 };
-                let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionSetHybridControllerConfigRspBuilder {
+                let resp =
+                    into_uci_hal_packets(uwb_uci_packets::SessionSetHybridControllerConfigRsp {
                         status: uwb_uci_packets::StatusCode::UciStatusOk,
-                    },
-                );
+                    });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -2755,11 +2753,10 @@ mod tests {
                     number_of_phases,
                     phase_list: phase_list_clone_extended,
                 };
-                let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionSetHybridControllerConfigRspBuilder {
+                let resp =
+                    into_uci_hal_packets(uwb_uci_packets::SessionSetHybridControllerConfigRsp {
                         status: uwb_uci_packets::StatusCode::UciStatusOk,
-                    },
-                );
+                    });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -2797,11 +2794,10 @@ mod tests {
                     session_token,
                     controlee_phase_list: phase_list_clone,
                 };
-                let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionSetHybridControleeConfigRspBuilder {
+                let resp =
+                    into_uci_hal_packets(uwb_uci_packets::SessionSetHybridControleeConfigRsp {
                         status: uwb_uci_packets::StatusCode::UciStatusOk,
-                    },
-                );
+                    });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -2843,11 +2839,10 @@ mod tests {
                     slot_bitmap,
                     stop_data_transfer,
                 };
-                let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionDataTransferPhaseConfigRspBuilder {
+                let resp =
+                    into_uci_hal_packets(uwb_uci_packets::SessionDataTransferPhaseConfigRsp {
                         status: uwb_uci_packets::StatusCode::UciStatusOk,
-                    },
-                );
+                    });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -2880,7 +2875,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetCount;
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     session_count,
                 });
@@ -2906,7 +2901,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetState { session_token };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetStateRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetStateRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     session_state,
                 });
@@ -2943,7 +2938,7 @@ mod tests {
                     max_sdu_size_len,
                     max_sdu_size_value,
                 };
-                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRsp {
                     connect_id: 0x123,
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
@@ -2988,7 +2983,7 @@ mod tests {
                     max_sdu_size_len,
                     max_sdu_size_value,
                 };
-                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRsp {
                     connect_id: 0x123,
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
@@ -3064,8 +3059,8 @@ mod tests {
                 let mut buf = BytesMut::new();
                 write_multicast_rsp_v1_payload(&pload, &mut buf);
                 let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionUpdateControllerMulticastListRspBuilder {
-                        payload: Some(buf.freeze()),
+                    uwb_uci_packets::SessionUpdateControllerMulticastListRsp {
+                        payload: buf.into(),
                     },
                 );
 
@@ -3123,8 +3118,8 @@ mod tests {
                 let mut buf = BytesMut::new();
                 write_multicast_rsp_v2_payload(&pload, &mut buf);
                 let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionUpdateControllerMulticastListRspBuilder {
-                        payload: Some(buf.freeze()),
+                    uwb_uci_packets::SessionUpdateControllerMulticastListRsp {
+                        payload: buf.into(),
                     },
                 );
                 hal.expected_send_command(cmd, resp, Ok(()));
@@ -3181,8 +3176,8 @@ mod tests {
                 let mut buf = BytesMut::new();
                 write_multicast_rsp_v2_payload(&pload, &mut buf);
                 let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionUpdateControllerMulticastListRspBuilder {
-                        payload: Some(buf.freeze()),
+                    uwb_uci_packets::SessionUpdateControllerMulticastListRsp {
+                        payload: buf.into(),
                     },
                 );
 
@@ -3216,12 +3211,11 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionQueryMaxDataSize { connect_id };
-                let resp =
-                    into_uci_hal_packets(uwb_uci_packets::SessionQueryMaxDataSizeRspBuilder {
-                        max_data_size,
-                        connect_id: 0x10,
-                        status: StatusCode::UciStatusOk,
-                    });
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionQueryMaxDataSizeRsp {
+                    max_data_size,
+                    connect_id: 0x10,
+                    status: StatusCode::UciStatusOk,
+                });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -3246,7 +3240,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::CoreQueryTimeStamp {};
-                let resp = into_uci_hal_packets(uwb_uci_packets::CoreQueryTimeStampRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::CoreQueryTimeStampRsp {
                     status: StatusCode::UciStatusOk,
                     timeStamp: time_stamp,
                 });
@@ -3282,12 +3276,11 @@ mod tests {
                     session_token,
                     ranging_round_indexes: vec![3, 5],
                 };
-                let resp = into_uci_hal_packets(
-                    uwb_uci_packets::SessionUpdateDtTagRangingRoundsRspBuilder {
+                let resp =
+                    into_uci_hal_packets(uwb_uci_packets::SessionUpdateDtTagRangingRoundsRsp {
                         status: StatusCode::UciStatusErrorRoundIndexNotActivated,
                         ranging_round_indexes: vec![3],
-                    },
-                );
+                    });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -3313,7 +3306,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionStart { session_token };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionStartRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionStartRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
 
@@ -3339,7 +3332,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionStop { session_token };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionStopRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionStopRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
 
@@ -3366,11 +3359,10 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetRangingCount { session_token };
-                let resp =
-                    into_uci_hal_packets(uwb_uci_packets::SessionGetRangingCountRspBuilder {
-                        status: uwb_uci_packets::StatusCode::UciStatusOk,
-                        count,
-                    });
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetRangingCountRsp {
+                    status: uwb_uci_packets::StatusCode::UciStatusOk,
+                    count,
+                });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },
@@ -3394,7 +3386,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::AndroidSetCountryCode { country_code: country_code_clone };
-                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidSetCountryCodeRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidSetCountryCodeRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                 });
 
@@ -3424,7 +3416,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::AndroidGetPowerStats;
-                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidGetPowerStatsRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidGetPowerStatsRsp {
                     stats: power_stats_clone,
                 });
 
@@ -3454,7 +3446,7 @@ mod tests {
                     session_token,
                     config_tlvs: vec![config_tlv_clone],
                 };
-                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidSetRadarConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidSetRadarConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     cfg_status: vec![],
                 });
@@ -3489,7 +3481,7 @@ mod tests {
             |mut hal| async move {
                 let cmd =
                     UciCommand::AndroidGetRadarConfig { session_token, radar_cfg: vec![config_id] };
-                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidGetRadarConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::AndroidGetRadarConfigRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     tlvs: vec![tlv_clone],
                 });
@@ -3523,9 +3515,9 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::RawUciCmd { mt, gid, oid, payload: cmd_payload_clone };
-                let resp = into_uci_hal_packets(uwb_uci_packets::UciVendor_F_ResponseBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::UciVendor_F_Response {
                     opcode: oid as u8,
-                    payload: Some(Bytes::from(resp_payload_clone)),
+                    payload: resp_payload_clone,
                 });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
@@ -3557,7 +3549,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal_nop_logger(
             |mut hal| async move {
                 let cmd = UciCommand::RawUciCmd { mt, gid, oid, payload: cmd_payload_clone };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRsp {
                     status,
                     cfg_status,
                 });
@@ -3590,7 +3582,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::RawUciCmd { mt, gid, oid, payload: cmd_payload_clone };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRsp {
                     status,
                     cfg_status,
                 });
@@ -3717,7 +3709,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::RawUciCmd { mt, gid, oid, payload: cmd_payload_clone };
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetAppConfigRsp {
                     status,
                     cfg_status,
                 });
@@ -3793,30 +3785,30 @@ mod tests {
         let resp_payload = vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
         let resp_payload_clone = resp_payload.clone();
 
-        let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
-            |mut hal| async move {
-                let cmd = UciCommand::RawUciCmd {
-                    mt: cmd_mt.into(),
-                    gid: gid.into(),
-                    oid: oid.into(),
-                    payload: cmd_payload_clone,
-                };
-                let raw_resp = build_uci_packet(resp_mt, 0, gid, oid, resp_payload_clone);
-                let mut responses =
-                    into_uci_hal_packets(uwb_uci_packets::SessionStatusNtfBuilder {
+        let (uci_manager, mut mock_hal) =
+            setup_uci_manager_with_open_hal(
+                |mut hal| async move {
+                    let cmd = UciCommand::RawUciCmd {
+                        mt: cmd_mt.into(),
+                        gid: gid.into(),
+                        oid: oid.into(),
+                        payload: cmd_payload_clone,
+                    };
+                    let raw_resp = build_uci_packet(resp_mt, 0, gid, oid, resp_payload_clone);
+                    let mut responses = into_uci_hal_packets(uwb_uci_packets::SessionStatusNtf {
                         session_token,
                         session_state: uwb_uci_packets::SessionState::SessionStateInit,
                         reason_code:
                             uwb_uci_packets::ReasonCode::StateChangeWithSessionManagementCommands
                                 .into(),
                     });
-                responses.push(raw_resp);
-                hal.expected_send_command(cmd, responses, Ok(()));
-            },
-            UciLoggerMode::Disabled,
-            mpsc::unbounded_channel::<UciLogEvent>().0,
-        )
-        .await;
+                    responses.push(raw_resp);
+                    hal.expected_send_command(cmd, responses, Ok(()));
+                },
+                UciLoggerMode::Disabled,
+                mpsc::unbounded_channel::<UciLogEvent>().0,
+            )
+            .await;
 
         let expected_result =
             Ok(RawUciMessage { gid: gid.into(), oid: oid.into(), payload: resp_payload });
@@ -3871,10 +3863,10 @@ mod tests {
 
         // Setup session active.
         let cmd = UciCommand::SessionStart { session_token };
-        let mut responses = into_uci_hal_packets(uwb_uci_packets::SessionStartRspBuilder {
+        let mut responses = into_uci_hal_packets(uwb_uci_packets::SessionStartRsp {
             status: uwb_uci_packets::StatusCode::UciStatusOk,
         });
-        responses.append(&mut into_uci_hal_packets(uwb_uci_packets::SessionStatusNtfBuilder {
+        responses.append(&mut into_uci_hal_packets(uwb_uci_packets::SessionStatusNtf {
             session_token,
             session_state: SessionState::SessionStateActive,
             reason_code: 0, /* ReasonCode::StateChangeWithSessionManagementCommands */
@@ -4220,18 +4212,16 @@ mod tests {
                 // Now setup the notifications that should be received after a Data packet send.
                 let data_packet_snd =
                     build_uci_packet(mt_data, pbf, dpf, oid, expected_data_snd_payload);
-                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
-                ntfs.append(&mut into_uci_hal_packets(
-                    uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        connect_id,
-                        uci_sequence_number,
-                        status,
-                        tx_count,
-                    },
-                ));
+                ntfs.append(&mut into_uci_hal_packets(uwb_uci_packets::DataTransferStatusNtf {
+                    connect_id,
+                    uci_sequence_number,
+                    status,
+                    tx_count,
+                }));
                 hal.expected_send_packet(data_packet_snd, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
@@ -4306,7 +4296,7 @@ mod tests {
                     oid,
                     expected_data_snd_payload_fragment_1,
                 );
-                let ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
@@ -4320,18 +4310,16 @@ mod tests {
                     oid,
                     expected_data_snd_payload_fragment_2,
                 );
-                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
-                ntfs.append(&mut into_uci_hal_packets(
-                    uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        connect_id,
-                        uci_sequence_number,
-                        status,
-                        tx_count,
-                    },
-                ));
+                ntfs.append(&mut into_uci_hal_packets(uwb_uci_packets::DataTransferStatusNtf {
+                    connect_id,
+                    uci_sequence_number,
+                    status,
+                    tx_count,
+                }));
                 hal.expected_send_packet(data_packet_snd_fragment_2, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
@@ -4413,7 +4401,7 @@ mod tests {
             |mut hal| async move {
                 // Expected UCI CMD CORE_GET_DEVICE_INFO
                 let cmd = UciCommand::CoreGetDeviceInfo;
-                let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::GetDeviceInfoRsp {
                     status,
                     uci_version,
                     mac_version,
@@ -4425,7 +4413,7 @@ mod tests {
 
                 // Expected UCI CMD CORE_GET_CAPS_INFO
                 let cmd = UciCommand::CoreGetCapsInfo;
-                let resp = into_uci_hal_packets(uwb_uci_packets::GetCapsInfoRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::GetCapsInfoRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     tlvs: vec![uwbs_caps_info_tlv_clone],
                 });
@@ -4439,7 +4427,7 @@ mod tests {
                     oid,
                     expected_data_snd_payload_fragment_1,
                 );
-                let ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
@@ -4453,18 +4441,16 @@ mod tests {
                     oid,
                     expected_data_snd_payload_fragment_2,
                 );
-                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
-                ntfs.append(&mut into_uci_hal_packets(
-                    uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        connect_id,
-                        uci_sequence_number,
-                        status: data_status,
-                        tx_count,
-                    },
-                ));
+                ntfs.append(&mut into_uci_hal_packets(uwb_uci_packets::DataTransferStatusNtf {
+                    connect_id,
+                    uci_sequence_number,
+                    status: data_status,
+                    tx_count,
+                }));
                 hal.expected_send_packet(data_packet_snd_fragment_2, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
@@ -4556,25 +4542,23 @@ mod tests {
                 // failed Data packet send attempt.
                 let data_packet_snd =
                     build_uci_packet(mt_data, pbf, dpf, oid, expected_data_snd_payload);
-                let error_ntf = into_uci_hal_packets(uwb_uci_packets::GenericErrorBuilder {
+                let error_ntf = into_uci_hal_packets(uwb_uci_packets::GenericError {
                     status: StatusCode::UciStatusCommandRetry,
                 });
                 hal.expected_send_packet(data_packet_snd.clone(), error_ntf, Ok(()));
 
                 // Setup the notifications that should be received after the Data packet send
                 // is successfully retried.
-                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtfBuilder {
+                let mut ntfs = into_uci_hal_packets(uwb_uci_packets::DataCreditNtf {
                     session_token,
                     credit_availability: CreditAvailability::CreditAvailable,
                 });
-                ntfs.append(&mut into_uci_hal_packets(
-                    uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        connect_id,
-                        uci_sequence_number,
-                        status,
-                        tx_count,
-                    },
-                ));
+                ntfs.append(&mut into_uci_hal_packets(uwb_uci_packets::DataTransferStatusNtf {
+                    connect_id,
+                    uci_sequence_number,
+                    status,
+                    tx_count,
+                }));
                 hal.expected_send_packet(data_packet_snd, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
@@ -4677,7 +4661,7 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetCount;
-                let retry_resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let retry_resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusCommandRetry,
                     session_count: 0,
                 });
@@ -4703,11 +4687,11 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetCount;
-                let retry_resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let retry_resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusCommandRetry,
                     session_count: 0,
                 });
-                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     session_count,
                 });
@@ -4732,11 +4716,11 @@ mod tests {
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_open_hal(
             |mut hal| async move {
                 let cmd = UciCommand::SessionGetCount;
-                let resp1 = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let resp1 = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     session_count: 1,
                 });
-                let resp2 = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRspBuilder {
+                let resp2 = into_uci_hal_packets(uwb_uci_packets::SessionGetCountRsp {
                     status: uwb_uci_packets::StatusCode::UciStatusOk,
                     session_count: 2,
                 });
@@ -4756,12 +4740,11 @@ mod tests {
         uci_manager.set_logger_mode(UciLoggerMode::Filtered).await.unwrap();
         uci_manager.session_get_count().await.unwrap();
         let packet: Vec<u8> = log_receiver.recv().await.unwrap().try_into().unwrap();
-        let cmd_packet: Vec<u8> = SessionGetCountCmdBuilder {}.build().encode_to_vec().unwrap();
+        let cmd_packet: Vec<u8> = SessionGetCountCmd {}.encode_to_vec().unwrap();
         assert_eq!(&packet, &cmd_packet);
         let packet: Vec<u8> = log_receiver.recv().await.unwrap().try_into().unwrap();
         let rsp_packet: Vec<u8> =
-            SessionGetCountRspBuilder { status: StatusCode::UciStatusOk, session_count: 2 }
-                .build()
+            SessionGetCountRsp { status: StatusCode::UciStatusOk, session_count: 2 }
                 .encode_to_vec()
                 .unwrap();
         assert_eq!(&packet, &rsp_packet);
@@ -4783,11 +4766,10 @@ mod tests {
                     session_token,
                     config_tlvs: vec![config_tlv_clone],
                 };
-                let resp =
-                    into_uci_hal_packets(uwb_uci_packets::SessionSetRfTestConfigRspBuilder {
-                        status: uwb_uci_packets::StatusCode::UciStatusOk,
-                        cfg_status: vec![],
-                    });
+                let resp = into_uci_hal_packets(uwb_uci_packets::SessionSetRfTestConfigRsp {
+                    status: uwb_uci_packets::StatusCode::UciStatusOk,
+                    cfg_status: vec![],
+                });
 
                 hal.expected_send_command(cmd, resp, Ok(()));
             },

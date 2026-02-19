@@ -36,14 +36,17 @@ use tokio::sync::{mpsc, Mutex};
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
 use uwb_core::params::uci_packets::SessionId;
 use uwb_core::uci::uci_hal::{UciHal, UciHalPacket};
-use uwb_uci_packets::{DeviceState, DeviceStatusNtfBuilder};
+use uwb_uci_packets::{DeviceState, DeviceStatusNtf};
 
 use crate::error::{Error, Result};
 
-fn input_uci_hal_packet<T: Into<uwb_uci_packets::UciControlPacket>>(
+fn input_uci_hal_packet<
+    E: std::fmt::Debug,
+    T: TryInto<uwb_uci_packets::UciControlPacket, Error = E>,
+>(
     builder: T,
 ) -> Vec<UciHalPacket> {
-    let packets: Vec<uwb_uci_packets::UciControlPacketHal> = builder.into().into();
+    let packets: Vec<uwb_uci_packets::UciControlPacketHal> = builder.try_into().unwrap().into();
     packets.into_iter().map(|packet| packet.encode_to_vec().unwrap()).collect()
 }
 
@@ -51,9 +54,8 @@ fn input_uci_hal_packet<T: Into<uwb_uci_packets::UciControlPacket>>(
 fn send_device_state_error_notification(
     uci_sender: &mpsc::UnboundedSender<UciHalPacket>,
 ) -> UwbCoreResult<()> {
-    let raw_message_packets = input_uci_hal_packet(DeviceStatusNtfBuilder {
-        device_state: DeviceState::DeviceStateError,
-    });
+    let raw_message_packets =
+        input_uci_hal_packet(DeviceStatusNtf { device_state: DeviceState::DeviceStateError });
     for raw_message_packet in raw_message_packets {
         if let Err(e) = uci_sender.send(raw_message_packet) {
             error!("Error sending device state error notification: {e:?}");
@@ -221,9 +223,9 @@ impl UciHal for UciHalAndroid {
             Some(Ok(())) => {
                 // Workaround while http://b/243140882 is not fixed:
                 // Send DEVICE_STATE_READY notification as chip is not sending this notification.
-                let device_ready_ntfs = input_uci_hal_packet(
-                    DeviceStatusNtfBuilder { device_state: DeviceState::DeviceStateReady }.build(),
-                );
+                let device_ready_ntfs = input_uci_hal_packet(DeviceStatusNtf {
+                    device_state: DeviceState::DeviceStateReady,
+                });
                 for device_ready_ntf in device_ready_ntfs {
                     packet_sender.send(device_ready_ntf).unwrap_or_else(|e| {
                         error!("UCI HAL: failed to send device ready notification: {e:?}");
