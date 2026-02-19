@@ -2788,6 +2788,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         mSessionNotificationManager.onControleeAddFailed(
                                 uwbSession, address, actionStatus);
                     } else if (action == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                        uwbSession.mControleesPendingDisconnection.remove(address);
                         mSessionNotificationManager.onControleeRemoveFailed(
                                 uwbSession, address,
                                 actionStatus, reason.asControleeRemovedReason());
@@ -2890,6 +2891,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                                           uwbSession, addresses[i], st);
                                             } else if (action
                                                     == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                                                uwbSession.mControleesPendingDisconnection.remove(
+                                                    addresses[i]);
                                                 mSessionNotificationManager.onControleeRemoveFailed(
                                                         uwbSession, addresses[i], st,
                                                                 reason.asControleeRemovedReason());
