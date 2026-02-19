@@ -294,6 +294,8 @@ public class CccDecoder extends TlvDecoder {
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "CCC_SUPPORTED_UWBS_MAX_PPM not found");
         }
+        builder.setTimesyncAccuracyVerified(
+                mUwbInjector.getDeviceConfigFacade().isTimesyncAccuracyVerified());
 
         return builder.build();
     }

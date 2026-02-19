@@ -126,6 +126,7 @@ public class CccDecoderTest {
         MockitoAnnotations.initMocks(this);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
+        when(mDeviceConfigFacade.isTimesyncAccuracyVerified()).thenReturn(true);
         mCccDecoder = new CccDecoder(mUwbInjector);
     }
 
@@ -159,6 +160,7 @@ public class CccDecoderTest {
                 List.of(HOPPING_SEQUENCE_AES));
         assertThat(cccSpecificationParams.getMaxRangingSessionNumber()).isEqualTo(1);
         assertThat(cccSpecificationParams.getMinUwbInitiationTimeMs()).isEqualTo(1);
+        assertThat(cccSpecificationParams.isTimesyncAccuracyVerified()).isTrue();
     }
 
     @Test

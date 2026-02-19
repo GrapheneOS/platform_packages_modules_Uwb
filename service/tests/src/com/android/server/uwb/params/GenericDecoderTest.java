@@ -92,7 +92,7 @@ public class GenericDecoderTest {
 
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
-
+        when(mDeviceConfigFacade.isTimesyncAccuracyVerified()).thenReturn(true);
         mGenericDecoder = new GenericDecoder(mUwbInjector);
     }
 
