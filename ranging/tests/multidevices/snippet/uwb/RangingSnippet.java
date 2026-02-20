@@ -56,6 +56,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 
 public class RangingSnippet implements Snippet {
     private static final String TAG = "GenericRangingSnippet";
@@ -510,6 +512,17 @@ public class RangingSnippet implements Snippet {
     @Rpc(description = "Log info level message to device logcat")
     public void logInfo(String message) {
         Log.i(TAG, message);
+    }
+
+    @Rpc(description = "Submit MPC BLE Channel Sounding Performance Value")
+    public void submitMpcBleChannelSoundingPerformanceValue(float value) {
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(
+            "CtsMultiDeviceGenericRangingAccuracyTests:test_channel_sounding_ranging");
+        Requirements.Android17BLEChannelSoundingRequirement r7_4_3__h_3_1 =
+            Requirements.addR7_4_3__H_3_1().to(pce);
+        r7_4_3__h_3_1.setIsBleCsSupported(true);
+        r7_4_3__h_3_1.setBleCsAccuracy(value);
+        pce.submitAndCheck();
     }
 
     public void runWithShellPermission(Runnable action) throws Throwable {

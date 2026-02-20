@@ -209,6 +209,9 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
               reference_device_name=self.responder.serial,
           )
       )
+      self.initiator.rangingSnippetSubmitMpcBleChannelSoundingPerformanceValue(
+          self.all_test_metrics["ble_cs_ranging_test"]["initiator"]["results_in_range"]
+      )
 
     finally:
       bluetooth_utils.ble_unbond(
