@@ -19,6 +19,7 @@ rust_defaults {
         "libthiserror",
         "libtokio",
         "libuwb_uci_packets",
+        "libpdl_runtime",
     ],
     prefer_rlib: true,
     apex_available: [

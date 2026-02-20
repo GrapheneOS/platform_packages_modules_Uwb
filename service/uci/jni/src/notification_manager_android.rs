@@ -21,15 +21,14 @@ use crate::jclass_name::{
     UWB_RADAR_SWEEP_DATA_CLASS, UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
 };
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use jni::errors::Error as JNIError;
 use jni::objects::{GlobalRef, JClass, JMethodID, JObject, JValue};
 use jni::signature::TypeSignature;
 use jni::sys::jvalue;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
+use std::collections::HashMap;
+use std::sync::Arc;
 use uwb_core::error::{Error as UwbError, Result as UwbResult};
 use uwb_core::params::{ControleeStatusList, UwbAddress};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
@@ -1992,7 +1991,7 @@ mod tests {
             0x05, 0x07, 0x09, 0x05, // 4(Active Ranging Rounds)
         ];
         let short_address_measurement_vec =
-            ShortAddressDlTdoaRangingMeasurement::parse(&bytes, 1).unwrap();
+            ShortAddressDlTdoaRangingMeasurement::decode_full(&bytes, 1).unwrap();
         let short_address_measurement = &short_address_measurement_vec[0];
         let measurement = DlTdoaRangingMeasurement::from(short_address_measurement.clone());
         assert_eq!(
@@ -2065,7 +2064,7 @@ mod tests {
             0x02, 0x05, 0x02, 0x05, // 2(Initiator-Responder ToF), 2(Active Ranging Rounds)
         ];
         let extended_address_measurement_vec =
-            ExtendedAddressDlTdoaRangingMeasurement::parse(&bytes, 1).unwrap();
+            ExtendedAddressDlTdoaRangingMeasurement::decode_full(&bytes, 1).unwrap();
         let extended_address_measurement = &extended_address_measurement_vec[0];
 
         let measurement = DlTdoaRangingMeasurement::from(extended_address_measurement.clone());

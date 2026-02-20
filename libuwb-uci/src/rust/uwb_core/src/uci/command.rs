@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryFrom;
-
-use bytes::Bytes;
 use log::error;
+use std::convert::TryFrom;
 
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
@@ -160,17 +158,15 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
         let packet = match cmd {
             // UCI Session Config Commands
             UciCommand::SessionInit { session_id, session_type } => {
-                uwb_uci_packets::SessionInitCmdBuilder { session_id, session_type }.build().into()
+                uwb_uci_packets::SessionInitCmd { session_id, session_type }.try_into()?
             }
             UciCommand::SessionDeinit { session_token } => {
-                uwb_uci_packets::SessionDeinitCmdBuilder { session_token }.build().into()
+                uwb_uci_packets::SessionDeinitCmd { session_token }.try_into()?
             }
-            UciCommand::CoreGetDeviceInfo => {
-                uwb_uci_packets::GetDeviceInfoCmdBuilder {}.build().into()
-            }
-            UciCommand::CoreGetCapsInfo => uwb_uci_packets::GetCapsInfoCmdBuilder {}.build().into(),
+            UciCommand::CoreGetDeviceInfo => uwb_uci_packets::GetDeviceInfoCmd {}.try_into()?,
+            UciCommand::CoreGetCapsInfo => uwb_uci_packets::GetCapsInfoCmd {}.try_into()?,
             UciCommand::SessionGetState { session_token } => {
-                uwb_uci_packets::SessionGetStateCmdBuilder { session_token }.build().into()
+                uwb_uci_packets::SessionGetStateCmd { session_token }.try_into()?
             }
             UciCommand::SessionUpdateControllerMulticastList {
                 session_token,
@@ -183,109 +179,93 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 controlees,
             )
             .map_err(|_| Error::BadParameters)?
-            .into(),
+            .try_into()?,
             UciCommand::CoreSetConfig { config_tlvs } => {
-                uwb_uci_packets::SetConfigCmdBuilder { tlvs: config_tlvs }.build().into()
+                uwb_uci_packets::SetConfigCmd { tlvs: config_tlvs }.try_into()?
             }
-            UciCommand::CoreGetConfig { cfg_id } => uwb_uci_packets::GetConfigCmdBuilder {
-                cfg_id: cfg_id.into_iter().map(u8::from).collect(),
+            UciCommand::CoreGetConfig { cfg_id } => {
+                uwb_uci_packets::GetConfigCmd { cfg_id: cfg_id.into_iter().map(u8::from).collect() }
+                    .try_into()?
             }
-            .build()
-            .into(),
             UciCommand::CoreQueryTimeStamp => {
-                uwb_uci_packets::CoreQueryTimeStampCmdBuilder {}.build().into()
+                uwb_uci_packets::CoreQueryTimeStampCmd {}.try_into()?
             }
             UciCommand::SessionSetAppConfig { session_token, config_tlvs } => {
-                uwb_uci_packets::SessionSetAppConfigCmdBuilder {
+                uwb_uci_packets::SessionSetAppConfigCmd {
                     session_token,
                     tlvs: config_tlvs.into_iter().map(|tlv| tlv.into_inner()).collect(),
                 }
-                .build()
-                .into()
+                .try_into()?
             }
             UciCommand::SessionGetAppConfig { session_token, app_cfg } => {
-                uwb_uci_packets::SessionGetAppConfigCmdBuilder {
+                uwb_uci_packets::SessionGetAppConfigCmd {
                     session_token,
                     app_cfg: app_cfg.into_iter().map(u8::from).collect(),
                 }
-                .build()
-                .into()
+                .try_into()?
             }
             UciCommand::AndroidSetRadarConfig { session_token, config_tlvs } => {
-                uwb_uci_packets::AndroidSetRadarConfigCmdBuilder {
-                    session_token,
-                    tlvs: config_tlvs,
-                }
-                .build()
-                .into()
+                uwb_uci_packets::AndroidSetRadarConfigCmd { session_token, tlvs: config_tlvs }
+                    .try_into()?
             }
             UciCommand::AndroidGetRadarConfig { session_token, radar_cfg } => {
-                uwb_uci_packets::AndroidGetRadarConfigCmdBuilder {
+                uwb_uci_packets::AndroidGetRadarConfigCmd {
                     session_token,
                     tlvs: radar_cfg.into_iter().map(u8::from).collect(),
                 }
-                .build()
-                .into()
+                .try_into()?
             }
             UciCommand::SessionUpdateDtTagRangingRounds {
                 session_token,
                 ranging_round_indexes,
-            } => uwb_uci_packets::SessionUpdateDtTagRangingRoundsCmdBuilder {
+            } => uwb_uci_packets::SessionUpdateDtTagRangingRoundsCmd {
                 session_token,
                 ranging_round_indexes,
             }
-            .build()
-            .into(),
+            .try_into()?,
             UciCommand::AndroidGetPowerStats => {
-                uwb_uci_packets::AndroidGetPowerStatsCmdBuilder {}.build().into()
+                uwb_uci_packets::AndroidGetPowerStatsCmd {}.try_into()?
             }
             UciCommand::RawUciCmd { mt, gid, oid, payload } => {
                 build_raw_uci_cmd_packet(mt, gid, oid, payload)?
             }
-            UciCommand::SessionGetCount => {
-                uwb_uci_packets::SessionGetCountCmdBuilder {}.build().into()
-            }
+            UciCommand::SessionGetCount => uwb_uci_packets::SessionGetCountCmd {}.try_into()?,
             UciCommand::AndroidSetCountryCode { country_code } => {
-                uwb_uci_packets::AndroidSetCountryCodeCmdBuilder {
-                    country_code: country_code.into(),
-                }
-                .build()
-                .into()
+                uwb_uci_packets::AndroidSetCountryCodeCmd { country_code: country_code.into() }
+                    .try_into()?
             }
             UciCommand::DeviceReset { reset_config } => {
-                uwb_uci_packets::DeviceResetCmdBuilder { reset_config }.build().into()
+                uwb_uci_packets::DeviceResetCmd { reset_config }.try_into()?
             }
             // UCI Session Control Commands
             UciCommand::SessionStart { session_token } => {
-                uwb_uci_packets::SessionStartCmdBuilder { session_token }.build().into()
+                uwb_uci_packets::SessionStartCmd { session_token }.try_into()?
             }
             UciCommand::SessionStop { session_token } => {
-                uwb_uci_packets::SessionStopCmdBuilder { session_token }.build().into()
+                uwb_uci_packets::SessionStopCmd { session_token }.try_into()?
             }
             UciCommand::SessionGetRangingCount { session_token } => {
-                uwb_uci_packets::SessionGetRangingCountCmdBuilder { session_token }.build().into()
+                uwb_uci_packets::SessionGetRangingCountCmd { session_token }.try_into()?
             }
             UciCommand::SessionQueryMaxDataSize { connect_id } => {
-                uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { connect_id }.build().into()
+                uwb_uci_packets::SessionQueryMaxDataSizeCmd { connect_id }.try_into()?
             }
             UciCommand::SessionSetHybridControllerConfig {
                 session_token,
                 number_of_phases,
                 phase_list,
-            } => uwb_uci_packets::SessionSetHybridControllerConfigCmdBuilder {
+            } => uwb_uci_packets::SessionSetHybridControllerConfigCmd {
                 session_token,
                 number_of_phases,
                 phase_list,
             }
-            .build()
-            .into(),
+            .try_into()?,
             UciCommand::SessionSetHybridControleeConfig { session_token, controlee_phase_list } => {
-                uwb_uci_packets::SessionSetHybridControleeConfigCmdBuilder {
+                uwb_uci_packets::SessionSetHybridControleeConfigCmd {
                     session_token,
                     controlee_phase_list,
                 }
-                .build()
-                .into()
+                .try_into()?
             }
             UciCommand::SessionDataTransferPhaseConfig {
                 session_token,
@@ -305,30 +285,26 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 stop_data_transfer,
             )
             .map_err(|_| Error::BadParameters)?
-            .into(),
+            .try_into()?,
             UciCommand::SessionSetRfTestConfig { session_token, config_tlvs } => {
-                uwb_uci_packets::SessionSetRfTestConfigCmdBuilder {
-                    session_token,
-                    tlvs: config_tlvs,
-                }
-                .build()
-                .into()
+                uwb_uci_packets::SessionSetRfTestConfigCmd { session_token, tlvs: config_tlvs }
+                    .try_into()?
             }
             UciCommand::TestPeriodicTx { psdu_data } => {
-                uwb_uci_packets::TestPeriodicTxCmdBuilder { psdu_data }.build().into()
+                uwb_uci_packets::TestPeriodicTxCmd { psdu_data }.try_into()?
             }
             UciCommand::TestPerRx { psdu_data } => {
-                uwb_uci_packets::TestPerRxCmdBuilder { psdu_data }.build().into()
+                uwb_uci_packets::TestPerRxCmd { psdu_data }.try_into()?
             }
             UciCommand::TestLoopback { psdu_data } => {
-                uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data }.build().into()
+                uwb_uci_packets::TestLoopbackCmd { psdu_data }.try_into()?
             }
-            UciCommand::TestRx => uwb_uci_packets::TestRxCmdBuilder {}.build().into(),
-            UciCommand::TestSrRx => uwb_uci_packets::TestSrRxCmdBuilder {}.build().into(),
-            UciCommand::TestSsTwr => uwb_uci_packets::TestSsTwrCmdBuilder {}.build().into(),
-            UciCommand::StopRfTest => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
+            UciCommand::TestRx => uwb_uci_packets::TestRxCmd {}.try_into()?,
+            UciCommand::TestSrRx => uwb_uci_packets::TestSrRxCmd {}.try_into()?,
+            UciCommand::TestSsTwr => uwb_uci_packets::TestSsTwrCmd {}.try_into()?,
+            UciCommand::StopRfTest => uwb_uci_packets::StopRfTestCmd {}.try_into()?,
             UciCommand::GetLogicalLinkParams { connect_id } => {
-                uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id }.build().into()
+                uwb_uci_packets::GetLogicalLinkParamsCmd { connect_id }.try_into()?
             }
             UciCommand::CreateLogicalLink {
                 session_token,
@@ -338,28 +314,26 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 max_sdu_size_value,
             } => {
                 if max_sdu_size_len == 0 {
-                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_0Builder {
+                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_0 {
                         session_token,
                         link_layer_mode,
                         dest_mac_address,
                         logical_link_class_len: 0,
                     }
-                    .build()
-                    .into()
+                    .try_into()?
                 } else {
-                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_1Builder {
+                    uwb_uci_packets::CreateLogicalLinkCmd_V_1_1 {
                         session_token,
                         link_layer_mode,
                         dest_mac_address,
                         max_sdu_size_len,
                         max_sdu_size_value,
                     }
-                    .build()
-                    .into()
+                    .try_into()?
                 }
             }
             UciCommand::CloseLogicalLink { connect_id } => {
-                uwb_uci_packets::CloseLogicalLinkCmdBuilder { connect_id }.build().into()
+                uwb_uci_packets::CloseLogicalLinkCmd { connect_id }.try_into()?
             }
         };
         Ok(packet)
@@ -376,7 +350,6 @@ fn build_raw_uci_cmd_packet(
         error!("Invalid GroupId: {gid}");
         Error::BadParameters
     })?;
-    let payload = if payload.is_empty() { None } else { Some(Bytes::from(payload)) };
     let opcode = u8::try_from(oid).map_err(|_| {
         error!("Invalid opcod: {oid}");
         Error::BadParameters
@@ -409,30 +382,30 @@ mod tests {
         let mut packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::DeviceResetCmdBuilder { reset_config: ResetConfig::UwbsReset }
-                .build()
-                .into()
+            uwb_uci_packets::DeviceResetCmd { reset_config: ResetConfig::UwbsReset }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::CoreGetDeviceInfo {};
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
-        assert_eq!(packet, uwb_uci_packets::GetDeviceInfoCmdBuilder {}.build().into());
+        assert_eq!(packet, uwb_uci_packets::GetDeviceInfoCmd {}.try_into().unwrap());
 
         cmd = UciCommand::CoreGetCapsInfo {};
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
-        assert_eq!(packet, uwb_uci_packets::GetCapsInfoCmdBuilder {}.build().into());
+        assert_eq!(packet, uwb_uci_packets::GetCapsInfoCmd {}.try_into().unwrap());
 
         let device_cfg_tlv = DeviceConfigTlv { cfg_id: DeviceConfigId::DeviceState, v: vec![0] };
         cmd = UciCommand::CoreSetConfig { config_tlvs: vec![device_cfg_tlv.clone()] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SetConfigCmdBuilder { tlvs: vec![device_cfg_tlv] }.build().into()
+            uwb_uci_packets::SetConfigCmd { tlvs: vec![device_cfg_tlv] }.try_into().unwrap()
         );
 
         cmd = UciCommand::CoreGetConfig { cfg_id: vec![DeviceConfigId::DeviceState] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
-        assert_eq!(packet, uwb_uci_packets::GetConfigCmdBuilder { cfg_id: vec![0] }.build().into());
+        assert_eq!(packet, uwb_uci_packets::GetConfigCmd { cfg_id: vec![0] }.try_into().unwrap());
 
         cmd = UciCommand::SessionInit {
             session_id: 1,
@@ -441,48 +414,48 @@ mod tests {
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionInitCmdBuilder {
+            uwb_uci_packets::SessionInitCmd {
                 session_id: 1,
                 session_type: SessionType::FiraRangingSession
             }
-            .build()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionDeinit { session_token: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionDeinitCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionDeinitCmd { session_token: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::SessionSetAppConfig { session_token: 1, config_tlvs: vec![] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionSetAppConfigCmdBuilder { session_token: 1, tlvs: vec![] }
-                .build()
-                .into()
+            uwb_uci_packets::SessionSetAppConfigCmd { session_token: 1, tlvs: vec![] }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::SessionGetAppConfig { session_token: 1, app_cfg: vec![] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionGetAppConfigCmdBuilder { session_token: 1, app_cfg: vec![] }
-                .build()
-                .into()
+            uwb_uci_packets::SessionGetAppConfigCmd { session_token: 1, app_cfg: vec![] }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::SessionGetCount {};
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
-        assert_eq!(packet, uwb_uci_packets::SessionGetCountCmdBuilder {}.build().into());
+        assert_eq!(packet, uwb_uci_packets::SessionGetCountCmd {}.try_into().unwrap());
 
         cmd = UciCommand::SessionGetState { session_token: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionGetStateCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionGetStateCmd { session_token: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::SessionUpdateControllerMulticastList {
@@ -502,7 +475,8 @@ mod tests {
             )
             .map_err(|_| Error::BadParameters)
             .unwrap()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionUpdateDtTagRangingRounds {
@@ -512,47 +486,47 @@ mod tests {
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionUpdateDtTagRangingRoundsCmdBuilder {
+            uwb_uci_packets::SessionUpdateDtTagRangingRoundsCmd {
                 session_token: 1,
                 ranging_round_indexes: vec![0]
             }
-            .build()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionQueryMaxDataSize { connect_id: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { connect_id: 1 }.build().into()
+            uwb_uci_packets::SessionQueryMaxDataSizeCmd { connect_id: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::GetLogicalLinkParams { connect_id: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id: 1 }.build().into()
+            uwb_uci_packets::GetLogicalLinkParamsCmd { connect_id: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::SessionStart { session_token: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionStartCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionStartCmd { session_token: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::SessionStop { session_token: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionStopCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionStopCmd { session_token: 1 }.try_into().unwrap()
         );
 
         cmd = UciCommand::SessionGetRangingCount { session_token: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionGetRangingCountCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionGetRangingCountCmd { session_token: 1 }.try_into().unwrap()
         );
 
         let country_code: [u8; 2] = [85, 83];
@@ -562,34 +536,34 @@ mod tests {
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::AndroidSetCountryCodeCmdBuilder { country_code }.build().into()
+            uwb_uci_packets::AndroidSetCountryCodeCmd { country_code }.try_into().unwrap()
         );
 
         cmd = UciCommand::AndroidGetPowerStats {};
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
-        assert_eq!(packet, uwb_uci_packets::AndroidGetPowerStatsCmdBuilder {}.build().into());
+        assert_eq!(packet, uwb_uci_packets::AndroidGetPowerStatsCmd {}.try_into().unwrap());
 
         cmd = UciCommand::AndroidSetRadarConfig { session_token: 1, config_tlvs: vec![] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::AndroidSetRadarConfigCmdBuilder { session_token: 1, tlvs: vec![] }
-                .build()
-                .into()
+            uwb_uci_packets::AndroidSetRadarConfigCmd { session_token: 1, tlvs: vec![] }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::AndroidGetRadarConfig { session_token: 1, radar_cfg: vec![] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::AndroidGetRadarConfigCmdBuilder { session_token: 1, tlvs: vec![] }
-                .build()
-                .into()
+            uwb_uci_packets::AndroidGetRadarConfigCmd { session_token: 1, tlvs: vec![] }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::CoreQueryTimeStamp {};
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
-        assert_eq!(packet, uwb_uci_packets::CoreQueryTimeStampCmdBuilder {}.build().into());
+        assert_eq!(packet, uwb_uci_packets::CoreQueryTimeStampCmd {}.try_into().unwrap());
 
         cmd = UciCommand::RawUciCmd { mt: 1, gid: 0xa, oid: 0, payload: vec![0, 1, 2, 3] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
@@ -621,13 +595,13 @@ mod tests {
         let phase_list_clone = phase_list_short_mac_address.clone();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionSetHybridControllerConfigCmdBuilder {
+            uwb_uci_packets::SessionSetHybridControllerConfigCmd {
                 session_token: 1,
                 number_of_phases: 0,
                 phase_list: phase_list_clone,
             }
-            .build()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionSetHybridControleeConfig {
@@ -637,12 +611,12 @@ mod tests {
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionSetHybridControleeConfigCmdBuilder {
+            uwb_uci_packets::SessionSetHybridControleeConfigCmd {
                 controlee_phase_list: vec![],
                 session_token: 1,
             }
-            .build()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionDataTransferPhaseConfig {
@@ -657,52 +631,52 @@ mod tests {
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionDataTransferPhaseConfigCmdBuilder {
+            uwb_uci_packets::SessionDataTransferPhaseConfigCmd {
                 session_token: 1,
                 dtpcm_repetition: 0,
                 data_transfer_control: 2,
                 dtpml_size: 1,
-                payload: Some(vec![0x00, 0x01, 0x02, 0x03, 0x00].into()),
+                payload: vec![0x00, 0x01, 0x02, 0x03, 0x00],
             }
-            .build()
-            .into()
+            .try_into()
+            .unwrap()
         );
 
         cmd = UciCommand::SessionSetRfTestConfig { session_token: 1, config_tlvs: vec![] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionSetRfTestConfigCmdBuilder { session_token: 1, tlvs: vec![] }
-                .build()
-                .into()
+            uwb_uci_packets::SessionSetRfTestConfigCmd { session_token: 1, tlvs: vec![] }
+                .try_into()
+                .unwrap()
         );
 
         cmd = UciCommand::TestPeriodicTx { psdu_data: vec![0] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::TestPeriodicTxCmdBuilder { psdu_data: vec![0] }.build().into()
+            uwb_uci_packets::TestPeriodicTxCmd { psdu_data: vec![0] }.try_into().unwrap()
         );
 
         cmd = UciCommand::TestPerRx { psdu_data: vec![0] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::TestPerRxCmdBuilder { psdu_data: vec![0] }.build().into()
+            uwb_uci_packets::TestPerRxCmd { psdu_data: vec![0] }.try_into().unwrap()
         );
 
         cmd = UciCommand::TestLoopback { psdu_data: vec![0] };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data: vec![0] }.build().into()
+            uwb_uci_packets::TestLoopbackCmd { psdu_data: vec![0] }.try_into().unwrap()
         );
 
         cmd = UciCommand::CloseLogicalLink { connect_id: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::CloseLogicalLinkCmdBuilder { connect_id: 1 }.build().into()
+            uwb_uci_packets::CloseLogicalLinkCmd { connect_id: 1 }.try_into().unwrap()
         );
     }
 }
