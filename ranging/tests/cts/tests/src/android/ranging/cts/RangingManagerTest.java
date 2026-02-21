@@ -150,6 +150,8 @@ public class RangingManagerTest {
         assumeTrue(Flags.rangingStackEnabled());
         PackageManager packageManager = mContext.getPackageManager();
         assertThat(packageManager).isNotNull();
+        // Check is any ranging tech is supported.
+        assumeTrue(isAnyRangingTechSupported(packageManager));
         mRangingManager = mContext.getSystemService(RangingManager.class);
         assertThat(mRangingManager).isNotNull();
         CapabilitiesCallback callback = new CapabilitiesCallback(new CountDownLatch(1));
@@ -192,6 +194,13 @@ public class RangingManagerTest {
         // Just in case if some test failed.
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         uiAutomation.dropShellPermissionIdentity();
+    }
+
+    public boolean isAnyRangingTechSupported(PackageManager packageManager) {
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_UWB)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
+                || (packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)
+                && packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT));
     }
 
     @SuppressLint({"CheckResult", "CheckReturnValue"})

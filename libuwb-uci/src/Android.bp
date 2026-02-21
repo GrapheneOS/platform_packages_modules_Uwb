@@ -207,7 +207,7 @@ rust_library {
         "libprotobuf",
     ],
     flags: [
-        // Required due to the protoc-gen-rust tool emitting invalid
+        // Required due to the protoc-gen-rs tool emitting invalid
         // annotations.  This can be removed when we upgrade to protobuf-4,
         // if we patch  protobuf-3 to no longer emit `#![allow(box_pointers)]`,
         // or switch to using a `rust_protobuf` rule instead of a `genrule`.
@@ -222,12 +222,12 @@ genrule {
     name: "gen_uwb_core_proto",
     tools: [
         "aprotoc",
-        "protoc-gen-rust",
+        "protoc-gen-rs",
     ],
     cmd: "$(location aprotoc)" +
         " --proto_path=`dirname $(in)`" +
-        " --plugin=protoc-gen-rust=$(location protoc-gen-rust)" +
-        " --rust_out=$(genDir) $(in)",
+        " --plugin=protoc-gen-rs=$(location protoc-gen-rs)" +
+        " --rs_out=$(genDir) $(in)",
     srcs: [
         "rust/uwb_core/protos/uwb_service.proto",
     ],
