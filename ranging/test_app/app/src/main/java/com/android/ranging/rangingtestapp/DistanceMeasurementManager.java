@@ -252,7 +252,6 @@ class DistanceMeasurementManager {
 
                 public void onStopped(RangingDevice peer, int technology) {
                     printLog("DistanceMeasurementManager onStopped! " + technology);
-                    mCallback.onStop();
                 }
 
                 public void onClosed(int reason) {
