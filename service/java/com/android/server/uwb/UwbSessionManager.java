@@ -16,6 +16,7 @@
 package com.android.server.uwb;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+import static android.uwb.LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE;
 
 import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
 import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
@@ -220,6 +221,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     final ConcurrentHashMap<Integer, List<UwbSession>> mNonPrivilegedUidToFiraSessionsTable =
             new ConcurrentHashMap();
     final ConcurrentHashMap<Integer, Integer> mSessionTokenMap = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<Integer, LogicalLinkCreationParams>
+            mCachedLogicalLinkCreationParams = new ConcurrentHashMap<>();
     private final ActivityManager mActivityManager;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
@@ -741,11 +745,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 : null;
 
         if (uwbSession == null || info == null) {
-            Log.e(TAG, "onLogicalLinkCreateNotification: Missing UwbSession or LogicalLinkInfo for"
-                    + " connectId: " + connectionId);
+            Log.d(TAG, "onLogicalLinkCreateNotification: Missing UwbSession or LogicalLinkInfo for"
+                    + " connectId: " + connectionId + " caching params");
+            mCachedLogicalLinkCreationParams.put(connectionId,
+                    new LogicalLinkCreationParams
+                            .Builder(LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE,
+                            UwbAddress.fromBytes(new byte[] {0x00, 0x00}))
+                            .setLogicalLinkClassLength(maxSduSizeLength)
+                            .setMaxSduTransmitSize(maxSduSizeValue & 0x0F)
+                            .setMaxSduReceiveSize((maxSduSizeValue >> 4) & 0x0F)
+                            .build());
             return;
         }
-
         LogicalLinkCreationParams params = new LogicalLinkCreationParams
                 .Builder(info.params.getLinkLayerModeSelector(),
                     UwbAddress.fromBytes(info.params.getDestinationAddress()))
@@ -3197,7 +3208,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 || sessionType == UwbUciConstants.SESSION_TYPE_RANGING_WITH_DATA_PHASE)
                 && !(linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE
                 || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_SECURE
-                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS)) {
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS))
+        {
             Log.e(TAG, "Invalid Link Layer Mode Selector for session type: " + sessionType);
             mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession, params, status);
             return;
@@ -3224,12 +3239,28 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.e(TAG, "Logical link creation failed with UCI status: " + uciStatus);
             mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession,
                     params, status);
+            mCachedLogicalLinkCreationParams.remove(connectId);
             return;
         }
 
         uwbSession.addLogicalLinkInfo(connectId, logicalLinkInfo);
         Log.i(TAG, "handleCreateLogicalLink: Successfully initiated logical link creation,"
                 + " connectId = " + connectId);
+        if (mCachedLogicalLinkCreationParams.containsKey(connectId)) {
+            LogicalLinkCreationParams llParam = mCachedLogicalLinkCreationParams.get(connectId);
+            LogicalLinkCreationParams updatedParam = new LogicalLinkCreationParams
+                    .Builder(logicalLinkInfo.params.getLinkLayerModeSelector(),
+                            UwbAddress.fromBytes(logicalLinkInfo.params.getDestinationAddress()))
+                    .setLogicalLinkClassLength(llParam.getLogicalLinkClassLength())
+                    .setMaxSduTransmitSize(llParam.getMaxSduSizeValue() & 0x0F)
+                    .setMaxSduReceiveSize((llParam.getMaxSduSizeValue() >> 4) & 0x0F)
+                    .build();
+            Log.d(TAG, "Sending cached LogicalLinkCreateNotification for connectId " + connectId
+                      + " for sessionId " + uwbSession.getSessionId());
+            mSessionNotificationManager.onLogicalLinkCreated(uwbSession, updatedParam,
+                        connectId);
+            mCachedLogicalLinkCreationParams.remove(connectId);
+        }
     }
 
     private void handleCloseLogicalLink(CloseLogicalLink info) {
