@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues
+    type="baseline"
+    client=""
+    dependencies="true"
+    name=""
+    variant=""
+    version="">
+    <issue
+        id="NewApi"
+        message="Call requires API level CUR_DEVELOPMENT/10000 (current min is 37): `android.ranging.oob.DeviceHandle.Builder#setBluetoothDevice`"
+        errorLine1="            deviceHandleBuilder.setBluetoothDevice(targetBtDevice);"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Uwb/ranging/test_app/app/src/main/java/com/android/ranging/rangingtestapp/RangingParameters.java"
+            line="189"
+            column="33"/>
+    </issue>
+
+</issues>
