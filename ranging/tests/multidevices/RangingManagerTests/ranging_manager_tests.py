@@ -195,6 +195,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     utils.reset_wifi_state(self.initiator.ad)
     utils.reset_wifi_state(self.responder.ad)
 
+  def _enable_wifi(self):
+        utils.set_wifi_state_and_verify(self.initiator.ad, True)
+        utils.set_wifi_state_and_verify(self.responder.ad, True)
+
   def _disable_wifi(self):
       utils.set_wifi_state_and_verify(self.initiator.ad, False)
       utils.set_wifi_state_and_verify(self.responder.ad, False)
@@ -1518,7 +1522,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     session.stop_and_assert_closed()
 
-  @CddTest(requirements = ['7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"'])
+  @CddTest(requirements = ['7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4,C-1-6,C-1-7'])
   def test_one_to_one_wifi_pd_ranging(self):
     """Verifies wifi pd ranging with peer device, devices range for 10 seconds."""
     SESSION_HANDLE = str(uuid4())
@@ -1532,6 +1536,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         not self.initiator.is_ranging_technology_supported(RangingTechnology.WIFI_PD),
         f"Wifi PD not supported by initiator",
     )
+    self._enable_wifi()
 
     initiator_caps = self.initiator.ad.ranging.getWifiPdCapabilities()
     responder_caps = self.responder.ad.ranging.getWifiPdCapabilities()
