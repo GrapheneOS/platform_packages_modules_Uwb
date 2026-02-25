@@ -334,8 +334,14 @@ public class UwbUciConstants {
             (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE;
     public static final byte LINK_LAYER_MODE_CONNECTIONLESS_SECURE =
             (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE =
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE =
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE;
     public static final byte LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS =
             (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS;
+    public static final byte LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS =
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS;
 
     /**
      * Table 42: Status code of LOGICAL_LINK_CREATE_NTF
