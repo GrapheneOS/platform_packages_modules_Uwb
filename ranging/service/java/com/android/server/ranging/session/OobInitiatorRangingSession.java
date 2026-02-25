@@ -116,6 +116,25 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             mDevice = connection.getHandle().getRangingDevice();
             mConnection = connection;
             mOobCompleted = SettableFuture.create();
+            mConnection.registerAsyncMessageListener(this::onOobMessageReceived);
+        }
+
+        private boolean onOobMessageReceived(byte[] data) {
+            try {
+                // Only handle async message here. Pass the rest OOB messages to controller.
+                OobMessage message = OobMessage.fromBytes(data);
+                if (message instanceof MotionNotification) {
+                    MotionNotification motionNotification = (MotionNotification) message;
+                    reportPeerMotion(
+                            mDevice,
+                            new MotionState(fromOobMotion(motionNotification.getMotion())));
+                    return true;
+                }
+            } catch (Exception e) {
+                // If parsing fails, pass the raw data to the controller.
+                Log.w(TAG, "Failed to parse OOB message", e);
+            }
+            return false;
         }
 
         public void createRangingEngine(
@@ -333,9 +352,6 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                     peer.mConnection.sendData(request.toBytes())
                             .transformAsync(unused -> {
                                 peer.mOobCompleted.set(null);
-                                // TODO: Exchange OOB capability and enabling param.
-                                peer.mConnection.receiveData().addCallback(
-                                        new OobConnectionListener(peer), mOobExecutor);
                                 return Futures.immediateFuture(null);
                             }, mOobExecutor));
 
@@ -505,56 +521,14 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
     }
 
     @Override
+    protected void reportPeerMotion(
+            @NonNull RangingDevice peer, @NonNull MotionState motion) {
+        mSessionListener.onMotionReceived(peer, motion);
+    }
+
+    @Override
     public void close() {
         mPeers.values().forEach(Peer::close);
         mPeers.clear();
-    }
-
-    // A Listener to handle async message from responder.
-    private class OobConnectionListener implements FutureCallback<byte[]> {
-        private final Peer mPeer;
-
-        OobConnectionListener(Peer peer) {
-            mPeer = peer;
-        }
-
-        @Override
-        public void onSuccess(byte[] data) {
-            if (!mPeers.containsKey(mPeer.mDevice)) {
-                Log.d(TAG, "Peer " + mPeer.mDevice
-                        + " removed or session closed. Stopping read loop.");
-                return;
-            }
-            OobMessage message = OobMessage.fromBytes(data);
-            Log.v(TAG, "Received " + message + " from " + mPeer.mDevice);
-            switch (message) {
-                case MotionNotification notification -> {
-                    reportPeerMotion(
-                            mPeer.mDevice,
-                            new MotionState(fromOobMotion(notification.getMotion())));
-                }
-                default -> {
-                    Log.w(TAG, "Received unexpected OOB message with id " + message.getId());
-                }
-            }
-            mPeer.mConnection.receiveData().addCallback(this, mOobExecutor);
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            if (t instanceof ConnectionClosedException
-                    && ((ConnectionClosedException) t).getReason()
-                    == ConnectionClosedException.Reason.REQUESTED) {
-                Log.i(TAG, "OOB connection with " + mPeer.mDevice + " closed by local request");
-                return;
-            }
-            Log.w(TAG, "OOB connection with " + mPeer.mDevice + " failed", t);
-            if (mPeers.remove(mPeer.mDevice) != null) {
-                mPeer.close();
-            }
-            if (mPeers.isEmpty()) {
-                mSessionListener.onSessionClosed(InternalReason.NO_PEERS_FOUND);
-            }
-        }
     }
 }
