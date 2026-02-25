@@ -35,6 +35,7 @@ import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -352,7 +353,8 @@ public class UwbCountryCode {
                     LocationManager.PASSIVE_PROVIDER,
                     TIME_BETWEEN_UPDATES_MS,
                     DISTANCE_BETWEEN_UPDATES_METERS,
-                    location -> setCountryCodeFromGeocodingLocation(location));
+                    location -> setCountryCodeFromGeocodingLocation(location),
+                    Looper.getMainLooper());
 
         }
         Log.d(TAG, "Default country code from system property is "
