@@ -18,6 +18,7 @@ package com.google.snippet.uwb;
 
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.PersistableBundle;
@@ -472,6 +473,11 @@ public class UwbManagerSnippet implements Snippet {
     @Rpc(description = "Get Uwb adapter state")
     public int getAdapterState() throws Throwable {
         return runWithShellPermission(() -> mUwbManager.getAdapterState());
+    }
+
+    @Rpc(description = "Get Uwb supported")
+    public boolean isUwbSupported() throws Throwable {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB);
     }
 
     /** Get the UWB state. */
