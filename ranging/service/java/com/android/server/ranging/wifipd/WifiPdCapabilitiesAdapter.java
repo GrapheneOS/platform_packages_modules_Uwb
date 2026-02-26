@@ -17,7 +17,7 @@
 package com.android.server.ranging.wifipd;
 
 import static android.net.wifi.WifiAvailableChannel.OP_MODE_STA;
-import static android.net.wifi.WifiScanner.WIFI_BAND_BOTH;
+import static android.net.wifi.WifiScanner.WIFI_BAND_BOTH_WITH_DFS;
 import static android.ranging.RangingCapabilities.DISABLED_USER;
 import static android.ranging.RangingCapabilities.DISABLED_USER_RESTRICTIONS;
 import static android.ranging.RangingCapabilities.ENABLED;
@@ -69,8 +69,9 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         WifiRttManager wifiRttManager = context.getSystemService(WifiRttManager.class);
         try {
             return RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")
-                    && RangingInjector.isFlagEnabled(
-                            com.android.wifi.flags.Flags.class, "proximityRanging")
+                    //TODO: check why this fails
+//                    && RangingInjector.isFlagEnabled(
+//                            com.android.wifi.flags.Flags.class, "proximityRanging")
                     && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
                     && wifiRttManager != null
                     && wifiRttManager.getProximityDetectionCharacteristics() != null;
@@ -130,7 +131,8 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         if (characteristics.isAuthenticatedPasnModeSupported()) {
             pasnModes.add(WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE);
         }
-        Set<Integer> channelSet = mWifiManager.getUsableChannels(WIFI_BAND_BOTH, OP_MODE_STA)
+        Set<Integer> channelSet = mWifiManager.getUsableChannels(WIFI_BAND_BOTH_WITH_DFS,
+                        OP_MODE_STA)
                 .stream()
                 .map(WifiAvailableChannel::getFrequencyMhz)
                 .collect(Collectors.toSet());

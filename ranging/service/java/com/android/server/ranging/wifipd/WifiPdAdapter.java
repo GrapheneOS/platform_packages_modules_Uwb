@@ -190,6 +190,8 @@ public class WifiPdAdapter implements RangingAdapter {
                 .build();
         mWifiRttManager.startContinuousRanging(null /*WorkSource*/, request, mExecutorService,
                 mContinuousRangingResultCallback);
+        // Callback here to be consistent with other ranging technologies.
+        mCallback.onStarted(ImmutableSet.of(mPeer));
     }
 
     @Override
@@ -203,7 +205,7 @@ public class WifiPdAdapter implements RangingAdapter {
         if (mWifiRttManager == null) {
             return;
         }
-        mWifiRttManager.cancelRanging(null);
+        mWifiRttManager.stopContinuousRanging(null);
     }
 
     @Override
@@ -251,61 +253,60 @@ public class WifiPdAdapter implements RangingAdapter {
         STOPPED,
     }
 
-    private ContinuousRangingResultCallback mContinuousRangingResultCallback;
-
-    {
-        new ContinuousRangingResultCallback() {
-            @Override
-            public void onRangingFailure(int reason) {
-                Log.e(TAG, "onRangingFailure: " + reason);
-                closeForReason(convertReason(reason));
-            }
-
-            @Override
-            public void onRangingStopped(int reason) {
-                Log.e(TAG, "onRangingStopped: " + reason);
-                closeForReason(convertReason(reason));
-            }
-
-            @Override
-            public void onRangingResults(@NonNull List<RangingResult> results) {
-                if (results == null || results.isEmpty()) {
-                    Log.w(TAG, "Wifi PD range results are empty");
+    private ContinuousRangingResultCallback mContinuousRangingResultCallback =
+            new ContinuousRangingResultCallback() {
+                @Override
+                public void onRangingFailure(int reason) {
+                    Log.e(TAG, "onRangingFailure: " + reason);
+                    closeForReason(convertReason(reason));
                 }
-                RangingResult result = results.get(0);
-                int status = result.getStatus();
-                if (status != RangingResult.STATUS_SUCCESS) {
-                    closeForReason(convertReason(status));
-                    return;
-                }
-                RangingData.Builder rangingDataBuilder = new RangingData.Builder()
-                        .setRangingTechnology(RangingManager.WIFI_PD)
-                        .setDistance(new RangingMeasurement.Builder()
-                                .setMeasurement(result.getDistanceMm() / 1000.0)
-                                .build())
-                        .setRssi(result.getRssi())
-                        .setTimestampMillis(result.getRangingTimestampMillis());
 
-                rangingDataBuilder.setRangingDataExtras(new RangingDataExtras.Builder()
-                        .setRttSpecificData(new WifiRttSpecificData.Builder()
-                                .setNumSuccessfulMeasurements(result.getNumSuccessfulMeasurements())
-                                .setNumAttemptedMeasurements(result.getNumAttemptedMeasurements())
-                                .setMeasurementBandwidth((int) result.getMeasurementBandwidth())
-                                .setMeasurementChannelFrequencyMHz(
-                                        result.getMeasurementChannelFrequencyMHz())
-                                .setLci(result.getLci())
-                                .setDistanceStandardDeviationMeters(
-                                        result.getDistanceStdDevMm() / 1000.0)
-                                .build())
-                        .build());
-                synchronized (mLock) {
-                    if (mStateMachine.getState() == State.STARTED) {
-                        mCallback.onRangingData(mPeer, rangingDataBuilder.build());
+                @Override
+                public void onRangingStopped(int reason) {
+                    Log.e(TAG, "onRangingStopped: " + reason);
+                    closeForReason(convertReason(reason));
+                }
+
+                @Override
+                public void onRangingResults(@NonNull List<RangingResult> results) {
+                    if (results == null || results.isEmpty()) {
+                        Log.w(TAG, "Wifi PD range results are empty");
+                    }
+                    RangingResult result = results.get(0);
+                    int status = result.getStatus();
+                    if (status != RangingResult.STATUS_SUCCESS) {
+                        closeForReason(convertReason(status));
+                        return;
+                    }
+                    RangingData.Builder rangingDataBuilder = new RangingData.Builder()
+                            .setRangingTechnology(RangingManager.WIFI_PD)
+                            .setDistance(new RangingMeasurement.Builder()
+                                    .setMeasurement(result.getDistanceMm() / 1000.0)
+                                    .build())
+                            .setRssi(result.getRssi())
+                            .setTimestampMillis(result.getRangingTimestampMillis());
+
+                    rangingDataBuilder.setRangingDataExtras(new RangingDataExtras.Builder()
+                            .setRttSpecificData(new WifiRttSpecificData.Builder()
+                                    .setNumSuccessfulMeasurements(
+                                            result.getNumSuccessfulMeasurements())
+                                    .setNumAttemptedMeasurements(
+                                            result.getNumAttemptedMeasurements())
+                                    .setMeasurementBandwidth((int) result.getMeasurementBandwidth())
+                                    .setMeasurementChannelFrequencyMHz(
+                                            result.getMeasurementChannelFrequencyMHz())
+                                    .setLci(result.getLci())
+                                    .setDistanceStandardDeviationMeters(
+                                            result.getDistanceStdDevMm() / 1000.0)
+                                    .build())
+                            .build());
+                    synchronized (mLock) {
+                        if (mStateMachine.getState() == State.STARTED) {
+                            mCallback.onRangingData(mPeer, rangingDataBuilder.build());
+                        }
                     }
                 }
-            }
-        };
-    }
+            };
 
     private static @RangingUtils.InternalReason int convertReason(int reason) {
         return switch (reason) {
