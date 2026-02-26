@@ -65,6 +65,7 @@
             <item name="enable_random_hopmodekey" type="bool" />
             <item name="fira_supported_extension_ccc" type="bool" />
             <item name="enable_16_byte_hopmodekey" type="bool" />
+            <item name="timesync_accuracy_verified" type="bool" />
             <item name="android_specific_timesync_supported" type="bool"/>
             <item name="timesync_uncertainty_override" type="integer"/>
             <item name="timesync_static_device_offset_us" type="integer"/>

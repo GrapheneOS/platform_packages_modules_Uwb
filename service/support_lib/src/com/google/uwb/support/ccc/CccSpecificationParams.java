@@ -55,6 +55,7 @@ public class CccSpecificationParams extends CccParams {
     @HoppingConfigMode private final List<Integer> mHoppingConfigModes;
     @HoppingSequence private final List<Integer> mHoppingSequences;
     private final int mUwbsMaxPPM;
+    private final boolean mCccTimesyncAccuracyVerified;
 
     private static final String KEY_PROTOCOL_VERSIONS = "protocol_versions";
     private static final String KEY_UWB_CONFIGS = "uwb_configs";
@@ -68,6 +69,8 @@ public class CccSpecificationParams extends CccParams {
     private static final String KEY_HOPPING_CONFIGS = "hopping_config_modes";
     private static final String KEY_HOPPING_SEQUENCES = "hopping_sequences";
     private static final String KEY_UWBS_MAX_PPM = "uwbs_max_ppm";
+    private static final String KEY_TIMESYNC_ACCURACY_VERIFIED =
+            "timesync_accuracy_verified";
 
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 1;
 
@@ -83,7 +86,8 @@ public class CccSpecificationParams extends CccParams {
             @Channel List<Integer> channels,
             @HoppingConfigMode List<Integer> hoppingConfigModes,
             @HoppingSequence List<Integer> hoppingSequences,
-            int uwbsMaxPPM) {
+            int uwbsMaxPPM,
+            boolean cccTimesyncAccuracyVerified) {
         mProtocolVersions = protocolVersions;
         mUwbConfigs = uwbConfigs;
         mPulseShapeCombos = pulseShapeCombos;
@@ -96,6 +100,7 @@ public class CccSpecificationParams extends CccParams {
         mHoppingConfigModes = hoppingConfigModes;
         mHoppingSequences = hoppingSequences;
         mUwbsMaxPPM = uwbsMaxPPM;
+        mCccTimesyncAccuracyVerified = cccTimesyncAccuracyVerified;
     }
 
     @Override
@@ -126,6 +131,7 @@ public class CccSpecificationParams extends CccParams {
         bundle.putIntArray(KEY_HOPPING_CONFIGS, toIntArray(mHoppingConfigModes));
         bundle.putIntArray(KEY_HOPPING_SEQUENCES, toIntArray(mHoppingSequences));
         bundle.putInt(KEY_UWBS_MAX_PPM, mUwbsMaxPPM);
+        bundle.putBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, mCccTimesyncAccuracyVerified);
         return bundle;
     }
 
@@ -194,6 +200,9 @@ public class CccSpecificationParams extends CccParams {
             builder.setUwbsMaxPPM(bundle.getInt(KEY_UWBS_MAX_PPM));
         }
 
+        builder.setTimesyncAccuracyVerified(
+                bundle.getBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, false));
+
         return builder.build();
     }
 
@@ -260,6 +269,10 @@ public class CccSpecificationParams extends CccParams {
         return mUwbsMaxPPM;
     }
 
+    public boolean isTimesyncAccuracyVerified() {
+        return mCccTimesyncAccuracyVerified;
+    }
+
     @Override
     public boolean equals(@Nullable Object other) {
         if (other instanceof CccSpecificationParams) {
@@ -275,7 +288,9 @@ public class CccSpecificationParams extends CccParams {
                 && otherSpecificationParams.mChannels.equals(mChannels)
                 && otherSpecificationParams.mHoppingConfigModes.equals(mHoppingConfigModes)
                 && otherSpecificationParams.mHoppingSequences.equals(mHoppingSequences)
-                && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM;
+                && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM
+                && otherSpecificationParams.mCccTimesyncAccuracyVerified
+                    == mCccTimesyncAccuracyVerified;
         }
         return false;
     }
@@ -296,6 +311,7 @@ public class CccSpecificationParams extends CccParams {
                 mHoppingConfigModes.hashCode(),
                 mHoppingSequences.hashCode(),
                 mUwbsMaxPPM,
+                mCccTimesyncAccuracyVerified ? 1 : 0,
             });
     }
 
@@ -313,6 +329,7 @@ public class CccSpecificationParams extends CccParams {
         @HoppingSequence private List<Integer> mHoppingSequences = new ArrayList<>();
         @HoppingConfigMode private List<Integer> mHoppingConfigModes = new ArrayList<>();
         private int mUwbsMaxPPM = 0;
+        private boolean mCccTimesyncAccuracyVerified = false;
 
         public Builder addProtocolVersion(@NonNull CccProtocolVersion version) {
             mProtocolVersions.add(version);
@@ -393,6 +410,11 @@ public class CccSpecificationParams extends CccParams {
             return this;
         }
 
+        public Builder setTimesyncAccuracyVerified(boolean timesyncAccuracyVerified) {
+            mCccTimesyncAccuracyVerified = timesyncAccuracyVerified;
+            return this;
+        }
+
         public CccSpecificationParams build() {
             if (mProtocolVersions.size() == 0) {
                 throw new IllegalStateException("No protocol versions set");
@@ -434,7 +456,8 @@ public class CccSpecificationParams extends CccParams {
                     mChannels,
                     mHoppingConfigModes,
                     mHoppingSequences,
-                    mUwbsMaxPPM);
+                    mUwbsMaxPPM,
+                    mCccTimesyncAccuracyVerified);
         }
     }
 }

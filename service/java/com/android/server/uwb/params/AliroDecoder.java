@@ -322,6 +322,9 @@ public class AliroDecoder extends TlvDecoder {
             }
         }
 
+        builder.setTimesyncAccuracyVerified(
+                mUwbInjector.getDeviceConfigFacade().isTimesyncAccuracyVerified());
+
         return builder.build();
     }
 

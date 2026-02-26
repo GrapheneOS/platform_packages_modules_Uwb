@@ -112,6 +112,7 @@ public class DeviceConfigFacade {
     private int mTimesyncDeviceOffset;
     private int mTimesyncClockSkewPpm;
     private int mTimesyncBleTimeUncertainty;
+    private boolean mTimesyncAccuracyVerified;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -374,6 +375,12 @@ public class DeviceConfigFacade {
                     mContext.getResources().getInteger(R.integer.timesync_ble_time_uncertainty_us)
             );
 
+            mTimesyncAccuracyVerified = DeviceConfig.getBoolean(
+                    DeviceConfig.NAMESPACE_UWB,
+                    "timesync_accuracy_verified",
+                    mContext.getResources().getBoolean(R.bool.timesync_accuracy_verified)
+            );
+
             // A little parsing and cleanup:
             mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
             mBackAzimuthRadiansPerSecond = (float) Math.toRadians(backAzimuthDegreesPerSecond);
@@ -442,6 +449,7 @@ public class DeviceConfigFacade {
             mTimesyncDeviceOffset = -36000;
             mTimesyncClockSkewPpm = 100;
             mTimesyncBleTimeUncertainty = 1000;
+            mTimesyncAccuracyVerified = false;
 
             // A little parsing and cleanup:
             mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
@@ -818,5 +826,9 @@ public class DeviceConfigFacade {
 
     public int getTimesyncBleTimeUncertainty() {
         return mTimesyncBleTimeUncertainty;
+    }
+
+    public boolean isTimesyncAccuracyVerified() {
+        return mTimesyncAccuracyVerified;
     }
 }

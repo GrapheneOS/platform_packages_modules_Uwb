@@ -251,6 +251,16 @@
     If enabled, FIRa CCC capability UCI Specification used -->
     <bool name = "fira_supported_extension_ccc">false</bool>
 
+    <!-- In order to ensure UWB ranging performance and best possible user experience for use cases
+    such as Passive Entry as defined in the CCC specification, devices must implement accurate
+    timesync. Based on the UWB_Device_Time and UWB_Device_Time_Uncertainty sent within the latest
+    Time_Sync message to the vehicle, the UWB_Time0 sent with the Ranging Session Setup Response
+    (RSS-RS) or RR-RS or CRR-RS should correspond to the actual moment in time the first UWB
+    pre-poll packet is received by the vehicle ± UWB_Device_Time_Uncertainty everytime.
+
+    It is highly recommended to keep the uncertainty as low as possible, preferably under 10ms. -->
+    <bool name="timesync_accuracy_verified">false</bool>
+
     <!-- Whether android proprietary timesync is supported,
      ANDROID_GID (0x0c) and ANDROID_TIMESTAMP_ANCHOR_TO_UWBS(0x03)-->
     <bool name = "android_specific_timesync_supported">false</bool>
