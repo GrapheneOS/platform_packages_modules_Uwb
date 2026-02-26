@@ -84,6 +84,7 @@ def log_ble_cs_distance_within_tolerance(
       "initiator": {
           "reference_device": reference_device_name,
           "percentage_results_in_range": f"{pass_percentage:.2f}%",
+          "results_in_range": pass_rate,
       }
   }
 

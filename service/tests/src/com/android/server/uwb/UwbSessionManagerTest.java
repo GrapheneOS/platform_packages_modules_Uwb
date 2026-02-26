@@ -5083,6 +5083,53 @@ public class UwbSessionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCreateLogicalLink_CachedParamsUsed() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+
+        UwbSession uwbSession = prepareExistingUwbSession();
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(
+                LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
+
+        int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+        int maxSduSizeLength = 2;
+        int maxSduSizeValue = 0x54; // transmit size index 4, receive size index 5
+
+        // First, receive the notification which should cache the parameters.
+        // Session and LogicalLinkInfo are not found at this point.
+        when(mUwbSessionManager.getUwbSessionByConnectionIdentifier(connectId)).thenReturn(null);
+        mUwbSessionManager.onLogicalLinkCreateNotification(connectId,
+                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED, maxSduSizeLength, maxSduSizeValue);
+
+        // Next, trigger logical link creation.
+        when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
+        when(uwbSession.getSessionType()).thenReturn(
+                UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
+        when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
+                anyByte(), anyString())).thenReturn(response);
+        when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
+        when(response.getLogicalLinkConnectId()).thenReturn(connectId);
+
+        mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchNext();
+
+        // Verify that onLogicalLinkCreated was called with the cached and updated parameters.
+        ArgumentCaptor<LogicalLinkCreationParams> paramsCaptor =
+                ArgumentCaptor.forClass(LogicalLinkCreationParams.class);
+        verify(mUwbSessionNotificationManager).onLogicalLinkCreated(eq(uwbSession),
+                paramsCaptor.capture(), eq(connectId));
+
+        LogicalLinkCreationParams resultParams = paramsCaptor.getValue();
+        assertThat(resultParams.getLogicalLinkClassLength()).isEqualTo(maxSduSizeLength);
+        assertThat(resultParams.getMaxSduSizeValue() & 0x0F).isEqualTo(maxSduSizeValue & 0x0F);
+        assertThat((resultParams.getMaxSduSizeValue() >> 4) & 0x0F)
+                .isEqualTo((maxSduSizeValue >> 4) & 0x0F);
+        assertThat(resultParams.getDestinationAddress()).isEqualTo(params.getDestinationAddress());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
     public void testCloseLogicalLink() throws Exception {
         assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
         //create logical link
