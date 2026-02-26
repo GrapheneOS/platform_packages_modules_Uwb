@@ -224,4 +224,39 @@ public class OobControllerTest {
             assertArrayEquals(data, pendingReceive.get());
         }
     }
+
+    @Test
+    public void receiveData_interceptedByAsyncListener_whenListenerReturnsTrue()
+            throws ExecutionException, InterruptedException {
+
+        OobHandle mockHandle = mock(OobHandle.class);
+        byte[] data = new byte[]{1, 2};
+
+        try (OobConnection connection = mController.createConnection(mockHandle)) {
+            connection.registerAsyncMessageListener((unused) -> true);
+
+            mController.handleOobDataReceived(mockHandle, data);
+
+            ListenableFuture<byte[]> pendingReceive = connection.receiveData();
+            assertThat(pendingReceive.isDone()).isFalse();
+        }
+    }
+
+    @Test
+    public void receiveData_passedToReceiver_whenAsyncListenerReturnsFalse()
+            throws ExecutionException, InterruptedException {
+
+        OobHandle mockHandle = mock(OobHandle.class);
+        byte[] data = new byte[]{1, 2};
+
+        try (OobConnection connection = mController.createConnection(mockHandle)) {
+            connection.registerAsyncMessageListener((unused) -> false);
+
+            mController.handleOobDataReceived(mockHandle, data);
+
+            ListenableFuture<byte[]> pendingReceive = connection.receiveData();
+            assertThat(pendingReceive.isDone()).isTrue();
+            assertArrayEquals(data, pendingReceive.get());
+        }
+    }
 }
