@@ -21,6 +21,7 @@ import android.content.AttributionSource;
 import android.os.Binder;
 import android.os.SystemClock;
 import android.ranging.MotionState;
+import android.ranging.RangingConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
@@ -70,6 +71,7 @@ public class BaseRangingSession {
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
     protected final SessionConfig mSessionConfig;
+    protected final RangingConfig mRangingConfig;
     protected final RangeHeuristicEventFactory mEventFactory;
     protected final SessionListener mSessionListener;
 
@@ -105,14 +107,16 @@ public class BaseRangingSession {
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull SessionConfig config,
+            @NonNull SessionConfig sesstionConfig,
+            @NonNull RangingConfig rangingConfig,
             @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
         mInjector = injector;
         mAttributionSource = attributionSource;
         mSessionHandle = sessionHandle;
-        mSessionConfig = config;
+        mSessionConfig = sesstionConfig;
+        mRangingConfig = rangingConfig;
         mSessionListener = listener;
         mAdapterExecutor = adapterExecutor;
         mStateMachine = new StateMachine<>(State.STOPPED, this);
@@ -450,7 +454,8 @@ public class BaseRangingSession {
         pw.println("---- Dump of RangingSession ----");
         pw.println("Session handle: " + mSessionHandle);
         pw.println("Attribution source: " + mAttributionSource);
-        pw.println("Config: " + mSessionConfig);
+        pw.println("Session Config: " + mSessionConfig);
+        pw.println("Ranging Config: " + mRangingConfig);
         pw.println("Adapters:");
         for (RangingAdapter adapter : mAdapters.values()) {
             pw.println(adapter);

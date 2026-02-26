@@ -294,6 +294,18 @@ public class ConfigurationFragment extends Fragment implements
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
                 });
+        mOobSecurityLevelSpinner.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mConfigurationParameters.get().oob.securityLevel =
+                                (int) mOobSecurityLevelSpinner.getItemAtPosition(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
         mOobModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {

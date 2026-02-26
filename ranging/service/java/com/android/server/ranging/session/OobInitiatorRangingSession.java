@@ -201,12 +201,14 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
 
     public OobInitiatorRangingSession(
             @NonNull AttributionSource attributionSource, @NonNull SessionHandle sessionHandle,
-            @NonNull RangingInjector injector, @NonNull SessionConfig config,
+            @NonNull RangingInjector injector, @NonNull SessionConfig sessionConfig,
+            @NonNull RangingConfig rangingConfig,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, sessionHandle, injector, sessionConfig, rangingConfig,
+                listener, adapterExecutor);
         mOobExecutor = oobExecutor;
         mPeers = new ConcurrentHashMap<>();
     }
