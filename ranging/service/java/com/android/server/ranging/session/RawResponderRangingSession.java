@@ -45,11 +45,13 @@ public class RawResponderRangingSession extends BaseRangingSession implements Ra
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull SessionConfig config,
+            @NonNull SessionConfig sessionConfig,
+            @NonNull RangingConfig rangingConfig,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, sessionHandle, injector, sessionConfig, rangingConfig,
+                listener, adapterExecutor);
     }
 
     @Override
