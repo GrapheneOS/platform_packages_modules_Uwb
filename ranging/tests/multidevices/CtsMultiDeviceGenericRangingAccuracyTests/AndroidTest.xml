@@ -22,14 +22,10 @@
     <option name="config-descriptor:metadata" key="component" value="uwb" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
-    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.uwb.apex" />
 
     <device name="AndroidDevice">
         <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
             <option name="forbidden_feature" value="android.hardware.type.automotive" />
-        </target_preparer>
-        <target_preparer class="AndroidMainlineModulesCheckDecorator">
-            <option name="mainline_module_package_name" value="com.google.android.uwb" />
         </target_preparer>
         <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
@@ -37,9 +33,6 @@
     <device name="AndroidDevice">
         <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
             <option name="forbidden_feature" value="android.hardware.type.automotive" />
-        </target_preparer>
-        <target_preparer class="AndroidMainlineModulesCheckDecorator">
-            <option name="mainline_module_package_name" value="com.google.android.uwb" />
         </target_preparer>
         <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
@@ -48,7 +41,7 @@
 
     <option name="mobly_pkg" key="file" value="CtsMultiDeviceGenericRangingAccuracyTests" />
 
-    <option name="build_apk" key="file" value="mobly_bundled_snippets.apk" />
+    <option name="build_apk" key="file" value="mobly-bundled-snippets.apk" />
     <option name="build_apk" key="file" value="bluetooth_multi_devices_snippet.apk" />
     <option name="build_apk" key="file" value="ranging_snippet.apk" />
     <option name="build_apk" key="file" value="uwb_snippet.apk" />
