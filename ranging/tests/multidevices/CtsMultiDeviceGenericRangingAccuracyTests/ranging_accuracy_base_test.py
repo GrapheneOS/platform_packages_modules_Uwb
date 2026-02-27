@@ -34,6 +34,8 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     ad.id = str(uuid.uuid4())
     ad.adb.shell("input keyevent KEYCODE_WAKEUP")
     ad.adb.shell("wm dismiss-keyguard")
+    # Set screen to stay on
+    ad.adb.shell("svc power stayon true")
     # Enable Bluetooth HCI snoop log.
     # NOTE: These setprop commands might not be effective on all OEM devices,
     # especially on user builds.

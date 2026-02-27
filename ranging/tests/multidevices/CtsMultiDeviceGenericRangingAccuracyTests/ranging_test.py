@@ -136,9 +136,6 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
         )
     )
 
-  # TODO(b/454692647): Keep @retry commented out. It reports retry_# cases
-  # to CTS-V, which blocks overriding failures.
-  # @retry(max_count=2)
   @CddTest(requirements="7.4.3/C-11-2")
   def test_channel_sounding_ranging(self) -> None:
     """Test Channel Sounding ranging at 1 meter between the devices.
@@ -212,7 +209,7 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
               reference_device_name=self.responder.serial,
           )
       )
-      self.initiator.rangingSnippetSubmitMpcBleChannelSoundingPerformanceValue(
+      self.initiator.ranging.submitMpcBleChannelSoundingPerformanceValue(
           self.all_test_metrics["ble_cs_ranging_test"]["initiator"]["results_in_range"]
       )
 
