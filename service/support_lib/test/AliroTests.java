@@ -328,6 +328,8 @@ public class AliroTests {
             paramsBuilder.addMacMode(macMode);
         }
 
+        paramsBuilder.setTimesyncAccuracyVerified(true);
+
         AliroSpecificationParams params = paramsBuilder.build();
         assertArrayEquals(params.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
         assertArrayEquals(params.getUwbConfigs().toArray(), UWB_CONFIGS);
@@ -339,6 +341,7 @@ public class AliroTests {
         assertArrayEquals(params.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(params.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertArrayEquals(params.getMacModes().toArray(), MAC_MODES);
+        assertTrue(params.isTimesyncAccuracyVerified());
 
         AliroSpecificationParams fromBundle =
                 AliroSpecificationParams.fromBundle(params.toBundle());
@@ -352,6 +355,7 @@ public class AliroTests {
         assertArrayEquals(fromBundle.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertArrayEquals(fromBundle.getMacModes().toArray(), MAC_MODES);
+        assertTrue(fromBundle.isTimesyncAccuracyVerified());
 
         verifyProtocolPresent(params);
         assertTrue(params.equals(fromBundle));
@@ -392,12 +396,15 @@ public class AliroTests {
         for (int macMode : MAC_MODES) {
             paramsBuilder.addMacMode(macMode);
         }
+        paramsBuilder.setTimesyncAccuracyVerified(true);
         AliroSpecificationParams params = paramsBuilder.build();
         assertEquals(List.of(), params.getChannels());
+        assertTrue(params.isTimesyncAccuracyVerified());
 
         AliroSpecificationParams fromBundle =
                 AliroSpecificationParams.fromBundle(params.toBundle());
         assertEquals(List.of(), fromBundle.getChannels());
+        assertTrue(fromBundle.isTimesyncAccuracyVerified());
     }
 
     private void verifyProtocolPresent(Params params) {

@@ -58,6 +58,7 @@ public class AliroSpecificationParams extends AliroParams {
     private final int mUwbsMaxPPM;
     @MacModeRound
     private final List<Integer> mMacModes;
+    private final boolean mTimesyncAccuracyVerified;
 
     private static final String KEY_PROTOCOL_VERSIONS = "protocol_versions";
     private static final String KEY_UWB_CONFIGS = "uwb_configs";
@@ -72,6 +73,8 @@ public class AliroSpecificationParams extends AliroParams {
     private static final String KEY_HOPPING_SEQUENCES = "hopping_sequences";
     private static final String KEY_UWBS_MAX_PPM = "uwbs_max_ppm";
     private static final String KEY_MAC_MODES = "mac_modes";
+    private static final String KEY_TIMESYNC_ACCURACY_VERIFIED =
+            "timesync_accuracy_verified";
 
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 1;
 
@@ -88,7 +91,8 @@ public class AliroSpecificationParams extends AliroParams {
             @HoppingConfigMode List<Integer> hoppingConfigModes,
             @HoppingSequence List<Integer> hoppingSequences,
             int uwbsMaxPPM,
-            @MacModeRound List<Integer> macModes) {
+            @MacModeRound List<Integer> macModes,
+            boolean timesyncAccuracyVerified) {
         mProtocolVersions = protocolVersions;
         mUwbConfigs = uwbConfigs;
         mPulseShapeCombos = pulseShapeCombos;
@@ -102,6 +106,7 @@ public class AliroSpecificationParams extends AliroParams {
         mHoppingSequences = hoppingSequences;
         mUwbsMaxPPM = uwbsMaxPPM;
         mMacModes = macModes;
+        mTimesyncAccuracyVerified = timesyncAccuracyVerified;
     }
 
     @Override
@@ -133,6 +138,7 @@ public class AliroSpecificationParams extends AliroParams {
         bundle.putIntArray(KEY_HOPPING_SEQUENCES, toIntArray(mHoppingSequences));
         bundle.putInt(KEY_UWBS_MAX_PPM, mUwbsMaxPPM);
         bundle.putIntArray(KEY_MAC_MODES, toIntArray(mMacModes));
+        bundle.putBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, mTimesyncAccuracyVerified);
         return bundle;
     }
 
@@ -205,6 +211,9 @@ public class AliroSpecificationParams extends AliroParams {
             builder.addMacMode(mode);
         }
 
+        builder.setTimesyncAccuracyVerified(
+                bundle.getBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, false));
+
         return builder.build();
     }
 
@@ -271,6 +280,9 @@ public class AliroSpecificationParams extends AliroParams {
         return mUwbsMaxPPM;
     }
 
+    public boolean isTimesyncAccuracyVerified() {
+        return mTimesyncAccuracyVerified;
+    }
 
     @MacModeRound
     public List<Integer> getMacModes() {
@@ -293,7 +305,9 @@ public class AliroSpecificationParams extends AliroParams {
                 && otherSpecificationParams.mHoppingConfigModes.equals(mHoppingConfigModes)
                 && otherSpecificationParams.mHoppingSequences.equals(mHoppingSequences)
                 && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM
-                && otherSpecificationParams.mMacModes.equals(mMacModes);
+                && otherSpecificationParams.mMacModes.equals(mMacModes)
+                && otherSpecificationParams.mTimesyncAccuracyVerified
+                    == mTimesyncAccuracyVerified;
         }
         return false;
     }
@@ -315,6 +329,7 @@ public class AliroSpecificationParams extends AliroParams {
                 mHoppingSequences.hashCode(),
                 mUwbsMaxPPM,
                 mMacModes.hashCode(),
+                mTimesyncAccuracyVerified ? 1 : 0,
             });
     }
 
@@ -334,6 +349,7 @@ public class AliroSpecificationParams extends AliroParams {
         private int mUwbsMaxPPM = 0;
         @MacModeRound
         private List<Integer> mMacModes = new ArrayList<>();
+        private boolean mTimesyncAccuracyVerified = false;
 
         public Builder addProtocolVersion(@NonNull AliroProtocolVersion version) {
             mProtocolVersions.add(version);
@@ -424,6 +440,11 @@ public class AliroSpecificationParams extends AliroParams {
             return this;
         }
 
+        public Builder setTimesyncAccuracyVerified(boolean timesyncAccuracyVerified) {
+            mTimesyncAccuracyVerified = timesyncAccuracyVerified;
+            return this;
+        }
+
         public AliroSpecificationParams build() {
             if (mProtocolVersions.size() == 0) {
                 throw new IllegalStateException("No protocol versions set");
@@ -466,7 +487,8 @@ public class AliroSpecificationParams extends AliroParams {
                     mHoppingConfigModes,
                     mHoppingSequences,
                     mUwbsMaxPPM,
-                    mMacModes);
+                    mMacModes,
+                    mTimesyncAccuracyVerified);
         }
     }
 }

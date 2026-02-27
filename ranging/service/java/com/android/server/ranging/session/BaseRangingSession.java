@@ -330,7 +330,7 @@ public class BaseRangingSession {
 
     protected void reportPeerMotion(
             @NonNull RangingDevice peer, @NonNull MotionState motion) {
-        mSessionListener.onMotionReceived(peer, motion);
+        Log.w(TAG, "reportPeerMotion is not implemented. Skip.");
     }
 
     /** Let subclasses override how onSessionClosed gets called. */

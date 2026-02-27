@@ -306,6 +306,8 @@ public class CccTests {
             paramsBuilder.addHoppingSequence(hoppingSequence);
         }
 
+        paramsBuilder.setTimesyncAccuracyVerified(true);
+
         CccSpecificationParams params = paramsBuilder.build();
         assertArrayEquals(params.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
         assertArrayEquals(params.getUwbConfigs().toArray(), UWB_CONFIGS);
@@ -316,6 +318,7 @@ public class CccTests {
         assertArrayEquals(params.getChannels().toArray(), CHANNELS);
         assertArrayEquals(params.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(params.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
+        assertTrue(params.isTimesyncAccuracyVerified());
 
         CccSpecificationParams fromBundle = CccSpecificationParams.fromBundle(params.toBundle());
         assertArrayEquals(fromBundle.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
@@ -327,6 +330,7 @@ public class CccTests {
         assertArrayEquals(fromBundle.getChannels().toArray(), CHANNELS);
         assertArrayEquals(fromBundle.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
+        assertTrue(fromBundle.isTimesyncAccuracyVerified());
 
         verifyProtocolPresent(params);
         assertTrue(params.equals(fromBundle));
@@ -364,11 +368,14 @@ public class CccTests {
         for (int hoppingSequence : HOPPING_SEQUENCES) {
             paramsBuilder.addHoppingSequence(hoppingSequence);
         }
+        paramsBuilder.setTimesyncAccuracyVerified(true);
         CccSpecificationParams params = paramsBuilder.build();
         assertEquals(List.of(), params.getChannels());
+        assertTrue(params.isTimesyncAccuracyVerified());
 
         CccSpecificationParams fromBundle = CccSpecificationParams.fromBundle(params.toBundle());
         assertEquals(List.of(), fromBundle.getChannels());
+        assertTrue(fromBundle.isTimesyncAccuracyVerified());
     }
 
     private void verifyProtocolPresent(Params params) {

@@ -40,6 +40,7 @@ import java.lang.annotation.Target;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 
 public class OobController {
     private static final String TAG = OobController.class.getSimpleName();
@@ -88,6 +89,7 @@ public class OobController {
         private final ConcurrentLinkedQueue<SettableFuture<byte[]>> mPendingReceivers;
         private final ConcurrentLinkedQueue<byte[]> mReceivedData;
         private final StateMachine<State> mStateMachine = new StateMachine<>(State.CONNECTED);
+        private Predicate<byte[]> mAsyncMessageListener;
 
         /** Invariant: Non-null iff {@code mStateMachine.getState() == State.CLOSED} */
         private ConnectionClosedException mClosedException = null;
@@ -102,6 +104,16 @@ public class OobController {
 
         public OobHandle getHandle() {
             return mHandle;
+        }
+
+        /**
+         * Registers a listener for async messages.
+         *
+         * @param listener A predicate that returns true if the message was consumed by the
+         *                 listener, false otherwise.
+         */
+        public void registerAsyncMessageListener(Predicate<byte[]> listener) {
+            mAsyncMessageListener = listener;
         }
 
         public FluentFuture<Void> sendData(byte[] data) {
@@ -164,6 +176,10 @@ public class OobController {
         }
 
         private void handleReceiveData(byte[] data) {
+            if (mAsyncMessageListener != null && mAsyncMessageListener.test(data)) {
+                return;
+            }
+
             if (mPendingReceivers.isEmpty()) {
                 mReceivedData.offer(data);
             } else {

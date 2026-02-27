@@ -128,6 +128,7 @@ public class AliroDecoderTest {
         MockitoAnnotations.initMocks(this);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
+        when(mDeviceConfigFacade.isTimesyncAccuracyVerified()).thenReturn(true);
         mAliroDecoder = new AliroDecoder(mUwbInjector);
     }
 
@@ -161,6 +162,7 @@ public class AliroDecoderTest {
                 List.of(HOPPING_SEQUENCE_AES));
         assertThat(aliroSpecificationParams.getMaxRangingSessionNumber()).isEqualTo(1);
         assertThat(aliroSpecificationParams.getMinUwbInitiationTimeMs()).isEqualTo(1);
+        assertThat(aliroSpecificationParams.isTimesyncAccuracyVerified()).isTrue();
     }
 
     @Test

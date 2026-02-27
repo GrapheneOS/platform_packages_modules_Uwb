@@ -22,6 +22,9 @@ android_app {
         "com.google.android.material_material",
         "truth",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_app_certificate {
