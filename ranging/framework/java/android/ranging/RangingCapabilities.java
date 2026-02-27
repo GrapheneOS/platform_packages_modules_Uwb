@@ -256,7 +256,6 @@ public final class RangingCapabilities implements Parcelable {
      * Gets the WiFi PD ranging capabilities.
      *
      * @return a {@link WifiPdRangingCapabilities} object or {@code null} if not available.
-     * @hide
      */
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     @Nullable
