@@ -16,6 +16,7 @@
 
 package com.android.ranging.rangingtestapp;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Build;
@@ -35,12 +36,14 @@ import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.pd.WifiPdRangingParams;
 import android.ranging.wifi.rtt.RttRangingParams;
 
 import java.time.Duration;
 import java.util.UUID;
 
 /** Utility class to hold ranging params shared across peer devices */
+@SuppressLint("NewApi")
 public class RangingParameters {
     public enum Freq {
         HIGH(RawRangingDevice.UPDATE_RATE_FREQUENT),
@@ -99,6 +102,7 @@ public class RangingParameters {
         BLE_CS(RangingManager.BLE_CS),
         WIFI_NAN_RTT(RangingManager.WIFI_NAN_RTT),
         WIFI_STA_RTT(RangingManager.WIFI_STA_RTT),
+        WIFI_PD(RangingManager.WIFI_PD),
         OOB(1000);
         public final int technology;
         Technology(int technology) {
@@ -161,6 +165,21 @@ public class RangingParameters {
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
                             .setPeriodicRangingHwFeatureEnabled(
                                     configParams.wifiNanRtt.isPeriodicRangingEnabled)
+                            .build());
+        } else if ((Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
+                && Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA)) {
+            rawRangingDeviceBuilder.setWifiPdRangingParams(
+                    new WifiPdRangingParams.Builder(configParams.wifiPd.peerMacAddress)
+                            .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setDiscoveryChannelFrequencyMhz(
+                                    configParams.wifiPd.discoveryChannelFrequencyMhz)
+                            .setPasnMode(configParams.wifiPd.pasnMode)
+                            .setDeviceIk(configParams.wifiPd.deviceIk)
+                            .setPassword(configParams.wifiPd.password)
+                            .setPreambleType(configParams.wifiPd.preambleType)
+                            .setResponder80211azNtbSupported(
+                                    configParams.wifiPd.isResponder80211azNtbSupported)
+                            .setChannelWidth(configParams.wifiPd.channelWidth)
                             .build());
         }
         return new RawInitiatorRangingConfig.Builder()
@@ -275,6 +294,21 @@ public class RangingParameters {
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
                             .setPeriodicRangingHwFeatureEnabled(
                                     configParams.wifiNanRtt.isPeriodicRangingEnabled)
+                            .build());
+        } else if ((Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
+                && Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA)) {
+            rawRangingDeviceBuilder.setWifiPdRangingParams(
+                    new WifiPdRangingParams.Builder(configParams.wifiPd.peerMacAddress)
+                            .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setDiscoveryChannelFrequencyMhz(
+                                    configParams.wifiPd.discoveryChannelFrequencyMhz)
+                            .setPasnMode(configParams.wifiPd.pasnMode)
+                            .setDeviceIk(configParams.wifiPd.deviceIk)
+                            .setPassword(configParams.wifiPd.password)
+                            .setPreambleType(configParams.wifiPd.preambleType)
+                            .setResponder80211azNtbSupported(
+                                    configParams.wifiPd.isResponder80211azNtbSupported)
+                            .setChannelWidth(configParams.wifiPd.channelWidth)
                             .build());
         }
         return new RawResponderRangingConfig.Builder()
