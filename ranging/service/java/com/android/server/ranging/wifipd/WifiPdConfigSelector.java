@@ -168,10 +168,10 @@ public class WifiPdConfigSelector extends ConfigSelector {
         mSupportedChannels.retainAll(new HashSet<>(
                 getDiscoveryChannelMhz(
                         pdCapabilities.getChannels())));
-        mMaxCompatiblePreamble = Math.max(mMaxCompatiblePreamble,
+        mMaxCompatiblePreamble = Math.min(mMaxCompatiblePreamble,
                 pdCapabilities.getMaxPreamble().toByte());
-        mMaxCompatibleChannelWidth = Math.max(mMaxCompatibleChannelWidth,
-                pdCapabilities.getMinInterval11mc());
+        mMaxCompatibleChannelWidth = Math.min(mMaxCompatibleChannelWidth,
+                pdCapabilities.getMaxChannelWidth().toByte());
 
         if (mSupports80211az && (mMinRangingInterval11az.toMillis()
                 < (pdCapabilities.getMinInterval11az()))) {

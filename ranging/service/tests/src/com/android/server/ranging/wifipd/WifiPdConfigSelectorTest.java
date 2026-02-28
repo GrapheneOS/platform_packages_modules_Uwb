@@ -35,6 +35,7 @@ import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.DiscoveryChannels;
 import com.android.server.ranging.oob.packets.PreambleType;
+import com.android.server.ranging.oob.packets.WifiBandwidth;
 import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
@@ -109,6 +110,7 @@ public class WifiPdConfigSelectorTest {
         Capabilities peerCapabilities = new WifiPdCapabilities.Builder()
                 .setChannels(new DiscoveryChannels.Builder().setChannel11(true).build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
+                .setMaxChannelWidth(WifiBandwidth.Mhz80)
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
                 peerCapabilities, DEVICETYPE_PHONE);
@@ -132,6 +134,7 @@ public class WifiPdConfigSelectorTest {
         Capabilities peerCapabilities = new WifiPdCapabilities.Builder()
                 .setChannels(new DiscoveryChannels.Builder().setChannel1(true).build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
+                .setMaxChannelWidth(WifiBandwidth.Mhz80)
                 .setMinInterval11mc((short) 200)
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
@@ -160,6 +163,7 @@ public class WifiPdConfigSelectorTest {
                 .setChannels(new DiscoveryChannels.Builder().setChannel1(true).setChannel36(true)
                         .build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
+                .setMaxChannelWidth(WifiBandwidth.Mhz80)
                 .setFeature11az(true)
                 .setAuthenticatedPasnSupport(true)
                 .build();
