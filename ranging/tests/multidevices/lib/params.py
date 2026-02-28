@@ -50,6 +50,7 @@ class RangingTechnology(enum.IntEnum):
   BLE_CS = 1
   WIFI_RTT = 2
   BLE_RSSI = 3
+  WIFI_STA_RTT = 4
   WIFI_PD = 5
 
 
@@ -89,6 +90,9 @@ class OobInitiatorRangingParams(RangingParams):
   security_level: SecurityLevel = SecurityLevel.BASIC
   ranging_mode: RangingMode = RangingMode.AUTO
   peer_ids: List[str]
+  ranging_technology_filter: List[RangingTechnology] = dataclasses.field(
+      default_factory=list
+  )
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

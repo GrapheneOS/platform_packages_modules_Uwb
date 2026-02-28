@@ -49,6 +49,8 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class RangingPreferenceConverter implements SnippetObjectConverter {
@@ -130,6 +132,14 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
                     device,
                     mTransportHandleFactory.createOobTransport(device)
             ).build());
+        }
+        if (!j.isNull("ranging_technology_filter")) {
+            JSONArray jFilters = j.getJSONArray("ranging_technology_filter");
+            Set<Integer> filters = new HashSet<>();
+            for (int i = 0; i < jFilters.length(); i++) {
+                filters.add(jFilters.getInt(i));
+            }
+            builder.setRangingTechnologyFilter(filters);
         }
         return builder
                 .setFastestRangingInterval(
