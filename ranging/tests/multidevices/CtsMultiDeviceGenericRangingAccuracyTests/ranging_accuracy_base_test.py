@@ -34,6 +34,8 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     ad.id = str(uuid.uuid4())
     ad.adb.shell("input keyevent KEYCODE_WAKEUP")
     ad.adb.shell("wm dismiss-keyguard")
+    # Set screen to stay on
+    ad.adb.shell("svc power stayon true")
     # Enable Bluetooth HCI snoop log.
     # NOTE: These setprop commands might not be effective on all OEM devices,
     # especially on user builds.
@@ -59,14 +61,11 @@ class RangingBaseTestClass(base_test.BaseTestClass):
     except adb.AdbError:
       ad.log.exception("Unable to force UWB country code. Continuing execution.")
 
-    if not ad.uwb.isUwbEnabled():
+    if ad.uwb.isUwbSupported() and not ad.uwb.isUwbEnabled():
       ad.uwb.setUwbEnabled(True)
     ad.unload_snippet("uwb")
 
     ad.load_snippet("ranging", _RANGING_SNIPPET_PACKAGE)
-    ad.adb.shell(
-        f"cmd uwb simulate-app-state-change {_RANGING_SNIPPET_PACKAGE}" " foreground"
-    )
 
     ad.load_snippet("bluetooth", _BLUETOOTH_SNIPPET_PACKAGE)
     end_time = time.monotonic() + _WAIT_FOR_BLE_RSSI_TIMEOUT.total_seconds()

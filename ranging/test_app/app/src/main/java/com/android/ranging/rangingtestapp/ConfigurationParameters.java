@@ -273,7 +273,7 @@ public class ConfigurationParameters {
          * @param prefEditor
          */
         public void toPref(SharedPreferences.Editor prefEditor) {
-            prefEditor.putInt("securitylevel", securityLevel);
+            prefEditor.putInt("securityLevel", securityLevel);
             prefEditor.putInt("mode", mode);
             Set<String> strTechFilter = new HashSet<>();
             for (Integer techId : techFilter) {

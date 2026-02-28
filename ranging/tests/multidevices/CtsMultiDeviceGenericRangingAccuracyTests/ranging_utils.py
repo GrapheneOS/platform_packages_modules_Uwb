@@ -28,6 +28,7 @@ _NO_DATA_TIMEOUT_SEC = 300
 _BLE_CS_ACCEPTABLE_RANGE_DEVIATION = 0.5
 _BLE_CS_PASS_RATE_THRESHOLD = 0.9
 _WIFI_RTT_PASS_RATE_THRESHOLD = 0.68
+_WIFI_PD_PASS_RATE_THRESHOLD = 0.68
 
 _UWB_ACCEPTABLE_RANGE_DEVIATION = 0.3
 _UWB_ACCEPTABLE_MEDIAN_DEVIATION = 0.25
@@ -217,6 +218,64 @@ def log_wifi_rtt_distance_within_tolerance(
           "error_at_68_percentile": error_at_68_percentile,
       }
   }
+
+
+def log_wifi_pd_distance_within_tolerance(
+        real_distance_in_meters: int,
+        measured_distance_datas: Sequence[list[float]],
+        reference_device_name: str,
+) -> dict[str, dict[str, str | float]]:
+    """Gets the Test metrics for WIFI_PD.
+
+    Based on CDD 7.4.2.10. Wi-Fi Proximity Detection (Peer-to-Peer Proximity Ranging):
+    [7.4.2.10/C-1-6] Devices MUST report the range accurately to within +/-2 meters
+    at 80 MHz bandwidth at the 68th percentile.
+
+    Args:
+      real_distance_in_meters: The real distance in meters between two devices.
+      measured_distance_datas: A sequence containing lists of measured distance
+        data. For Wi-Fi PD, this will typically only contain the initiator's
+        data, as only the initiator receives ranging results.
+
+    Returns:
+      A dict containing the calculated metrics of the ranging results.
+    """
+    # Per CDD [7.4.2.5/H-1-1], using the +/-2 meters threshold for 80MHz
+    # bandwidth as the test requirement.
+    acceptable_error_in_meters = 2.0
+
+    for measured_distance_data in measured_distance_datas:
+        asserts.assert_true(
+            measured_distance_data, "Measured distance data cannot be empty."
+        )
+        num_measurements = len(measured_distance_data)
+
+        filtered_data = [
+            data
+            for data in measured_distance_data
+            if abs(data - real_distance_in_meters) <= acceptable_error_in_meters
+        ]
+        pass_rate = len(filtered_data) / num_measurements
+
+        errors = [abs(data - real_distance_in_meters) for data in measured_distance_data]
+        error_quantiles = statistics.quantiles(errors, n=100)
+        error_at_68_percentile = error_quantiles[67]
+        is_passed = pass_rate >= _WIFI_PD_PASS_RATE_THRESHOLD
+        status_str = "PASSED" if is_passed else "FAILED"
+    logging.info(
+        "Test WIFI_PD status: %s Pass Rate=%.2f, Error at 68 percentile=%.4f",
+        status_str,
+        pass_rate,
+        error_at_68_percentile,
+    )
+
+    return {
+        "initiator": {
+            "reference_device": reference_device_name,
+            "pass_rate": pass_rate,
+            "error_at_68_percentile": error_at_68_percentile,
+        }
+    }
 
 
 def log_ble_rssi_precision_within_tolerance(
@@ -433,7 +492,7 @@ def start_ranging_and_get_distance_data(
   )  # pytype: disable=bad-return-type
 
 
-def start_rtt_ranging_and_get_distance_data(
+def start_wifi_ranging_and_get_distance_data(
     initiator: android_device.AndroidDevice,
     responder: android_device.AndroidDevice,
     technology: ranging_params.RangingTechnology,
@@ -441,7 +500,7 @@ def start_rtt_ranging_and_get_distance_data(
     responder_preference: ranging_params.RangingPreference,
     ranging_measure_count: int = _DEFAULT_RANGING_MEASURE_COUNTS,
 ) -> list[float]:
-  """Starts RTT ranging and gets all measured distance data from initiator.
+  """Starts Wi-Fi RTT or PD ranging and gets all measured distance data from initiator.
 
   For Wi-Fi RTT, only the initiator device receives ranging results. The
   responder participates in the ranging exchange but does not get distance

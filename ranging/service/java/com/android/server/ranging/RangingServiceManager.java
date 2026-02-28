@@ -469,21 +469,24 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             switch (baseParams) {
                 case RawDtTagRangingConfig params -> startSession(params, args,
                         new RawDtTagRangingSession(args.attributionSource, args.handle,
-                        mRangingInjector, sessionConfig, listener, mAdapterExecutor));
+                                mRangingInjector, sessionConfig, baseParams, listener,
+                                mAdapterExecutor));
                 case RawInitiatorRangingConfig params -> startSession(params, args,
                         new RawInitiatorRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, sessionConfig, listener, mAdapterExecutor));
+                                mRangingInjector, sessionConfig, baseParams, listener,
+                                mAdapterExecutor));
                 case RawResponderRangingConfig params -> startSession(params, args,
                         new RawResponderRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, sessionConfig, listener, mAdapterExecutor));
+                                mRangingInjector, sessionConfig, baseParams, listener,
+                                mAdapterExecutor));
                 case OobInitiatorRangingConfig params -> startSession(params, args,
                         new OobInitiatorRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, sessionConfig, listener, mAdapterExecutor,
-                                mOobExecutor));
+                                mRangingInjector, sessionConfig, baseParams, listener,
+                                mAdapterExecutor, mOobExecutor));
                 case OobResponderRangingConfig params -> startSession(params, args,
                         new OobResponderRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, sessionConfig, listener, mAdapterExecutor,
-                                mOobExecutor));
+                                mRangingInjector, sessionConfig, baseParams, listener,
+                                mAdapterExecutor, mOobExecutor));
                 default -> {
                     Log.e(TAG, "Unknown configuration object " + baseParams.getClass());
                     listener.onSessionClosed(InternalReason.INTERNAL_ERROR);

@@ -89,10 +89,9 @@ python_test_host {
         "mobly",
         "platform-test-py-annotations",
     ],
-    // test_suites: [
-    //     "cts-v-host",
-    //     TODO(b/457919483): Re-enable cts-v-host suite once flakiness is fixed.
-    // ],
+    test_suites: [
+        "cts-v-host",
+    ],
     device_common_data: [
         ":bluetooth_multi_devices_snippet",
         ":ranging_snippet",

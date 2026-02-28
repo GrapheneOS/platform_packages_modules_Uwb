@@ -8,6 +8,7 @@ import pathlib
 import logging
 
 from android.platform.test.annotations import CddTest
+from mobly import asserts
 from mobly import test_runner
 from mobly import utils
 from mobly.snippet import callback_event
@@ -17,12 +18,14 @@ from . import ranging_accuracy_base_test
 from . import ranging_utils
 import lib.params as ranging_params
 import lib.uwb as uwb_params
+from lib import wifipd
 
 # The count of ranging measurements for each technology.
 _DISTANCE_IN_METERS = 1
 _NUMBER_OF_BLE_CS_TEST_SAMPLES = 100
 _NUMBER_OF_UWB_TEST_SAMPLES = 1000
 _NUMBER_OF_WIFI_RTT_TEST_SAMPLES = 100
+_NUMBER_OF_WIFI_PD_TEST_SAMPLES = 100
 _NUMBER_OF_BLE_RSSI_TEST_SAMPLES = 1000
 _TARGET_MEDIAN_DBM = -55
 _MAX_BLE_RSSI_RANGE_DBM = 18
@@ -133,9 +136,6 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
         )
     )
 
-  # TODO(b/454692647): Keep @retry commented out. It reports retry_# cases
-  # to CTS-V, which blocks overriding failures.
-  # @retry(max_count=2)
   @CddTest(requirements="7.4.3/C-11-2")
   def test_channel_sounding_ranging(self) -> None:
     """Test Channel Sounding ranging at 1 meter between the devices.
@@ -209,7 +209,7 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
               reference_device_name=self.responder.serial,
           )
       )
-      self.initiator.rangingSnippetSubmitMpcBleChannelSoundingPerformanceValue(
+      self.initiator.ranging.submitMpcBleChannelSoundingPerformanceValue(
           self.all_test_metrics["ble_cs_ranging_test"]["initiator"]["results_in_range"]
       )
 
@@ -295,7 +295,7 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
         enable_range_data_notifications=False,
     )
 
-    initiator_distances = ranging_utils.start_rtt_ranging_and_get_distance_data(
+    initiator_distances = ranging_utils.start_wifi_ranging_and_get_distance_data(
         self.initiator,
         self.responder,
         technology,
@@ -311,6 +311,114 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
             reference_device_name=self.responder.serial,
         )
     )
+
+  @CddTest(requirements = ['7.4.2.10/C-1-6"'])
+  def test_wifi_pd_ranging(self) -> None:
+      """Test Wi-Fi PD ranging at 1 meter between the devices.
+
+      Test Preconditions:
+        * Two Android devices that support Wi-Fi PD.
+        * The devices are placed 1 meter apart.
+
+      Test Steps:
+        1. Enable Wi-Fi on both devices.
+        2. Generate a random service name for the PD session.
+        3. Set up Wi-Fi PD initiator and responder preferences.
+        4. Start the ranging session on both devices.
+        5. Collect 100 ranging measurements (_NUMBER_OF_WIFI_PD_TEST_SAMPLES)
+            from the initiator. (Note: Only initiator receives Wi-Fi PD results).
+        6. Stop the ranging session.
+        7. Verify that the 68th percentile of measurements are within the
+            acceptable tolerance (+/- 2m) as required by CDD.
+
+      Note: The accuracy requirements for Wi-Fi PD are the same as Wi-Fi RTT at the moment.
+            This will change in the future.
+
+      Expected Results:
+        * The ranging session starts successfully.
+        * The measured distance metrics pass the accuracy checks defined in
+          ranging_utils.log_wifi_pd_distance_within_tolerance.
+      """
+
+      technology = ranging_params.RangingTechnology.WIFI_PD
+      ranging_utils.skip_if_technology_not_supported(
+          [self.initiator, self.responder], technology
+      )
+
+      utils.concurrent_exec(
+          lambda device: device.mbs.wifiEnable(),
+          [[self.initiator], [self.responder]],
+      )
+
+      ranging_measure_count = _NUMBER_OF_WIFI_PD_TEST_SAMPLES
+      initiator_caps = self.initiator.ranging.getWifiPdCapabilities()
+      responder_caps = self.responder.ranging.getWifiPdCapabilities()
+
+      asserts.assert_true(
+          initiator_caps, "Failed to get Wifi PD capabilities from initiator"
+      )
+      asserts.assert_true(
+          responder_caps, "Failed to get Wifi PD capabilities from responder"
+      )
+      responder_mac_address = responder_caps.get("mac_address")
+      asserts.assert_true(
+          responder_mac_address,
+          "Failed to get Wifi PD MAC address from responder caps",
+      )
+      initiator_mac_address = initiator_caps.get("mac_address")
+      asserts.assert_true(
+          initiator_mac_address,
+          "Failed to get Wifi PD MAC address from initiator caps",
+      )
+
+      wifi_pd_params = wifipd.get_best_wifi_pd_params(
+          initiator_caps, responder_caps, responder_mac_address
+      )
+
+      initiator_preference = ranging_params.RangingPreference(
+          device_role=ranging_params.DeviceRole.INITIATOR,
+          ranging_params=ranging_params.RawInitiatorRangingParams(
+              peer_params=[
+                  ranging_params.DeviceParams(
+                      peer_id=self.responder.id,
+                      wifi_pd_params=wifi_pd_params,
+                  )
+              ],
+          ),
+          enable_range_data_notifications=True,
+      )
+
+      responder_wifi_pd_params = wifipd.get_best_wifi_pd_params(
+          initiator_caps, responder_caps, initiator_mac_address
+      )
+
+      responder_preference = ranging_params.RangingPreference(
+          device_role=ranging_params.DeviceRole.RESPONDER,
+          ranging_params=ranging_params.RawResponderRangingParams(
+              peer_params=ranging_params.DeviceParams(
+                  peer_id=self.initiator.id,
+                  wifi_pd_params=responder_wifi_pd_params,
+              ),
+          ),
+          enable_range_data_notifications=True,
+      )
+
+      initiator_distances = ranging_utils.start_wifi_ranging_and_get_distance_data(
+          self.initiator,
+          self.responder,
+          technology,
+          initiator_preference,
+          responder_preference,
+          ranging_measure_count,
+      )
+
+      self.all_test_metrics["pd_ranging_test"] = (
+          ranging_utils.log_wifi_pd_distance_within_tolerance(
+              real_distance_in_meters=_DISTANCE_IN_METERS,
+              measured_distance_datas=[initiator_distances],
+              reference_device_name=self.responder.serial,
+          )
+      )
 
   @CddTest(requirements=["7.4.3/C-10-1"])
   def test_ble_rssi_ranging(self) -> None:

@@ -16,7 +16,6 @@
 
 package com.android.server.ranging.wifipd;
 
-import static android.net.wifi.WifiAvailableChannel.OP_MODE_STA;
 import static android.net.wifi.WifiScanner.WIFI_BAND_BOTH;
 import static android.ranging.RangingCapabilities.DISABLED_USER;
 import static android.ranging.RangingCapabilities.DISABLED_USER_RESTRICTIONS;
@@ -29,8 +28,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.MacAddress;
-import android.net.wifi.WifiAvailableChannel;
 import android.net.wifi.WifiManager;
+import android.net.wifi.WifiScanner;
 import android.net.wifi.rtt.ProximityDetectionCharacteristics;
 import android.net.wifi.rtt.WifiRttManager;
 import android.ranging.RangingCapabilities;
@@ -58,6 +57,7 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
     private final WifiManager mWifiManager;
     private final WifiRttManager mWifiRttManager;
     private MacAddress mCachedPdMacAddress = null;
+    private final WifiScanner mWifiScanner;
 
     /**
      * Is Wifi PD feature supported boolean.
@@ -69,8 +69,9 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         WifiRttManager wifiRttManager = context.getSystemService(WifiRttManager.class);
         try {
             return RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")
-                    && RangingInjector.isFlagEnabled(
-                            com.android.wifi.flags.Flags.class, "proximityRanging")
+                    //TODO: check why this fails
+//                    && RangingInjector.isFlagEnabled(
+//                            com.android.wifi.flags.Flags.class, "proximityRanging")
                     && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
                     && wifiRttManager != null
                     && wifiRttManager.getProximityDetectionCharacteristics() != null;
@@ -89,6 +90,7 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         if (isSupported(context)) {
             mWifiRttManager = context.getSystemService(WifiRttManager.class);
             mWifiManager = context.getSystemService(WifiManager.class);
+            mWifiScanner = context.getSystemService(WifiScanner.class);
             mWifiRttManager.registerProximityDetectionMacAddressCallback(
                     Executors.newSingleThreadExecutor(),
                     macAddress -> {
@@ -99,6 +101,7 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         } else {
             mWifiRttManager = null;
             mWifiManager = null;
+            mWifiScanner = null;
         }
     }
 
@@ -130,9 +133,8 @@ public class WifiPdCapabilitiesAdapter extends CapabilitiesAdapter {
         if (characteristics.isAuthenticatedPasnModeSupported()) {
             pasnModes.add(WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE);
         }
-        Set<Integer> channelSet = mWifiManager.getUsableChannels(WIFI_BAND_BOTH, OP_MODE_STA)
+        Set<Integer> channelSet = mWifiScanner.getAvailableChannels(WIFI_BAND_BOTH)
                 .stream()
-                .map(WifiAvailableChannel::getFrequencyMhz)
                 .collect(Collectors.toSet());
 
         return new WifiPdRangingCapabilities.Builder()

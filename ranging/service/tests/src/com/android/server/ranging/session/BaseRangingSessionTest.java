@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.ranging.RangingConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
@@ -83,7 +84,8 @@ public class BaseRangingSessionTest {
     private @Mock AttributionSource mMockAttributionSource;
     private @Mock SessionHandle mMockSessionHandle;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingInjector mMockInjector;
-    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) SessionConfig mMockConfig;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) SessionConfig mMockSessionConfig;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingConfig mMockRangingConfig;
     private @Mock RangingServiceManager.SessionListener mMockSessionListener;
     private Map<TechnologyConfig, RangingAdapter> mMockAdapters;
     private BaseRangingSession mSession;
@@ -175,14 +177,15 @@ public class BaseRangingSessionTest {
 
     @Before
     public void setup() {
-        when(mMockConfig.getSensorFusionParams()).thenReturn(
+        when(mMockSessionConfig.getSensorFusionParams()).thenReturn(
                 new SensorFusionParams.Builder().setSensorFusionEnabled(true).build()
         );
         when(mMockInjector.getContext()).thenReturn(mMockContext);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
 
         mSession = new BaseRangingSession(
-                mMockAttributionSource, mMockSessionHandle, mMockInjector, mMockConfig,
+                mMockAttributionSource, mMockSessionHandle, mMockInjector,
+                mMockSessionConfig, mMockRangingConfig,
                 mMockSessionListener, MoreExecutors.newDirectExecutorService());
 
         mMockAdapters = Maps.newHashMap();

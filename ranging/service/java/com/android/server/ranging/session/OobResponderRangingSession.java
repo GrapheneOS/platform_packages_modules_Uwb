@@ -73,12 +73,14 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
-            @NonNull SessionConfig config,
+            @NonNull SessionConfig sessionConfig,
+            @NonNull RangingConfig rangingConfig,
             @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, sessionHandle, injector, sessionConfig, rangingConfig,
+                listener, adapterExecutor);
         mOobExecutor = oobExecutor;
         mOobConnectionListener = new OobConnectionListener();
     }
