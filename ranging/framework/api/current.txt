@@ -124,6 +124,7 @@ package android.ranging {
     method @Nullable public android.ranging.wifi.rtt.RttRangingCapabilities getRttRangingCapabilities();
     method @NonNull public java.util.Map<java.lang.Integer,java.lang.Integer> getTechnologyAvailability();
     method @Nullable public android.ranging.uwb.UwbRangingCapabilities getUwbCapabilities();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.wifi.pd.WifiPdRangingCapabilities getWifiPdRangingCapabilities();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingCapabilities> CREATOR;
     field public static final int DISABLED_REGULATORY = 2; // 0x2

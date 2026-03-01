@@ -16,17 +16,24 @@
 
 package com.android.ranging.rangingtestapp;
 
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_20MHZ;
+import static android.net.wifi.ScanResult.PREAMBLE_LEGACY;
 import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
 import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
+import static android.ranging.wifi.pd.WifiPdRangingCapabilities.UNAUTHENTICATED_PASN_MODE;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.MacAddress;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Set;
 
@@ -39,15 +46,17 @@ public class ConfigurationParameters {
     public BleCs bleCs;
     public BleRssi bleRssi;
     public WifiNanRtt wifiNanRtt;
+    public WifiPd wifiPd;
     public Oob oob;
 
     private ConfigurationParameters(Global global, Uwb uwb, BleCs bleCs, BleRssi bleRssi,
-            WifiNanRtt wifiNanRtt, Oob oob) {
+            WifiNanRtt wifiNanRtt, WifiPd wifiPd, Oob oob) {
         this.global = global;
         this.uwb = uwb;
         this.bleCs = bleCs;
         this.bleRssi = bleRssi;
         this.wifiNanRtt = wifiNanRtt;
+        this.wifiPd = wifiPd;
         this.oob = oob;
     }
 
@@ -57,6 +66,7 @@ public class ConfigurationParameters {
         bleCs = new BleCs();
         bleRssi = new BleRssi();
         wifiNanRtt = new WifiNanRtt();
+        wifiPd = new WifiPd();
         oob = new Oob();
     }
 
@@ -88,6 +98,7 @@ public class ConfigurationParameters {
                 BleCs.fromPref(pref, isResponder),
                 BleRssi.fromPref(pref, isResponder),
                 WifiNanRtt.fromPref(pref, isResponder),
+                WifiPd.fromPref(pref, isResponder),
                 Oob.fromPref(pref, isResponder));
     }
 
@@ -237,6 +248,50 @@ public class ConfigurationParameters {
             wifiNanRtt.isPeriodicRangingEnabled = pref.getBoolean("isPeriodicRangingEnabled",
                     wifiNanRtt.isPeriodicRangingEnabled);
             return wifiNanRtt;
+        }
+    }
+
+    public static class WifiPd extends BaseTechConfig {
+        public MacAddress peerMacAddress = MacAddress.fromString("02:00:00:00:00:00");
+        public int discoveryChannelFrequencyMhz = 2437;
+        public int pasnMode = UNAUTHENTICATED_PASN_MODE;
+        public byte[] deviceIk = new byte[0];
+        public String password = "password";
+        public int preambleType = PREAMBLE_LEGACY;
+        public boolean isResponder80211azNtbSupported = true;
+        public int channelWidth = CHANNEL_WIDTH_20MHZ;
+
+        public WifiPd() {
+            super(RangingParameters.Technology.WIFI_PD);
+        }
+
+        public void toPref(SharedPreferences.Editor prefEditor) {
+            prefEditor.putString("peerMacAddress", peerMacAddress.toString());
+            prefEditor.putInt("discoveryChannelFrequencyMhz", discoveryChannelFrequencyMhz);
+            prefEditor.putInt("pasnMode", pasnMode);
+            prefEditor.putString("deviceIk", HexFormat.of().formatHex(deviceIk));
+            prefEditor.putString("password", password);
+            prefEditor.putInt("preambleType", preambleType);
+            prefEditor.putBoolean("isResponder80211azNtbSupported", isResponder80211azNtbSupported);
+            prefEditor.putInt("channelWidth", channelWidth);
+
+        }
+
+        public static WifiPd fromPref(SharedPreferences pref, boolean isResponder) {
+            WifiPd wifiPd = new WifiPd();
+            wifiPd.peerMacAddress = MacAddress.fromString(pref.getString("peerMacAddress",
+                    wifiPd.peerMacAddress.toString()));
+            wifiPd.discoveryChannelFrequencyMhz = pref.getInt("discoveryChannelFrequencyMhz",
+                    wifiPd.discoveryChannelFrequencyMhz);
+            wifiPd.pasnMode = pref.getInt("pasnMode", wifiPd.pasnMode);
+            wifiPd.deviceIk = HexFormat.of().parseHex(
+                    pref.getString("deviceIk", HexFormat.of().formatHex(wifiPd.deviceIk)));
+            wifiPd.password = pref.getString("password", wifiPd.password);
+            wifiPd.preambleType = pref.getInt("preambleType", wifiPd.preambleType);
+            wifiPd.isResponder80211azNtbSupported = pref.getBoolean("isResponder80211azNtbSupported",
+                    wifiPd.isResponder80211azNtbSupported);
+            wifiPd.channelWidth = pref.getInt("channelWidth", wifiPd.channelWidth);
+            return wifiPd;
         }
     }
 
