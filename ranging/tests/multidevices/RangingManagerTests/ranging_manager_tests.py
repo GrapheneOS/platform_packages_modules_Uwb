@@ -260,6 +260,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         f"{technology.name} not supported by initiator",
     )
 
+    initiator_bt_addr = None
+    responder_bt_addr = None
     if technology in [RangingTechnology.BLE_CS, RangingTechnology.BLE_RSSI]:
       self._enable_bt()
       try:
@@ -272,6 +274,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             not self.initiator.ad.bluetooth.isRemoteDeviceBonded(),
             f"Responder is not bonded. Please bond manually.",
         )
+      initiator_bt_addr = self.initiator.bt_addr
+      responder_bt_addr = self.responder.bt_addr
     elif technology == RangingTechnology.WIFI_RTT:
       self._reset_wifi_state()
     elif technology == RangingTechnology.WIFI_PD:
@@ -281,6 +285,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         device_role=DeviceRole.INITIATOR,
         ranging_params=OobInitiatorRangingParams(
             peer_ids=[self.responder.id],
+            peer_bluetooth_addresses=[responder_bt_addr],
             ranging_mode=ranging_mode,
             ranging_technology_filter=[technology],
         ),
@@ -289,7 +294,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     responder_preference = RangingPreference(
         device_role=DeviceRole.RESPONDER,
-        ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+        ranging_params=OobResponderRangingParams(
+            peer_id=self.initiator.id,
+            peer_bluetooth_address=initiator_bt_addr,
+        ),
         enable_range_data_notifications=responder_notif,
     )
 
@@ -1272,8 +1280,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
   def test_one_to_one_ble_cs_ranging_with_oob(self):
     """Verifies BLE CS ranging with OOB."""
-    asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
-                    "Skipping OOB CS test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE CS test on emulator")
     asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
@@ -1350,8 +1356,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   @CddTest(requirements = ['7.4.3/C-10-1'])
   def test_one_to_one_ble_rssi_ranging_with_oob(self):
     """Verifies BLE RSSI ranging with OOB."""
-    asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
-                    "Skipping OOB BLE RSSI test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
     asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
