@@ -392,4 +392,24 @@ public final class WifiPdRangingCapabilities
             return new WifiPdRangingCapabilities(this);
         }
     }
+
+    /**
+     * @hide
+     */
+    @Override
+    public String toString() {
+        return "WifiPdRangingCapabilities{" +
+                "mSupportedPasnModes=" + mSupportedPasnModes +
+                ", mProximityDetectionMacAddress=" + mProximityDetectionMacAddress +
+                ", mIs80211mcSupported=" + mIs80211mcSupported +
+                ", mIs80211azNtbSupported=" + mIs80211azNtbSupported +
+                ", mMaxChannelWidth=" + mMaxChannelWidth +
+                ", mMaxPreamble=" + mMaxPreamble +
+                ", mSupportedDiscoveryChannelFrequenciesMhz="
+                + mSupportedDiscoveryChannelFrequenciesMhz
+                +
+                ", m80211mcMinRangingIntervalMillis=" + m80211mcMinRangingIntervalMillis +
+                ", m80211azNtbMinRangingIntervalMillis=" + m80211azNtbMinRangingIntervalMillis +
+                '}';
+    }
 }
