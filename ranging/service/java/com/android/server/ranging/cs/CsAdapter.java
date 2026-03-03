@@ -16,106 +16,78 @@
 
 package com.android.server.ranging.cs;
 
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
-
-import static com.android.bluetooth.flags.Flags.includePowerAndRssiInDistanceMeasurementResult;
 import static com.android.server.ranging.common.RangingUtils.InternalReason;
-import static com.android.server.ranging.common.RangingUtils.InternalReason.INTERNAL_ERROR;
-import static com.android.server.ranging.common.RangingUtils.convertBluetoothReasonCode;
-
 
 import android.annotation.Nullable;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.ChannelSoundingParams;
-import android.bluetooth.le.DistanceMeasurementManager;
-import android.bluetooth.le.DistanceMeasurementMethod;
-import android.bluetooth.le.DistanceMeasurementParams;
-import android.bluetooth.le.DistanceMeasurementResult;
-import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
-import android.os.CancellationSignal;
 import android.ranging.DataNotificationConfig;
-import android.ranging.RangingData;
-import android.ranging.RangingDataExtras;
 import android.ranging.RangingDevice;
-import android.ranging.RangingMeasurement;
-import android.ranging.ble.BleSpecificData;
-import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.DataNotificationManager;
-import com.android.server.ranging.common.RangingUtils;
 import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.util.concurrent.Executors;
+import java.util.UUID;
 
-/**
- * Channel Sounding adapter for ranging.
- * TODO(b/380125808): Need to coalesce requests from multiple apps for the same remote device.
- */
 public class CsAdapter implements RangingAdapter {
     private static final String TAG = CsAdapter.class.getSimpleName();
 
+    private final String mId;
+    private final StateMachine<State> mStateMachine;
     private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
-    private final StateMachine<State> mStateMachine;
     private final Object mLock;
-    private Callback mCallbacks;
 
     /** Invariant: non-null while a ranging session is active */
+    private final AlarmManager mAlarmManager;
     private BluetoothDevice mPeerBluetoothDevice;
-
-    /** Invariant: non-null while a ranging session is active */
-    private RangingDevice mRangingDevice;
-
-    /** Invariant: non-null while a ranging session is active */
-    private CancellationSignal mStartCancellationSignal;
-    private DistanceMeasurementSession mSession;
-    private CsConfig mConfig;
+    private String mPeerIdentityAddress;
     private DataNotificationManager mDataNotificationManager;
     private AttributionSource mNonPrivilegedAttributionSource;
+    private Callback mCallbacks;
 
-    private final AlarmManager mAlarmManager;
-    private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
+    RangingDevice mRangingDevice;
+    CsConfig mConfig;
 
-    /** Injectable constructor for testing. */
+    enum State {
+        STARTED,
+        STOPPED,
+    }
+
+    /**
+     * Every instance of the CsAdapter must share the same lock parameter
+     */
     public CsAdapter(@NonNull Context context, RangingInjector rangingInjector, Object lock) {
         if (!RangingTechnology.CS.isSupported(context)) {
             throw new IllegalArgumentException("BT_CS system feature not found.");
         }
         mContext = context;
-        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
-        mStateMachine = new StateMachine<>(State.STOPPED, lock);
-        mLock = lock;
-        mCallbacks = null;
-        mSession = null;
         mRangingInjector = rangingInjector;
+        mLock = lock;
+        mId = UUID.randomUUID().toString();
+
+        mCallbacks = null;
+        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
+        mStateMachine = new StateMachine<>(State.STOPPED, mLock);
+        mAlarmManager = mContext.getSystemService(AlarmManager.class);
         mDataNotificationManager = new DataNotificationManager(
                 new DataNotificationConfig.Builder().build(),
-                new DataNotificationConfig.Builder().build()
-        );
-        mAlarmManager = mContext.getSystemService(AlarmManager.class);
-        mMeasurementLimitListener = () -> {
-            Log.i(TAG, "Measurements limit exceeded. Stopping the session");
-            Executors.newCachedThreadPool().execute(this::stop);
-        };
+                new DataNotificationConfig.Builder().build());
     }
 
     @Override
@@ -127,9 +99,16 @@ public class CsAdapter implements RangingAdapter {
         return mDataNotificationManager;
     }
 
-    @VisibleForTesting
-    public void setSession(DistanceMeasurementSession session) {
-        mSession = session;
+    public String getId() {
+        return mId;
+    }
+
+    public Callback getCallbacks() {
+        return mCallbacks;
+    }
+
+    public State getStateMachineState() {
+        return mStateMachine.getState();
     }
 
     @Override
@@ -141,6 +120,7 @@ public class CsAdapter implements RangingAdapter {
         Log.i(TAG, "Start called.");
         mCallbacks = callback;
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
+
         if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
@@ -150,30 +130,29 @@ public class CsAdapter implements RangingAdapter {
         }
         if (!(config instanceof CsConfig csConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            mCallbacks.onClosed(INTERNAL_ERROR);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
-        BleCsRangingParams bleCsRangingParams = csConfig.getRangingParams();
-        if ((csConfig.getPeerDevice() == null)
+
+        mConfig = csConfig;
+        BleCsRangingParams bleCsRangingParams = mConfig.getRangingParams();
+
+        if ((mConfig.getPeerDevice() == null)
                 || (bleCsRangingParams.getPeerBluetoothAddress() == null)) {
             Log.e(TAG, "Peer device is null");
             closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
+
+        mRangingDevice = mConfig.getPeerDevice();
+
         if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
             Log.e(TAG, "Failed to start ranging, Bluetooth is turned off!");
             closeForReason(InternalReason.UNSUPPORTED);
             return;
         }
-        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
-            Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(InternalReason.INTERNAL_ERROR);
-            return;
-        }
-        mConfig = csConfig;
-        mRangingDevice = csConfig.getPeerDevice();
-        if (csConfig.getPeerBluetoothDevice() != null) {
-            mPeerBluetoothDevice = csConfig.getPeerBluetoothDevice();
+        if (mConfig.getPeerBluetoothDevice() != null) {
+            mPeerBluetoothDevice = mConfig.getPeerBluetoothDevice();
             Log.v(TAG,
                     "BluetoothDevice is provided. Using it instead of the address.");
         } else {
@@ -181,194 +160,90 @@ public class CsAdapter implements RangingAdapter {
                     mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
             Log.v(TAG, "BluetoothDevice not provided, using provided BLE address");
         }
-        DistanceMeasurementManager distanceMeasurementManager =
-                mBluetoothAdapter.getDistanceMeasurementManager();
-        int duration = DistanceMeasurementParams.getMaxDurationSeconds();
-        int frequency = getFrequency(bleCsRangingParams.getRangingUpdateRate());
-        int methodId = DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING;
-
-        DistanceMeasurementParams params =
-                new DistanceMeasurementParams.Builder(mPeerBluetoothDevice)
-                        .setChannelSoundingParams(new ChannelSoundingParams.Builder()
-                                .setLocationType(bleCsRangingParams.getLocationType())
-                                .setCsSecurityLevel(bleCsRangingParams.getSecurityLevel())
-                                .setSightType(bleCsRangingParams.getSightType())
-                                .build())
-                        .setDurationSeconds(duration)
-                        .setFrequency(frequency)
-                        .setMethodId(methodId)
-                        .build();
-
+        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress();
         mDataNotificationManager = new DataNotificationManager(
-                csConfig.getSessionConfig().getDataNotificationConfig(),
-                csConfig.getSessionConfig().getDataNotificationConfig());
+                mConfig.getSessionConfig().getDataNotificationConfig(),
+                mConfig.getSessionConfig().getDataNotificationConfig());
 
-        try {
-            mStartCancellationSignal = distanceMeasurementManager.startMeasurementSession(params,
-                    Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Error starting CS session", e);
-            closeForReason(InternalReason.INTERNAL_ERROR);
-            return;
-        }
-        // Callback here to be consistent with other ranging technologies.
-        mCallbacks.onStarted(ImmutableSet.of(csConfig.getPeerDevice()));
-        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
-            RangingUtils.setMeasurementsLimitTimeout(
+        synchronized (mLock) {
+            // This either starts a new DistanceMeasurementSession
+            // Or attach this adapter to an existing one
+            CsSession.registerAdapter(
+                    this,
+                    mBluetoothAdapter,
+                    mPeerBluetoothDevice,
                     mAlarmManager,
-                    mMeasurementLimitListener,
-                    mConfig.getSessionConfig().getRangingMeasurementsLimit(),
-                    BleCsConstants.getIntervalInMs(
-                            mConfig.getRangingParams().getRangingUpdateRate()));
+                    mConfig,
+                    mLock);
+
+            // Adapter must not start until DistanceMeasurementSession is started
+            if (mStateMachine.transition(State.STOPPED, State.STARTED)) {
+                mCallbacks.onStarted(ImmutableSet.of(mRangingDevice));
+            } else {
+                CsSession.deregisterAdapter(this, mPeerIdentityAddress);
+                closeForReason(InternalReason.INTERNAL_ERROR);
+            }
         }
     }
 
     @Override
     public void appMovedToBackground() {
-        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+        Log.i(TAG, "app moved to background");
+        if (mNonPrivilegedAttributionSource != null
+                && mStateMachine.getState() != State.STOPPED) {
             mDataNotificationManager.updateConfigAppMovedToBackground();
         }
     }
 
     @Override
     public void appMovedToForeground() {
-        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+        Log.i(TAG, "app moved to foreground");
+        if (mNonPrivilegedAttributionSource != null
+                && mStateMachine.getState() != State.STOPPED) {
             mDataNotificationManager.updateConfigAppMovedToForeground();
         }
     }
 
     @Override
     public void appInBackgroundTimeout() {
-        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+        Log.i(TAG, "app in background timeout");
+        if (mNonPrivilegedAttributionSource != null
+                && mStateMachine.getState() != State.STOPPED) {
             stop();
         }
     }
 
     @Override
     public void stop() {
-        Log.i(TAG, "Stop called.");
-        if (!mStateMachine.transition(State.STARTED, State.STOPPED)) {
-            Log.v(TAG, "Attempted to stop adapter when it was already stopped");
-            return;
-        }
-        if (mStartCancellationSignal == null && mSession == null) {
-            Log.v(TAG, "Attempted to stop adapter when ranging session was already stopped");
-            return;
-        }
-        if (mSession == null) {
-            mStartCancellationSignal.cancel(); // In the middle of starting.
-        } else {
-            mSession.stopSession();
-        }
+        Log.i(TAG, "Stop called for CsAdapter : " + mId);
+        CsSession.deregisterAdapter(this, mPeerIdentityAddress);
+        closeForReason(InternalReason.LOCAL_REQUEST);
     }
 
-    private int getFrequency(int updateRate) {
-        if (updateRate == UPDATE_RATE_INFREQUENT) {
-            return DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
-        } else if (updateRate == UPDATE_RATE_NORMAL) {
-            return DistanceMeasurementParams.REPORT_FREQUENCY_MEDIUM;
-        } else if (updateRate == UPDATE_RATE_FREQUENT) {
-            return DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
-        }
-        return DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
-    }
+    public void closeForReason(@InternalReason int reason) {
+        Log.i(TAG, "CloseForReason called");
+        synchronized (mLock) {
+            if (mStateMachine.transition(State.STARTED, State.STOPPED)) {
+                if (mRangingDevice != null) {
+                    mCallbacks.onStopped(ImmutableSet.of(mRangingDevice), reason);
+                }
+            }
 
-    private void closeForReason(@InternalReason int reason) {
-        if (mRangingDevice != null) {
-            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice), reason);
+            if (mCallbacks != null) {
+                mCallbacks.onClosed(reason);
+                clear();
+            }
         }
-        mCallbacks.onClosed(reason);
-        clear();
     }
 
     private void clear() {
-        if (mConfig != null && mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
-            mAlarmManager.cancel(mMeasurementLimitListener);
-        }
-        mSession = null;
-        mStartCancellationSignal = null;
+        mRangingDevice = null;
+        mPeerBluetoothDevice = null;
+        mPeerIdentityAddress = null;
+        mDataNotificationManager = null;
+        mNonPrivilegedAttributionSource = null;
         mCallbacks = null;
-        mConfig = null;
     }
 
-    public enum State {
-        STARTED,
-        STOPPED,
-    }
-
-    @VisibleForTesting
-    public DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
-            new DistanceMeasurementSession.Callback() {
-                public void onStarted(DistanceMeasurementSession session) {
-                    Log.i(TAG, "DistanceMeasurement onStarted !");
-                    mSession = session;
-                    // onStarted is called right after start measurement is called, other ranging
-                    // technologies do not wait for this callback till they find the peer, if peer
-                    // is not found here, we get onStartFail.
-                    //mCallbacks.onStarted(mRangingDevice);
-                }
-
-                public void onStartFail(int reason) {
-                    Log.i(TAG, "DistanceMeasurement onStartFail ! reason " + reason);
-                    closeForReason(convertBluetoothReasonCode(reason));
-                }
-
-                public void onStopped(DistanceMeasurementSession session, int reason) {
-                    Log.i(TAG, "DistanceMeasurement onStopped ! reason " + reason);
-                    closeForReason(convertBluetoothReasonCode(reason));
-                }
-
-                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {
-                    if (!mDataNotificationManager.shouldSendResult(result.getResultMeters())) {
-                        return;
-                    }
-                    Log.i(TAG, "DistanceMeasurement onResult ! "
-                            + result.getResultMeters()
-                            + ", "
-                            + result.getErrorMeters());
-                    RangingData.Builder dataBuilder = new RangingData.Builder()
-                            .setRangingTechnology(RangingTechnology.CS.getValue())
-                            .setDistance(new RangingMeasurement.Builder()
-                                    .setMeasurement(result.getResultMeters())
-                                    .setConfidence(
-                                            (int) Math.round(result.getConfidenceLevel() * 2.0))
-                                    .setRawConfidence(result.getConfidenceLevel())
-                                    .setError(result.getErrorMeters())
-                                    .build())
-                            .setTimestampMillis(RangingUtils.convertNanosToMillis(
-                                    result.getMeasurementTimestampNanos()))
-                            .setDelaySpreadMeters(result.getDelaySpreadMeters())
-                            .setDetectedAttackLevel((byte) result.getDetectedAttackLevel())
-                            .setVelocityMetersPerSec(result.getVelocityMetersPerSecond());
-                    if (!Double.isNaN(result.getAzimuthAngle())) {
-                        dataBuilder.setAzimuth(new RangingMeasurement.Builder()
-                                .setMeasurement(result.getAzimuthAngle())
-                                .setError(result.getErrorAzimuthAngle())
-                                .build());
-                    }
-                    if (!Double.isNaN(result.getAltitudeAngle())) {
-                        dataBuilder.setElevation(new RangingMeasurement.Builder()
-                                .setMeasurement(result.getAltitudeAngle())
-                                .setError(result.getErrorAltitudeAngle())
-                                .build());
-                    }
-                    BleSpecificData.Builder bleCsSpecificDataBuilder =
-                            new BleSpecificData.Builder()
-                                    .setDelaySpreadMeters(result.getDelaySpreadMeters());
-                    if (includePowerAndRssiInDistanceMeasurementResult()) {
-                        dataBuilder.setRssi(result.getRssiDbm());
-                        bleCsSpecificDataBuilder
-                                .setRemoteTxPowerDbm(result.getRemoteTxPowerDbm());
-                    }
-                    dataBuilder.setRangingDataExtras(
-                            new RangingDataExtras.Builder()
-                                    .setBleSpecificData(bleCsSpecificDataBuilder.build())
-                                    .build());
-                    synchronized (mLock) {
-                        if (mStateMachine.getState() == State.STARTED) {
-                            mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());
-                        }
-                    }
-                }
-            };
 }
+
