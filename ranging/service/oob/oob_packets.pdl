@@ -248,17 +248,10 @@ struct WifiPdConfiguration: Configuration(technology = WIFI_PD) {
     channel_width: WifiBandwidth,
     channel: 8,
     pasn_mode: PasnMode,
-    _body_
-}
-
-struct WifiPdAuthenticatedConfiguration: WifiPdConfiguration(pasn_mode = AUTHENTICATED_MODE ) {
-    device_ik: 8[16],
+    _size_(device_ik): 8,
+    device_ik: 8[],
     _size_(password): 8,
     password: 8[],
-}
-
-struct WifiPdUnauthenticatedConfiguration: WifiPdConfiguration(pasn_mode = UNAUTHENTICATED_MODE ) {
-    empty: 8[] // Empty payload.
 }
 
 // Protocol-level packets.
