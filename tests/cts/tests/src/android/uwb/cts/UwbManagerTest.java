@@ -47,6 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import static java.util.Objects.requireNonNull;
@@ -86,6 +87,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.uwb.flags.Flags;
 
@@ -139,6 +141,14 @@ import java.util.function.Consumer;
 @AppModeFull(reason = "Cannot get UwbManager in instant app mode")
 public class UwbManagerTest {
     private static final String TAG = "UwbManagerTest";
+
+    private static boolean isEmulator() {
+        return PropertyUtil.propertyEquals("ro.boot.qemu", "1")
+                || PropertyUtil.propertyEquals("ro.hardware", "cutf_cvm")
+                || PropertyUtil.propertyEquals("ro.hardware", "goldfish")
+                || PropertyUtil.propertyEquals("ro.hardware", "ranchu");
+    }
+
     private final Context mContext = InstrumentationRegistry.getContext();
     private UwbManager mUwbManager;
     private String mDefaultChipId;
@@ -3140,6 +3150,7 @@ public class UwbManagerTest {
     @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testAliroSession_withHostKey() throws Exception {
+        assumeFalse(isEmulator());
         AliroSpecificationParams params = getAliroSpecificationParams();
         assumeTrue(params != null && params.getProtocolVersions() != null);
         if (getVsrApiLevel() >= Build.VERSION_CODES.CINNAMON_BUN) {
