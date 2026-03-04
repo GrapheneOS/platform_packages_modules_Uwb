@@ -20,6 +20,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
 import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
 
+import android.bluetooth.BluetoothAdapter;
 import android.net.MacAddress;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingConfig;
@@ -124,14 +125,25 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     ) throws JSONException {
         OobInitiatorRangingConfig.Builder builder = new OobInitiatorRangingConfig.Builder();
         JSONArray jPeers = j.getJSONArray("peer_ids");
+        JSONArray jPeerBluetoothAddresses = null;
+        if (j.has("peer_bluetooth_addresses") && !j.isNull("peer_bluetooth_addresses")) {
+            jPeerBluetoothAddresses = j.getJSONArray("peer_bluetooth_addresses");
+        }
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
         for (int i = 0; i < jPeers.length(); i++) {
             RangingDevice device = new RangingDevice.Builder()
                     .setUuid(UUID.fromString(jPeers.getString(i)))
                     .build();
-            builder.addDeviceHandle(new DeviceHandle.Builder(
+            DeviceHandle.Builder deviceHandleBuilder = new DeviceHandle.Builder(
                     device,
                     mTransportHandleFactory.createOobTransport(device)
-            ).build());
+            );
+            if (jPeerBluetoothAddresses != null && !jPeerBluetoothAddresses.isNull(i)) {
+                deviceHandleBuilder.setBluetoothDevice(
+                        bluetoothAdapter.getRemoteDevice(jPeerBluetoothAddresses.getString(i)));
+            }
+            builder.addDeviceHandle(deviceHandleBuilder.build());
         }
         if (!j.isNull("ranging_technology_filter")) {
             JSONArray jFilters = j.getJSONArray("ranging_technology_filter");
@@ -157,9 +169,16 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         RangingDevice device = new RangingDevice.Builder()
                 .setUuid(UUID.fromString(j.getString("peer_id")))
                 .build();
-        return new OobResponderRangingConfig.Builder(
-                new DeviceHandle.Builder(
-                        device, mTransportHandleFactory.createOobTransport(device)).build())
+        DeviceHandle.Builder deviceHandleBuilder = new DeviceHandle.Builder(
+                device, mTransportHandleFactory.createOobTransport(device));
+
+        if (j.has("peer_bluetooth_address") && !j.isNull("peer_bluetooth_address")) {
+            deviceHandleBuilder.setBluetoothDevice(
+                    BluetoothAdapter.getDefaultAdapter().getRemoteDevice(
+                            j.getString("peer_bluetooth_address")));
+        }
+
+        return new OobResponderRangingConfig.Builder(deviceHandleBuilder.build())
                 .build();
     }
 

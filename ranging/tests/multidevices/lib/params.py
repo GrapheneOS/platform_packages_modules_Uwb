@@ -90,6 +90,9 @@ class OobInitiatorRangingParams(RangingParams):
   security_level: SecurityLevel = SecurityLevel.BASIC
   ranging_mode: RangingMode = RangingMode.AUTO
   peer_ids: List[str]
+  peer_bluetooth_addresses: List[str | None] = dataclasses.field(
+      default_factory=list
+  )
   ranging_technology_filter: List[RangingTechnology] = dataclasses.field(
       default_factory=list
   )
@@ -99,6 +102,7 @@ class OobInitiatorRangingParams(RangingParams):
 class OobResponderRangingParams(RangingParams):
   session_type: RangingSessionType = RangingSessionType.OOB
   peer_id: str
+  peer_bluetooth_address: str | None = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

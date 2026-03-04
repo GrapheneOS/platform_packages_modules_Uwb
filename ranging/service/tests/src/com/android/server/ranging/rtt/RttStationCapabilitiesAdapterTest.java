@@ -32,6 +32,8 @@ import android.net.wifi.WifiManager;
 import androidx.test.filters.SmallTest;
 
 import com.android.server.ranging.CapabilitiesProvider;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,8 @@ public class RttStationCapabilitiesAdapterTest {
     private Context mMockContext;
     @Mock
     private PackageManager mMockPackageManager;
+    @Mock
+    private RangingInjector mMockRangingInjector;
 
     @Mock
     private WifiManager mMockWifiManager;
@@ -58,9 +62,14 @@ public class RttStationCapabilitiesAdapterTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
+
+        RangingInjector.setInstance(mMockRangingInjector);
+
         when(mMockContext.getSystemService(PackageManager.class)).thenReturn(mMockPackageManager);
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
+        when(mMockRangingInjector.isRangingTechnologyEnabled(RangingTechnology.RTT_STATION))
+                .thenReturn(true);
         when(mMockContext.getSystemService(WifiManager.class)).thenReturn(mMockWifiManager);
         when(mMockPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_WIFI_RTT)).thenReturn(true);
