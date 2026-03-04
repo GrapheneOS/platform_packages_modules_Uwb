@@ -18,7 +18,6 @@ package com.android.ranging.rangingtestapp;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -53,7 +52,6 @@ public class ResponderFragment extends Fragment {
     private Spinner mSpinnerDuration;
     private Button mButton;
     private LinearLayout mDistanceViewLayout;
-    private TextView mLogText;
 
     private BleConnectionPeripheralViewModel mBleConnectionViewModel;
     private DistanceMeasurementViewModel mDistanceMeasurementViewModel;
@@ -78,16 +76,16 @@ public class ResponderFragment extends Fragment {
         mDistanceText.setTextSize(96);
         mDistanceText.setGravity(Gravity.END);
         mDistanceCanvasView = new CanvasView(getContext(), "Distance");
+        mDistanceCanvasView.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 1200));
         mDistanceViewLayout.addView(mDistanceCanvasView);
-        mDistanceViewLayout.setPadding(0, 0, 0, 600);
-        mLoggingListener = new LoggingListener(getActivity().getApplicationContext(), true);
-        mLogText = (TextView) root.findViewById(R.id.text_log);
+        mLoggingListener = new LoggingListener(requireContext().getApplicationContext(), true);
         return root;
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        mButton.setEnabled(false);
         mTechnologyArrayAdapter =
                 new ArrayAdapter<String>(
                         getContext(), android.R.layout.simple_spinner_item, new ArrayList<>());
@@ -105,35 +103,29 @@ public class ResponderFragment extends Fragment {
         mDurationArrayAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
-        mLoggingListener
-                .getLogText()
-                .observe(
-                        getActivity(),
-                        log -> {
-                            mLogText.setText(log);
-                        });
         mBleConnectionViewModel =
                 new ViewModelProvider(this,
                         new BleConnectionPeripheralViewModel.Factory(
-                                getActivity().getApplication(), mLoggingListener))
+                                requireActivity().getApplication(), mLoggingListener))
                         .get(BleConnectionPeripheralViewModel.class);
         mDistanceMeasurementViewModel = new ViewModelProvider(
                 this,
                 new DistanceMeasurementViewModel.Factory(
-                        getActivity(), mBleConnectionViewModel,
+                        requireActivity(), mBleConnectionViewModel,
                         mLoggingListener, true))
                 .get(DistanceMeasurementViewModel.class);
         mBleConnectionViewModel
                 .getTargetDevice()
                 .observe(
-                        getActivity(),
+                        getViewLifecycleOwner(),
                         targetDevice -> {
                             mDistanceMeasurementViewModel.setTargetDevice(targetDevice);
+                            mButton.setEnabled(true);
                         });
         mDistanceMeasurementViewModel
                 .getSessionState()
                 .observe(
-                        getActivity(),
+                        getViewLifecycleOwner(),
                         state-> {
                             switch (state) {
                                 case STARTED:
@@ -158,11 +150,15 @@ public class ResponderFragment extends Fragment {
         mDistanceMeasurementViewModel
                 .getDistanceResult()
                 .observe(
-                        getActivity(),
-                        distanceMeters -> {
-                            mDistanceCanvasView.addNode(distanceMeters, /* abort= */ false);
+                        getViewLifecycleOwner(),
+                        distanceResult -> {
+                            mDistanceCanvasView.addNode(
+                                    distanceResult.technology,
+                                    distanceResult.distanceMeters,
+                                    /* abort= */ false);
                             mDistanceText.setText(
-                                    DISTANCE_DECIMAL_FMT.format(distanceMeters) + " m");
+                                    DISTANCE_DECIMAL_FMT.format(distanceResult.distanceMeters)
+                                            + " m");
                         });
 
         mTechnologyArrayAdapter.addAll(mDistanceMeasurementViewModel.getSupportedTechnologies());
