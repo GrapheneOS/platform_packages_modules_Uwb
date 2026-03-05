@@ -47,6 +47,7 @@ _TEST_CASES = (
     "test_ranging_nearby_share_profile_no_valid_reports_stops_session",
     "test_ranging_device_tracker_profile_max_sessions_reject",
     "test_logical_link_mode_data_transfer_session",
+    "test_bypass_mode_data_transfer_session",
 )
 
 class RangingTest(uwb_base_test.UwbBaseTest):
@@ -1872,6 +1873,82 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
     self.initiator.log.info("Logical link data transfer test completed successfully")
     self.responder.log.info("Logical link data transfer test completed successfully")
+
+  def test_bypass_mode_data_transfer_session(self):
+    """Verifies data transmission over bypass mode for in-band data transfer"""
+
+    asserts.skip_if(
+        not self.initiator.ad.uwb.getSpecificationInfo()["fira"]["logical_link_bypass_mode_support"]
+        or not self.responder.ad.uwb.getSpecificationInfo()["fira"]["logical_link_bypass_mode_support"],
+        "Logical link bypass mode data transfer is not supported on one or both devices."
+    )
+
+    self.initiator.log.info("Starting bypass mode data transfer test")
+    self.responder.log.info("Starting bypass mode data transfer test")
+
+    # Configure ranging parameters for initiator and responder
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        ranging_round_usage=uwb_ranging_params.FiraParamEnums
+        .RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        ranging_interval_ms=200,
+        slots_per_ranging_round=25,
+        rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
+        link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_BYPASS,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_RANGING_AND_IN_BAND_DATA,
+        in_band_termination_attempt_count=1,
+    )
+    responder_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+        ranging_round_usage=uwb_ranging_params.FiraParamEnums
+        .RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE,
+        device_address=self.responder_addr,
+        destination_addresses=[self.initiator_addr],
+        ranging_interval_ms=200,
+        slots_per_ranging_round=25,
+        rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
+        link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_BYPASS,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_RANGING_AND_IN_BAND_DATA,
+        in_band_termination_attempt_count=1,
+    )
+
+    session = 0
+    self.initiator.open_fira_ranging(initiator_params, session, expect_to_succeed=True)
+    self.responder.open_fira_ranging(responder_params, session, expect_to_succeed=True)
+
+    # Start ranging
+    self.initiator.start_fira_ranging(session)
+    self.responder.start_fira_ranging(session)
+
+    data = [0x66, 0x77]
+    if not self.initiator.fira_send_logical_link_data(session, data):
+        asserts.fail("Initiator: Failed to send data for session %s: %s",
+                     session, data)
+
+    self.initiator.verify_callback_received("DataSent", session)
+    self.responder.verify_callback_received("DataReceived", session)
+
+      # TODO: Needs more testing
+#     time.sleep(2)
+#     data = [0x20, 0x40]
+#     if not self.responder.fira_send_logical_link_data(session, data):
+#         asserts.fail("Initiator: Failed to send logical link data for session %s: %s",
+#                      session, data)
+#
+#     self.responder.verify_callback_received("DataSent", session)
+#     self.initiator.verify_callback_received("DataReceived", session)
+    # Stop and close sessions
+    self.initiator.stop_ranging(session)
+
+    self.initiator.close_ranging(session)
+    self.responder.close_ranging(session)
+
+    self.initiator.log.info("Bypass mode data transfer test completed successfully")
+    self.responder.log.info("Bypass mode link data transfer test completed successfully")
 
   def test_ranging_device_tracker_profile_max_sessions_reject(self):
     """Verifies opening session fails after max sessions opened.
