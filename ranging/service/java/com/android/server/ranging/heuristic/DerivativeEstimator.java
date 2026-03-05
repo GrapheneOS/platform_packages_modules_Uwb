@@ -41,6 +41,8 @@ public class DerivativeEstimator extends RangeHeuristic {
                     / (data.getTimestampMillis() - mLastData.getTimestampMillis());
             if (!Double.isNaN(slope) && Math.abs(slope) >= 0.0001 /* 10 cm/s */) {
                 onHeuristicUpdated(mAvg.next(slope));
+            } else {
+                onHeuristicUpdated(mAvg.next(0.0));
             }
         }
         mLastData = data;

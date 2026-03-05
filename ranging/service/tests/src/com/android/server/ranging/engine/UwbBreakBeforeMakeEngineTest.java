@@ -17,6 +17,8 @@
 package com.android.server.ranging.engine;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -134,7 +136,8 @@ public class UwbBreakBeforeMakeEngineTest {
         // Simulate error on ALT_TECH. This should result in the stopTechnologies on the ALT_TECH
         RangeHeuristicEvent event = mEngine.getAltFailure();
         event.complete(event);
-        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(Set.of(ALT_TECH));
+        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS))
+                .stopTechnologies(eq(Set.of(ALT_TECH)), anyInt());
     }
 
     @Test
@@ -145,8 +148,8 @@ public class UwbBreakBeforeMakeEngineTest {
         // Simulate error on UWB. This should result in the stopTechnologies on the UWB
         RangeHeuristicEvent event = mEngine.getUwbFailure();
         event.complete(event);
-        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(
-                Set.of(RangingTechnology.UWB));
+        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS))
+                .stopTechnologies(eq(Set.of(RangingTechnology.UWB)), anyInt());
     }
 
     @Test
@@ -162,7 +165,8 @@ public class UwbBreakBeforeMakeEngineTest {
         // A switch event should result in the ALT tech being stopped.
         RangeHeuristicEvent event = mEngine.getNextEvent();
         event.complete(event);
-        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(Set.of(ALT_TECH));
+        mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(
+                eq(Set.of(ALT_TECH)), anyInt());
 
         // Simulate technology stopped callback, then verify UWB is started.
         mEngine.onTechnologyStopped(ALT_TECH, InternalReason.ENGINE_REQUEST);
@@ -178,7 +182,7 @@ public class UwbBreakBeforeMakeEngineTest {
         RangeHeuristicEvent event = mEngine.getNextEvent();
         event.complete(event);
         mListenerInOrder.verify(mListener, timeout(TIMEOUT_MS)).stopTechnologies(
-                Set.of(RangingTechnology.UWB));
+                eq(Set.of(RangingTechnology.UWB)), anyInt());
 
         // Simulate technology stopped callback, then verify UWB is started.
         mEngine.onTechnologyStopped(RangingTechnology.UWB, InternalReason.ENGINE_REQUEST);
