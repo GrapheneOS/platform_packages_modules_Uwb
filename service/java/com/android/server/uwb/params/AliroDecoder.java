@@ -300,10 +300,10 @@ public class AliroDecoder extends TlvDecoder {
 
         try {
             byte mode = tlvs.getByte(ALIRO_SUPPORTED_MAC_MODES);
-            if (isBitSet(mode, MAC_MODE_ROUND_1)) {
+            if (isBitSet(mode, 1 << MAC_MODE_ROUND_1)) {
                 builder.addMacMode(MAC_MODE_ROUND_1);
             }
-            if (isBitSet(mode, MAC_MODE_ROUND_2)) {
+            if (isBitSet(mode, 1 << MAC_MODE_ROUND_2)) {
                 builder.addMacMode(MAC_MODE_ROUND_2);
             }
         } catch (IllegalArgumentException e) {
