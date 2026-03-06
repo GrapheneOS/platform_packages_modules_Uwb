@@ -59,6 +59,7 @@ import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.List;
@@ -138,7 +139,7 @@ public class WifiPdAdapter implements RangingAdapter {
         }
 
         WifiPdRangingParams wifiPdRangingParams = wifiPdConfig.getPdRangingParams();
-        mPeer = wifiPdConfig.getPeerDevice();
+        mPeer = Iterables.getOnlyElement(wifiPdConfig.getPeerDevices());
         mDataNotificationManager = new DataNotificationManager(
                 wifiPdConfig.getSessionConfig().getDataNotificationConfig(),
                 wifiPdConfig.getSessionConfig().getDataNotificationConfig()
@@ -191,7 +192,7 @@ public class WifiPdAdapter implements RangingAdapter {
         mWifiRttManager.startContinuousRanging(null /*WorkSource*/, request, mExecutorService,
                 mContinuousRangingResultCallback);
         // Callback here to be consistent with other ranging technologies.
-        mCallback.onStarted(ImmutableSet.of(mPeer));
+        mCallback.onStarted(wifiPdConfig.getPeerDevices());
     }
 
     @Override

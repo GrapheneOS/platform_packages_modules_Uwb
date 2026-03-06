@@ -123,7 +123,7 @@ public class BleRssiAdapterTest {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getRemoteDevice(anyString())).thenReturn(mMockBluetoothDevice);
         when(mMockBleRssiConfig.getRangingParams()).thenReturn(mMockRangingParams);
-        when(mMockBleRssiConfig.getPeerDevice()).thenReturn(mMockRangingDevice);
+        when(mMockBleRssiConfig.getPeerDevices()).thenReturn(ImmutableSet.of(mMockRangingDevice));
         when(mMockBleRssiConfig.getSessionConfig()).thenReturn(mMockSessionConfig);
         when(mMockSessionConfig.getDataNotificationConfig()).thenReturn(mDataNotificationConfig);
         when(mMockRangingParams.getPeerBluetoothAddress()).thenReturn("mockAddress");

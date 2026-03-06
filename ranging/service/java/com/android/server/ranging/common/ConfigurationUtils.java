@@ -41,9 +41,7 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.blerssi.BleRssiConfig;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.rtt.RttConfig;
-import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
-import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 import com.android.server.ranging.uwb.DlTdoaConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 import com.android.server.ranging.wifipd.WifiPdConfig;
@@ -95,11 +93,11 @@ public class ConfigurationUtils {
         return ImmutableSet.copyOf(configs);
     }
 
-    private static @NonNull Set<MulticastTechnologyConfig> extractMulticastTechnologies(
+    private static @NonNull Set<TechnologyConfig> extractMulticastTechnologies(
             @NonNull Collection<RawRangingDevice> peerParams,
             SessionConfig sessionConfig, @RangingPreference.DeviceRole int role
     ) {
-        Set<MulticastTechnologyConfig> configs = new HashSet<>();
+        Set<TechnologyConfig> configs = new HashSet<>();
 
         Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                 uwbPeersByParams = PeerIgnoringParamsHasher.groupUwbPeersByParams(peerParams);
@@ -117,11 +115,11 @@ public class ConfigurationUtils {
         return configs;
     }
 
-    private static @NonNull Set<UnicastTechnologyConfig> extractUnicastTechnologies(
+    private static @NonNull Set<TechnologyConfig> extractUnicastTechnologies(
             @NonNull Collection<RawRangingDevice> peerParams,
             @NonNull SessionConfig sessionConfig, @RangingPreference.DeviceRole int role
     ) {
-        Set<UnicastTechnologyConfig> configs = new HashSet<>();
+        Set<TechnologyConfig> configs = new HashSet<>();
 
         for (RawRangingDevice peer : peerParams) {
             if (peer.getRangingDevice() == null) continue;
