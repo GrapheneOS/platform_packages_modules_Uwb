@@ -672,9 +672,13 @@ public class UwbAdapter implements RangingAdapter {
                             measurement.getBlockIndex(),
                             measurement.getRoundIndex(),
                             measurement.getNLoS(),
-                            ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+                            measurement.getTxTimestampV2() != null
+                                    ? measurement.getTxTimestampV2()
+                                    : ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
                                     .putLong(measurement.getTxTimestamp()).array(),
-                            ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+                            measurement.getRxTimestampV2() != null
+                                    ? measurement.getRxTimestampV2()
+                                    : ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
                                     .putLong(measurement.getRxTimestamp()).array(),
                             measurement.getAnchorCfo(),
                             measurement.getCfo(),
@@ -806,6 +810,7 @@ public class UwbAdapter implements RangingAdapter {
                 rangeLimitsConfig,
                 params.getRangingIntervalMillis(),
                 params.getSlotsPerRangingRound(),
+                params.getMeasurementVersion(),
                 params.getRangingRoundIndexes());
     }
 }

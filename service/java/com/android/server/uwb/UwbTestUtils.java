@@ -18,6 +18,7 @@ package com.android.server.uwb;
 
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA;
+import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.util.UwbUtil.convertFloatToQFormat;
@@ -50,6 +51,9 @@ import com.google.uwb.support.oemextension.RangingReportMetadata;
 import com.google.uwb.support.radar.RadarData;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSweepData;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class UwbTestUtils {
     public static final int TEST_SESSION_ID = 7;
@@ -112,6 +116,8 @@ public class UwbTestUtils {
     private static final int TEST_ROUND_INDEX = 1;
     private static final long TEST_TIMESTAMP = 500_000L;
     private static final long TEST_TIMESTAMP2 = 600_000L;
+    private static final byte[] TEST_TIMESTAMP_V2 = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
+    private static final byte[] TEST_TIMESTAMP2_V2 = {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
     private static final float TEST_ANCHOR_CFO = 12.50f;
     private static final float TEST_CFO = 15.50f;
     private static final long TEST_INTIATOR_REPLY_TIME = 500_000L;
@@ -152,6 +158,8 @@ public class UwbTestUtils {
                         macAddressingMode, macAddress, rangingStatus);
             case RANGING_MEASUREMENT_TYPE_DL_TDOA:
                 return generateDlTDoAMeasurementRangingData(macAddressingMode, rangingStatus);
+            case RANGING_MEASUREMENT_TYPE_DL_TDOA_V2:
+                return generateDlTDoAV2MeasurementRangingData(macAddressingMode, rangingStatus);
             default:
                 return generateDefaultRangingData();
         }
@@ -219,10 +227,35 @@ public class UwbTestUtils {
                 convertFloatToQFormat(TEST_ANCHOR_CFO, 6, 10),
                 convertFloatToQFormat(TEST_CFO, 6, 10), TEST_INTIATOR_REPLY_TIME,
                 TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
-                TEST_ACTIVE_RANGING_ROUNDS);
+                TEST_ACTIVE_RANGING_ROUNDS, DlTDoAMeasurement.SUPERCLUSTER_ID_ABSENT);
 
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_DL_TDOA,
+                TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
+                uwbDlTDoAMeasurements, TEST_RAW_NTF_DATA);
+    }
+
+    private static UwbRangingData generateDlTDoAV2MeasurementRangingData(
+            int macAddressingMode, int rangingStatus) {
+        final int noOfRangingMeasures = 1;
+        byte[] macAddress = (macAddressingMode == MAC_ADDRESSING_MODE_SHORT)
+                ? PEER_SHORT_MAC_ADDRESS : PEER_EXTENDED_MAC_ADDRESS;
+        final UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements =
+                new UwbDlTDoAMeasurement[noOfRangingMeasures];
+        uwbDlTDoAMeasurements[0] = new UwbDlTDoAMeasurement(macAddress, rangingStatus,
+                TEST_MESSAGE_TYPE, TEST_MESSAGE_CONTROL, TEST_BLOCK_INDEX, TEST_ROUND_INDEX,
+                TEST_LOS, convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7),
+                TEST_AOA_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7),
+                TEST_AOA_ELEVATION_FOM, TEST_RSSI, TEST_TIMESTAMP, TEST_TIMESTAMP,
+                TEST_TIMESTAMP_V2, TEST_TIMESTAMP2_V2,
+                convertFloatToQFormat(TEST_ANCHOR_CFO, 6, 10),
+                convertFloatToQFormat(TEST_CFO, 6, 10), TEST_INTIATOR_REPLY_TIME,
+                TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
+                TEST_ACTIVE_RANGING_ROUNDS, 0x55);
+
+        return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
+                TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL,
+                RANGING_MEASUREMENT_TYPE_DL_TDOA_V2,
                 TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
                 uwbDlTDoAMeasurements, TEST_RAW_NTF_DATA);
     }
@@ -329,14 +362,19 @@ public class UwbTestUtils {
                     .setRangingMeasurementMetadata(rangingMeasurementMetadata);
         }
 
-        if (rangingMeasurementType == RANGING_MEASUREMENT_TYPE_DL_TDOA) {
-            DlTDoAMeasurement dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
+        if (rangingMeasurementType == RANGING_MEASUREMENT_TYPE_DL_TDOA
+                || rangingMeasurementType == RANGING_MEASUREMENT_TYPE_DL_TDOA_V2) {
+            DlTDoAMeasurement.Builder dlTDoAMeasurementBuilder = new DlTDoAMeasurement.Builder()
                     .setMessageType(TEST_MESSAGE_TYPE)
                     .setMessageControl(TEST_MESSAGE_CONTROL)
                     .setBlockIndex(TEST_BLOCK_INDEX)
                     .setNLoS(TEST_LOS)
                     .setTxTimestamp(TEST_TIMESTAMP)
                     .setRxTimestamp(TEST_TIMESTAMP)
+                    .setTxTimestampV2(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+                            .putLong(TEST_TIMESTAMP).array())
+                    .setRxTimestampV2(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+                            .putLong(TEST_TIMESTAMP).array())
                     .setAnchorCfo(TEST_ANCHOR_CFO)
                     .setCfo(TEST_CFO)
                     .setInitiatorReplyTime(TEST_INTIATOR_REPLY_TIME)
@@ -344,8 +382,20 @@ public class UwbTestUtils {
                     .setInitiatorResponderTof(TEST_INITIATOR_RESPONDER_TOF)
                     .setAnchorLocation(TEST_ANCHOR_LOCATION)
                     .setActiveRangingRounds(TEST_ACTIVE_RANGING_ROUNDS)
-                    .setRoundIndex(TEST_ROUND_INDEX)
-                    .build();
+                    .setRoundIndex(TEST_ROUND_INDEX);
+
+            if (rangingMeasurementType == RANGING_MEASUREMENT_TYPE_DL_TDOA_V2) {
+                dlTDoAMeasurementBuilder
+                        .setTxTimestampV2(TEST_TIMESTAMP_V2)
+                        .setRxTimestampV2(TEST_TIMESTAMP2_V2)
+                        .setSuperclusterId(0x55)
+                        .setMeasurementVersion(DlTDoAMeasurement.MEASUREMENT_VERSION_2);
+            } else {
+                dlTDoAMeasurementBuilder
+                        .setMeasurementVersion(DlTDoAMeasurement.MEASUREMENT_VERSION_1);
+            }
+
+            DlTDoAMeasurement dlTDoAMeasurement = dlTDoAMeasurementBuilder.build();
             rangingMeasurementBuilder.setRssiDbm(-TEST_RSSI / 2);
             rangingMeasurementBuilder.setRangingMeasurementMetadata(dlTDoAMeasurement.toBundle());
         }

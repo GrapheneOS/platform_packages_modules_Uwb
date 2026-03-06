@@ -326,7 +326,9 @@ enum AppConfigTlvType : 8 {
     SECURE_RANGING_CSW_LENGTH = 0x4B,
     APPLICATION_DATA_ENDPOINT = 0x4C,
     OWR_AOA_MEASUREMENT_NTF_PERIOD = 0x4D,
-    RFU_APP_CFG_TLV_TYPE_RANGE = 0x4E..0x9F,
+    DL_TDOA_ANCHOR_LOCATION_V2 = 0x4E,
+    DL_TDOA_MEASUREMENT_NTF_V2 = 0x4F,
+    RFU_APP_CFG_TLV_TYPE_RANGE = 0x50..0x9F,
 
     CCC_RESERVED_APP_CFG_TLV_TYPE_RANGE = 0xA0..0xBF {
         // CCC specific
@@ -1347,6 +1349,7 @@ enum RangingMeasurementType : 8 {
     TWO_WAY = 0x1,
     DL_TDOA = 0x02,
     OWR_AOA = 0x03,
+    DL_TDOA_V2 = 0x06,
 }
 
 packet SessionInfoNtf : SessionControlNotification (opcode = 0x0) { // SESSION_INFO
@@ -1398,6 +1401,24 @@ packet ExtendedMacDlTDoASessionInfoNtf : SessionInfoNtf (ranging_measurement_typ
 
 test ExtendedMacDlTDoASessionInfoNtf {
      "\x62\x00\x00\x19\x00\x00\x00\x00\x02\x03\x04\x05\x06\x07\x08\x00\x0a\x01\x01\x01\x02\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+}
+
+packet ShortMacDlTDoAV2SessionInfoNtf : SessionInfoNtf (ranging_measurement_type = DL_TDOA_V2, mac_address_indicator = SHORT_ADDRESS) {
+    no_of_ranging_measurements : 8,
+    dl_tdoa_measurements : 8[],
+}
+
+test ShortMacDlTDoAV2SessionInfoNtf {
+     "\x62\x00\x00\x19\x00\x00\x00\x00\x02\x03\x04\x05\x06\x07\x08\x00\x0a\x02\x01\x01\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+}
+
+packet ExtendedMacDlTDoAV2SessionInfoNtf : SessionInfoNtf (ranging_measurement_type = DL_TDOA_V2, mac_address_indicator = EXTENDED_ADDRESS) {
+    no_of_ranging_measurements : 8,
+    dl_tdoa_measurements : 8[],
+}
+
+test ExtendedMacDlTDoAV2SessionInfoNtf {
+     "\x62\x00\x00\x19\x00\x00\x00\x00\x02\x03\x04\x05\x06\x07\x08\x00\x0a\x01\x01\x01\x06\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00",
 }
 
 packet ShortMacOwrAoaSessionInfoNtf : SessionInfoNtf (ranging_measurement_type = OWR_AOA, mac_address_indicator = SHORT_ADDRESS) {

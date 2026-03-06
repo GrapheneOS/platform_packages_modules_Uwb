@@ -161,6 +161,7 @@ public class FiraOpenSessionParams extends FiraParams {
     @SecureRangingNefaLevel private final int mSecureRangingNefaLevel;
     private final int mSecureRangingCswLength;
     private final int mApplicationDataEndpoint;
+    @DlTdoaMeasurementVersion private final int mDlTdoaMeasurementVersion;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -275,6 +276,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_SECURE_RANGING_CSW_LENGTH = "secure_ranging_csw_length";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
     private static final String KEY_ANTENNA_MODE = "antenna_mode";
+    private static final String KEY_DLTDOA_MEASUREMENT_VERSION = "dltdoa_measurement_version";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -365,7 +367,8 @@ public class FiraOpenSessionParams extends FiraParams {
             int sessionOffsetInMicroSecond,
             @SecureRangingNefaLevel int secureRangingNefaLevel,
             int secureRangingCswLength,
-            int applicationDataEndpoint) {
+            int applicationDataEndpoint,
+            int dltdoaMeasurementVersion) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mSessionType = sessionType;
@@ -455,6 +458,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mSecureRangingNefaLevel = secureRangingNefaLevel;
         mSecureRangingCswLength = secureRangingCswLength;
         mApplicationDataEndpoint = applicationDataEndpoint;
+        mDlTdoaMeasurementVersion = dltdoaMeasurementVersion;
     }
 
     @Override
@@ -847,6 +851,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mApplicationDataEndpoint;
     }
 
+    public int getDlTdoaMeasurementVersion() {
+        return mDlTdoaMeasurementVersion;
+    }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -996,6 +1004,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_SECURE_RANGING_NEFA_LEVEL, mSecureRangingNefaLevel);
         bundle.putInt(KEY_SECURE_RANGING_CSW_LENGTH, mSecureRangingCswLength);
         bundle.putInt(KEY_APPLICATION_DATA_ENDPOINT, mApplicationDataEndpoint);
+        bundle.putInt(KEY_DLTDOA_MEASUREMENT_VERSION, mDlTdoaMeasurementVersion);
         return bundle;
     }
 
@@ -1139,9 +1148,12 @@ public class FiraOpenSessionParams extends FiraParams {
                         ? SECURE_RANGING_CSW_LENGTH_DEFAULT
                         : bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH))
                 .setApplicationDataEndpoint(bundle.getInt(
-                        KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
+                        KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT))
+                .setDlTdoaMeasurementVersion(bundle.getInt(
+                        KEY_DLTDOA_MEASUREMENT_VERSION, 1));
 
         if (builder.isTimeScheduledTwrSession()) {
+
             long[] destAddresses = bundle.getLongArray(KEY_DEST_ADDRESS_LIST);
             if (destAddresses != null) {
                 List<UwbAddress> destAddressList = new ArrayList<>();
@@ -1415,10 +1427,14 @@ public class FiraOpenSessionParams extends FiraParams {
         private int mSecureRangingNefaLevel = SECURE_RANGING_NEFA_LEVEL_DEFAULT;
 
         private int mSecureRangingCswLength = SECURE_RANGING_CSW_LENGTH_DEFAULT;
-
         private int mApplicationDataEndpoint = APPLICATION_DATA_ENDPOINT_DEFAULT;
 
-        public Builder() {}
+        @DlTdoaMeasurementVersion
+        private int mDlTdoaMeasurementVersion = DL_TDOA_MEASUREMENT_VERSION_1;
+
+        public Builder() {
+        }
+
 
         public Builder(@NonNull Builder builder) {
             mProtocolVersion.set(builder.mProtocolVersion.get());
@@ -1605,6 +1621,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mSecureRangingNefaLevel = params.mSecureRangingNefaLevel;
             mSecureRangingCswLength = params.mSecureRangingCswLength;
             mApplicationDataEndpoint = params.mApplicationDataEndpoint;
+            mDlTdoaMeasurementVersion = params.mDlTdoaMeasurementVersion;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
@@ -2191,6 +2208,12 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setDlTdoaMeasurementVersion(
+                int dlTdoaMeasurementVersion) {
+            mDlTdoaMeasurementVersion = dlTdoaMeasurementVersion;
+            return this;
+        }
+
         @SuppressLint("NewApi") // UwbManager#toBytes is supported from API 31.
         private void checkAddress() {
             checkArgument(
@@ -2474,7 +2497,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mSessionOffsetInMicroSeconds,
                     mSecureRangingNefaLevel,
                     mSecureRangingCswLength,
-                    mApplicationDataEndpoint);
+                    mApplicationDataEndpoint,
+                    mDlTdoaMeasurementVersion);
         }
     }
 }

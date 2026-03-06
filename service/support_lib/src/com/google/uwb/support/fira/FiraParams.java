@@ -1253,6 +1253,23 @@ public abstract class FiraParams extends Params {
     /** Logical Link Mode. */
     public static final int LINK_LAYER_MODE_LOGICAL_LINK = 0x01;
 
+    /**
+     * Dl-TDoA measurement version
+     */
+    @IntDef(
+            value = {
+                    DL_TDOA_MEASUREMENT_VERSION_1,
+                    DL_TDOA_MEASUREMENT_VERSION_2,
+            })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface DlTdoaMeasurementVersion {}
+
+    /** (Default) Bypass Logical Link Mode. */
+    public static final int DL_TDOA_MEASUREMENT_VERSION_1 = 0x01;
+
+    /** Logical Link Mode. */
+    public static final int DL_TDOA_MEASUREMENT_VERSION_2 = 0x02;
+
     private static final byte[] sShortForbiddenUwbAddress = {(byte) 0xFF, (byte) 0xFF};
     private static final byte[] sExtendedForbiddenUwbAddress = {
             (byte) 0xFF,

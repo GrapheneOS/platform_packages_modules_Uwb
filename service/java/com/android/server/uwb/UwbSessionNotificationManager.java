@@ -822,7 +822,9 @@ public class UwbSessionNotificationManager {
                 && rangingData.getRangingMeasuresType()
                     != UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA
                 && rangingData.getRangingMeasuresType()
-                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
+                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA
+                && rangingData.getRangingMeasuresType()
+                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2) {
             return null;
         }
         boolean isAoaAzimuthEnabled = true;
@@ -971,7 +973,9 @@ public class UwbSessionNotificationManager {
 
             rangingReportBuilder.addMeasurement(rangingMeasurementBuilder.build());
         } else if (rangingData.getRangingMeasuresType()
-                == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
+                == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA
+                || rangingData.getRangingMeasuresType()
+                == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2) {
             List<RangingMeasurement> rangingMeasurements = new ArrayList<>();
             UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements = rangingData.getUwbDlTDoAMeasurements();
             for (int i = 0; i < rangingData.getNoOfRangingMeasures(); ++i) {
@@ -997,7 +1001,6 @@ public class UwbSessionNotificationManager {
                                 angleOfArrivalMeasurement);
                     }
                 }
-                // TODO: support DlTDoAMeasurement for both measurement v1 and v2
                 DlTDoAMeasurement dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
                         .setMessageType(uwbDlTDoAMeasurements[i].getMessageType())
                         .setMessageControl(uwbDlTDoAMeasurements[i].getMessageControl())
@@ -1005,6 +1008,8 @@ public class UwbSessionNotificationManager {
                         .setNLoS(uwbDlTDoAMeasurements[i].getNLoS())
                         .setTxTimestamp(uwbDlTDoAMeasurements[i].getTxTimestamp())
                         .setRxTimestamp(uwbDlTDoAMeasurements[i].getRxTimestamp())
+                        .setTxTimestampV2(uwbDlTDoAMeasurements[i].getTxTimestampV2())
+                        .setRxTimestampV2(uwbDlTDoAMeasurements[i].getRxTimestampV2())
                         .setAnchorCfo(uwbDlTDoAMeasurements[i].getAnchorCfo())
                         .setCfo(uwbDlTDoAMeasurements[i].getCfo())
                         .setInitiatorReplyTime(uwbDlTDoAMeasurements[i].getInitiatorReplyTime())
@@ -1013,6 +1018,12 @@ public class UwbSessionNotificationManager {
                                 .getInitiatorResponderTof())
                         .setAnchorLocation(uwbDlTDoAMeasurements[i].getAnchorLocation())
                         .setActiveRangingRounds(uwbDlTDoAMeasurements[i].getActiveRangingRounds())
+                        .setSuperclusterId(uwbDlTDoAMeasurements[i].getSuperclusterId())
+                        .setMeasurementVersion(
+                                rangingData.getRangingMeasuresType()
+                                        == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2
+                                        ? DlTDoAMeasurement.MEASUREMENT_VERSION_2
+                                        : DlTDoAMeasurement.MEASUREMENT_VERSION_1)
                         .setRoundIndex(uwbDlTDoAMeasurements[i].getRoundIndex())
                         .build();
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(

@@ -129,6 +129,7 @@ public class RangingTagTest {
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         180, /* rangingIntervalMs */
                         20, /* slotsPerRangingRound */
+                        DlTdoaMeasurement.MEASUREMENT_VERSION_1,
                         new byte[]{0} /* rangingRoundIndexes */);
 
         int expectedSessionId = RangingDevice.calculateHashedSessionId(
@@ -446,6 +447,7 @@ public class RangingTagTest {
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         180, /* rangingIntervalMs */
                         20, /* slotsPerRangingRound */
+                        DlTdoaMeasurement.MEASUREMENT_VERSION_1,
                         new byte[]{0} /* rangingRoundIndexes */);
         mRangingTag.setRangingParameters(rangingParameters);
     }

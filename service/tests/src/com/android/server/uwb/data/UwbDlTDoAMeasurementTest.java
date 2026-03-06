@@ -27,8 +27,6 @@ import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.fira.FiraParams;
 
-import java.util.Arrays;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -58,6 +56,7 @@ public class UwbDlTDoAMeasurementTest {
     private static final int TEST_RSSI = -50;
     private static final long TEST_TX_TIMESTAMP = 1234567890L;
     private static final long TEST_RX_TIMESTAMP = 9876543210L;
+    private static final int TEST_SUPERCLUSTER_ID = 5;
     private static final int TEST_ANCHOR_CFO_QFORMAT = UwbUtil.twos_compliment(10 << 10, 16);
     private static final float TEST_ANCHOR_CFO_FLOAT =
             UwbUtil.convertQFormatToFloat(TEST_ANCHOR_CFO_QFORMAT, 6, 10);
@@ -70,6 +69,8 @@ public class UwbDlTDoAMeasurementTest {
     private static final byte[] TEST_ANCHOR_LOCATION =
             {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, (byte) 0x88, (byte) 0x99};
     private static final byte[] TEST_ACTIVE_RANGING_ROUNDS = {1, 3, 5, 7};
+    private static final byte[] TEST_TX_TIMESTAMP_V2 = {0x01, 0x02, 0x03, 0x04};
+    private static final byte[] TEST_RX_TIMESTAMP_V2 = {0x05, 0x06, 0x07, 0x08};
 
     private UwbDlTDoAMeasurement mUwbDlTDoAMeasurement;
 
@@ -81,7 +82,8 @@ public class UwbDlTDoAMeasurementTest {
                 TEST_AOA_AZIMUTH_FOM, TEST_AOA_ELEVATION_QFORMAT, TEST_AOA_ELEVATION_FOM,
                 TEST_RSSI_QFORMAT, TEST_TX_TIMESTAMP, TEST_RX_TIMESTAMP, TEST_ANCHOR_CFO_QFORMAT,
                 TEST_CFO_QFORMAT, TEST_INITIATOR_REPLY_TIME, TEST_RESPONDER_REPLY_TIME,
-                TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION, TEST_ACTIVE_RANGING_ROUNDS);
+                TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION, TEST_ACTIVE_RANGING_ROUNDS,
+                TEST_SUPERCLUSTER_ID);
 
         assertThat(mUwbDlTDoAMeasurement.getMacAddress()).isEqualTo(TEST_MAC_ADDRESS);
         assertThat(mUwbDlTDoAMeasurement.getStatus()).isEqualTo(TEST_STATUS);
@@ -99,8 +101,8 @@ public class UwbDlTDoAMeasurementTest {
         assertThat(mUwbDlTDoAMeasurement.getRxTimestamp()).isEqualTo(TEST_RX_TIMESTAMP);
         assertThat(mUwbDlTDoAMeasurement.getAnchorCfo()).isEqualTo(TEST_ANCHOR_CFO_FLOAT);
         assertThat(mUwbDlTDoAMeasurement.getCfo()).isEqualTo(TEST_CFO_FLOAT);
-        assertThat(mUwbDlTDoAMeasurement.getInitiatorReplyTime())
-                .isEqualTo(TEST_INITIATOR_REPLY_TIME);
+        assertThat(mUwbDlTDoAMeasurement.getInitiatorReplyTime()).isEqualTo(
+                TEST_INITIATOR_REPLY_TIME);
         assertThat(mUwbDlTDoAMeasurement.getResponderReplyTime())
                 .isEqualTo(TEST_RESPONDER_REPLY_TIME);
         assertThat(mUwbDlTDoAMeasurement.getInitiatorResponderTof())
@@ -108,5 +110,25 @@ public class UwbDlTDoAMeasurementTest {
         assertThat(mUwbDlTDoAMeasurement.getAnchorLocation()).isEqualTo(TEST_ANCHOR_LOCATION);
         assertThat(mUwbDlTDoAMeasurement.getActiveRangingRounds())
                 .isEqualTo(TEST_ACTIVE_RANGING_ROUNDS);
+        assertThat(mUwbDlTDoAMeasurement.getSuperclusterId()).isEqualTo(TEST_SUPERCLUSTER_ID);
     }
+
+    @Test
+    public void testInitializeUwbDlTDoAMeasurementV2() throws Exception {
+        mUwbDlTDoAMeasurement = new UwbDlTDoAMeasurement(
+                TEST_MAC_ADDRESS, TEST_STATUS, TEST_MESSAGE_TYPE, TEST_MESSAGE_CONTROL,
+                TEST_BLOCK_INDEX, TEST_ROUND_INDEX, TEST_NLOS, TEST_AOA_AZIMUTH_QFORMAT,
+                TEST_AOA_AZIMUTH_FOM, TEST_AOA_ELEVATION_QFORMAT, TEST_AOA_ELEVATION_FOM,
+                TEST_RSSI_QFORMAT, TEST_TX_TIMESTAMP, TEST_RX_TIMESTAMP,
+                TEST_TX_TIMESTAMP_V2, TEST_RX_TIMESTAMP_V2,
+                TEST_ANCHOR_CFO_QFORMAT, TEST_CFO_QFORMAT, TEST_INITIATOR_REPLY_TIME,
+                TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
+                TEST_ACTIVE_RANGING_ROUNDS, TEST_SUPERCLUSTER_ID);
+
+        assertThat(mUwbDlTDoAMeasurement.getMacAddress()).isEqualTo(TEST_MAC_ADDRESS);
+        assertThat(mUwbDlTDoAMeasurement.getTxTimestampV2()).isEqualTo(TEST_TX_TIMESTAMP_V2);
+        assertThat(mUwbDlTDoAMeasurement.getRxTimestampV2()).isEqualTo(TEST_RX_TIMESTAMP_V2);
+        assertThat(mUwbDlTDoAMeasurement.getSuperclusterId()).isEqualTo(TEST_SUPERCLUSTER_ID);
+    }
+
 }

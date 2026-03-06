@@ -26,6 +26,7 @@ public class DtTagParameters extends RangingParameters {
     // DL-TDoA Specific Params
     private final int mRangingIntervalMs;
     private final int mSlotsPerRangingRound;
+    private final int mMeasurementVersion;
     @Nullable
     private final byte[] mRangingRoundIndexes;
 
@@ -37,6 +38,7 @@ public class DtTagParameters extends RangingParameters {
             @Nullable UwbRangeLimitsConfig rangeLimitsConfig,
             int rangingIntervalMs,
             int slotsPerRangingRound,
+            int measurementVersion,
             @Nullable byte[] rangingRoundIndexes) {
         super(
                 DT_TAG_CONFIG_ID,
@@ -54,6 +56,7 @@ public class DtTagParameters extends RangingParameters {
                 Utils.ANTENNA_MODE_UNSET);
         mRangingIntervalMs = rangingIntervalMs;
         mSlotsPerRangingRound = slotsPerRangingRound;
+        mMeasurementVersion = measurementVersion;
         mRangingRoundIndexes = rangingRoundIndexes;
     }
 
@@ -63,6 +66,10 @@ public class DtTagParameters extends RangingParameters {
 
     public int getSlotsPerRangingRound() {
         return mSlotsPerRangingRound;
+    }
+
+    public int getMeasurementVersion() {
+        return mMeasurementVersion;
     }
 
     @Nullable

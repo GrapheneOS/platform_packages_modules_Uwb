@@ -27,6 +27,7 @@ import static com.android.ranging.uwb.backend.internal.Utils.STATIC_STS_SESSION_
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.Utils.VENDOR_ID_SIZE;
 import static com.android.ranging.uwb.backend.internal.Utils.getRangingTimingParams;
+
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
 import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_NONE;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_FIRA_HOPPING_ENABLE;
@@ -48,11 +49,14 @@ import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
 
 import android.util.ArrayMap;
+
 import androidx.annotation.Nullable;
+
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -361,13 +365,13 @@ public final class ConfigurationManager {
                         .setMaxRangingRoundRetries(rangingParameters
                                 .getUwbRangeLimitsConfig().getRangeMaxRangingRoundRetries())
                         .setAntennaMode(
-                            (byte) Utils.convertToFiraAntennaMode(
-                                rangingParameters.getAntennaMode()));
+                                (byte) Utils.convertToFiraAntennaMode(
+                                        rangingParameters.getAntennaMode()));
         // Turn off RRRM if the client does not want data notification.
         if (rangingParameters
                 .getUwbRangeDataNtfConfig()
                 .getRangeDataNtfConfigType() == RANGE_DATA_NTF_DISABLE) {
-             builder.setHasRangingResultReportMessage(false);
+            builder.setHasRangingResultReportMessage(false);
         }
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
@@ -511,6 +515,7 @@ public final class ConfigurationManager {
                                 Utils.convertMsToRstu(rangingParameters.getSlotDuration()))
                         .setSlotsPerRangingRound(rangingParameters.getSlotsPerRangingRound())
                         .setRangingIntervalMs(rangingParameters.getRangingIntervalMs())
+                        .setDlTdoaMeasurementVersion(rangingParameters.getMeasurementVersion())
                         .setInBandTerminationAttemptCount(3)
                         .setStsConfig(FiraParams.STS_CONFIG_STATIC)
                         .setRangingErrorStreakTimeoutMs(10_000L)
@@ -527,9 +532,8 @@ public final class ConfigurationManager {
                         rangingParameters.getSessionKeyInfo(),
                         VENDOR_ID_SIZE,
                         STATIC_STS_SESSION_KEY_INFO_SIZE);
-        builder.setVendorId(
-                Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
-            .setStaticStsIV(staticStsIv);
+        builder.setVendorId(Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
+                .setStaticStsIV(staticStsIv);
 
         builder.setRframeConfig(RFRAME_CONFIG_SP1);
 
