@@ -18,6 +18,7 @@ package com.android.server.uwb.params;
 
 import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_CSW_LENGTH_DEFAULT;
 import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_NEFA_LEVEL_DEFAULT;
+import static com.google.uwb.support.rftest.RfTestParams.NO_STS_DETECT_BITMAP;
 
 import android.uwb.UwbAddress;
 
@@ -60,8 +61,12 @@ public class RfTestEncoder extends TlvEncoder {
                 .putByte(ConfigParam.PHR_RANGING_BIT, (byte) params.getPhrRangingBit())
                 .putInt(ConfigParam.RMARKER_TX_START, params.getRmarkerTxStart())
                 .putInt(ConfigParam.RMARKER_RX_START, params.getRmarkerRxStart())
-                .putByte(ConfigParam.STS_INDEX_AUTO_INCR, (byte) params.getStsIndexAutoIncr())
-                .putByte(ConfigParam.STS_DETECT_BITMAP, (byte) params.getStsDetectBitmap());
+                .putByte(ConfigParam.STS_INDEX_AUTO_INCR, (byte) params.getStsIndexAutoIncr());
+
+        if (params.getStsDetectBitmap() != NO_STS_DETECT_BITMAP) {
+            tlvBufferBuilder.putByte(ConfigParam.STS_DETECT_BITMAP,
+                    (byte) params.getStsDetectBitmap());
+        }
 
         return tlvBufferBuilder.build();
     }
