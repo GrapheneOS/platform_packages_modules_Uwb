@@ -97,7 +97,6 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
         mProtocol = new OobResponderProtocol(mInjector);
 
         mOobConnection.receiveData().addCallback(mOobConnectionListener, mOobExecutor);
-        mSessionListener.onSessionOpened();
     }
 
     private class OobConnectionListener implements FutureCallback<byte[]> {

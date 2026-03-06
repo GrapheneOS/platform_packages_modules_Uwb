@@ -53,6 +53,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.common.EmptyTechnologyConfig;
 import com.android.server.ranging.oob.packets.BleCsCapabilities;
 import com.android.server.ranging.oob.packets.BleCsConfiguration;
 import com.android.server.ranging.oob.packets.BleRssiCapabilities;
@@ -270,12 +272,16 @@ public class OobResponderProtocol {
                                 UwbAddress.fromBytes(uwb.getAddress())))
                         .setDeviceRole(uwbDeviceRole(uwb.getDeviceRole()))
                         .build());
-                case BleCsConfiguration unused -> {
-                    // Skip: BLE CS does not need to be configured on responder.
-                }
-                case BleRssiConfiguration unused -> {
-                    // Skip: BLE RSSI does not need to be configured on responder.
-                }
+                case BleCsConfiguration unused ->
+                    // BLE CS does not need to be configured on responder.
+                    configsBuilder.add(new EmptyTechnologyConfig(
+                            RangingTechnology.CS, RangingPreference.DEVICE_ROLE_RESPONDER,
+                            ImmutableSet.of(handle.getRangingDevice())));
+                case BleRssiConfiguration unused ->
+                    // BLE RSSI does not need to be configured on responder.
+                    configsBuilder.add(new EmptyTechnologyConfig(
+                            RangingTechnology.RSSI, RangingPreference.DEVICE_ROLE_RESPONDER,
+                            ImmutableSet.of(handle.getRangingDevice())));
                 case WifiNanRttConfiguration wifiNan -> configsBuilder.add(new RttConfig(
                         Byte.toUnsignedInt(wifiNan.getDeviceRole().toByte()),
                         new RttRangingParams.Builder(

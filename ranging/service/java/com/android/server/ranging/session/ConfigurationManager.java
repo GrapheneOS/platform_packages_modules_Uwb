@@ -45,8 +45,7 @@ public class ConfigurationManager {
 
     /** A complete configuration for a session within a specific ranging technology's stack */
     public interface TechnologyConfig {
-        @NonNull
-        RangingTechnology getTechnology();
+        @NonNull RangingTechnology getTechnology();
 
         @RangingPreference.DeviceRole int getDeviceRole();
 
