@@ -43,7 +43,7 @@ public class IosAccessoryRangingManager {
         abstract void onRangingCapabilities(RangingCapabilities rangingCapabilities);
         abstract void onRangingStarted();
         abstract void onRangingStopped();
-        abstract void onRangingResult(double distanceMeters);
+        abstract void onRangingResult(int technology, double distanceMeters);
     }
 
     private final RangingManager mRangingManager;
@@ -90,7 +90,8 @@ public class IosAccessoryRangingManager {
 
         public void onResults(RangingDevice peer, RangingData data) {
             printLog("RangingSession onResults: " + peer + " with " + data);
-            mRangingCallback.onRangingResult(data.getDistance().getMeasurement());
+            mRangingCallback.onRangingResult(
+                    data.getRangingTechnology(), data.getDistance().getMeasurement());
         }
     };
 

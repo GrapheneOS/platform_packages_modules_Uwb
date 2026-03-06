@@ -165,7 +165,8 @@ public class IosAccessoryRangingViewModel extends AndroidViewModel {
     private final MutableLiveData<Constants.RangeSessionState> mSessionState =
             new MutableLiveData<>(Constants.RangeSessionState.STOPPED);
 
-    private final MutableLiveData<Double> mDistanceResult = new MutableLiveData<>();
+    private final MutableLiveData<DistanceMeasurementViewModel.DistanceResult> mDistanceResult =
+            new MutableLiveData<>();
 
     private DeviceRoleItem mDeviceRoleItem = DeviceRoleItem.RESPONDER;
     private SlotDurationItem mSlotDurationItem = SlotDurationItem.DURATION_2_MS;
@@ -235,6 +236,10 @@ public class IosAccessoryRangingViewModel extends AndroidViewModel {
                     UwbRangingCapabilities uwbRangingCapabilities =
                             rangingCapabilities.getUwbCapabilities();
 
+                    if (uwbRangingCapabilities == null) {
+                        return;
+                    }
+
                     List<Integer> slotDurations =
                             uwbRangingCapabilities.getSupportedSlotDurations();
                     List<SlotDurationItem> slotDurationItems = new ArrayList<>();
@@ -285,8 +290,10 @@ public class IosAccessoryRangingViewModel extends AndroidViewModel {
                 }
 
                 @Override
-                void onRangingResult(double distanceMeters) {
-                    mDistanceResult.postValue(distanceMeters);
+                void onRangingResult(int technology, double distanceMeters) {
+                    mDistanceResult.postValue(
+                            new DistanceMeasurementViewModel.DistanceResult(
+                                    technology, distanceMeters));
                 }
             };
 
@@ -337,7 +344,7 @@ public class IosAccessoryRangingViewModel extends AndroidViewModel {
         return mSessionState;
     }
 
-    LiveData<Double> getDistanceResult() {
+    LiveData<DistanceMeasurementViewModel.DistanceResult> getDistanceResult() {
         return mDistanceResult;
     }
 
@@ -362,6 +369,7 @@ public class IosAccessoryRangingViewModel extends AndroidViewModel {
         if (item == mSlotDurationItem) {
             return;
         }
+
         RangeSessionState state = mSessionState.getValue();
         if (state != RangeSessionState.STOPPED) {
             stopAccessoryRanging();
