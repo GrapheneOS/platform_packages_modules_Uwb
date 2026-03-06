@@ -256,6 +256,7 @@ public abstract class AliroParams extends Params {
                 MAC_MODE_ROUND_2,
             })
     public @interface MacModeRound {}
+
     public static final int MAC_MODE_ROUND_1 = 0;
     public static final int MAC_MODE_ROUND_2 = 1;
 
