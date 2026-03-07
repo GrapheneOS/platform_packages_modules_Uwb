@@ -155,7 +155,8 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
         mNextEvent.onNextOccurrence(unused -> {
             synchronized (UwbBreakBeforeMakeEngine.this) {
                 mNextTechnology = mAlt;
-                mListener.stopTechnologies(Set.of(RangingTechnology.UWB));
+                mListener.stopTechnologies(
+                        Set.of(RangingTechnology.UWB), InternalReason.ENGINE_REQUEST);
             }
         });
     }
@@ -171,7 +172,7 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
         mNextEvent.onNextOccurrence(unused -> {
             synchronized (UwbBreakBeforeMakeEngine.this) {
                 mNextTechnology = RangingTechnology.UWB;
-                mListener.stopTechnologies(Set.of(mAlt));
+                mListener.stopTechnologies(Set.of(mAlt), InternalReason.ENGINE_REQUEST);
             }
         });
 
@@ -202,10 +203,11 @@ public class UwbBreakBeforeMakeEngine implements RangingEngine {
     private synchronized void handleFailureEvent(RangeHeuristicEvent event) {
         if (event == mUwbFailure) {
             mNextTechnology = mAlt;
-            mListener.stopTechnologies(Set.of(RangingTechnology.UWB));
+            mListener.stopTechnologies(
+                    Set.of(RangingTechnology.UWB), InternalReason.ENGINE_REQUEST);
         } else if (event == mAltFailure) {
             mNextTechnology = RangingTechnology.UWB;
-            mListener.stopTechnologies(Set.of(mAlt));
+            mListener.stopTechnologies(Set.of(mAlt), InternalReason.ENGINE_REQUEST);
         }
     }
 

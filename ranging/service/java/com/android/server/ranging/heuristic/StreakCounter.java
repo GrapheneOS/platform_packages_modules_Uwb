@@ -16,22 +16,20 @@
 
 package com.android.server.ranging.heuristic;
 
-import android.app.AlarmManager;
-import android.app.AlarmManager.OnAlarmListener;
-import android.os.SystemClock;
 import android.ranging.RangingData;
 
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.common.TimeoutListener;
 import com.android.server.ranging.heuristic.RangeHeuristic.HeuristicThreshold;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
+import java.time.Duration;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.DoubleUnaryOperator;
 
 
@@ -41,7 +39,6 @@ import java.util.function.DoubleUnaryOperator;
  * {@link TechnologyConfig}.
  */
 public class StreakCounter {
-
     /**
      * A {@link RangeHeuristic} that counts consecutive success and failure streaks as determined by
      * a threshold. That is, on each ranging interval, if the threshold is passed the success streak
@@ -102,28 +99,27 @@ public class StreakCounter {
         }
     }
 
-    private final long mFailureTimeoutMs;
+    private final Duration mIntervalTimeoutDuration;
+    private final TimeoutListener mIntervalTimeout;
+    private final TimeoutListener mStartTimeout;
     private final TechnologyConfig mConfig;
-    private final AtomicBoolean mIsListeningForFailure = new AtomicBoolean(false);
-    private final AlarmManager mAlarmManager;
     private final Executor mExecutor;
-    private final RangingInjector mInjector;
     private final CopyOnWriteArrayList<Streak> mStreaks;
-    private final OnAlarmListener mFailureListener = new OnAlarmListener() {
-        @Override
-        public void onAlarm() {
-            mStreaks.forEach(
-                    streak -> streak.onHeuristicUpdated(streak.nextStreak(Streak::failure)));
-        }
-    };
 
     public StreakCounter(TechnologyConfig config, Executor executor, RangingInjector injector) {
-        mFailureTimeoutMs = config.getRangingInterval().toMillis();
-        mConfig = config;
-        mAlarmManager = injector.getContext().getSystemService(AlarmManager.class);
-        mExecutor = executor;
-        mInjector = injector;
         mStreaks = new CopyOnWriteArrayList<>();
+        mIntervalTimeoutDuration = config.getRangingInterval();
+        mIntervalTimeout = new TimeoutListener(() ->
+                mStreaks.forEach(streak ->
+                        streak.onHeuristicUpdated(streak.nextStreak(Streak::failure))),
+                injector);
+        mStartTimeout = new TimeoutListener(() ->
+                mStreaks.forEach(streak ->
+                        streak.onHeuristicUpdated(
+                                streak.nextStreak(unused -> Double.NEGATIVE_INFINITY))),
+                injector);
+        mConfig = config;
+        mExecutor = executor;
     }
 
     /** Create a {@link Streak} heuristic that counts success and failure streaks. */
@@ -154,26 +150,18 @@ public class StreakCounter {
         return count;
     }
 
+    public void onStart(Duration startTimeout) {
+        mIntervalTimeout.cancel();
+        mStartTimeout.reset(startTimeout);
+    }
+
     /** Provide ranging data to pass to the {@link Streak} heuristics managed by this counter. */
     public void onData(@NonNull RangingData data) {
         if (data.getRangingTechnology() != mConfig.getTechnology().getValue()) return;
 
-        stopFailureListener();
+        mStartTimeout.cancel();
+        mIntervalTimeout.cancel();
         mStreaks.forEach(count -> count.onData(data));
-        startFailureListener();
-    }
-
-    private void stopFailureListener() {
-        if (mIsListeningForFailure.compareAndSet(true, false)) {
-            mAlarmManager.cancel(mFailureListener);
-        }
-    }
-
-    private void startFailureListener() {
-        if (mIsListeningForFailure.compareAndSet(false, true)) {
-            mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    SystemClock.elapsedRealtime() + mFailureTimeoutMs, null, mFailureListener,
-                    mInjector.getAlarmHandler());
-        }
+        mIntervalTimeout.start(mIntervalTimeoutDuration);
     }
 }

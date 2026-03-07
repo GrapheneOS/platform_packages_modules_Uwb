@@ -166,8 +166,8 @@ public class RangingParameters {
                             .setPeriodicRangingHwFeatureEnabled(
                                     configParams.wifiNanRtt.isPeriodicRangingEnabled)
                             .build());
-        } else if ((Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
-                && Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA)) {
+        } else if (Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
+                && Constants.isAtLeastC()) {
             rawRangingDeviceBuilder.setWifiPdRangingParams(
                     new WifiPdRangingParams.Builder(configParams.wifiPd.peerMacAddress)
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
@@ -295,8 +295,8 @@ public class RangingParameters {
                             .setPeriodicRangingHwFeatureEnabled(
                                     configParams.wifiNanRtt.isPeriodicRangingEnabled)
                             .build());
-        } else if ((Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
-                && Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA)) {
+        } else if (Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_PD)
+                && Constants.isAtLeastC()) {
             rawRangingDeviceBuilder.setWifiPdRangingParams(
                     new WifiPdRangingParams.Builder(configParams.wifiPd.peerMacAddress)
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)

@@ -19,17 +19,20 @@ package com.android.ranging.rangingtestapp;
 import android.Manifest.permission;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,14 +57,70 @@ public class MainActivity extends AppCompatActivity {
         NavigationView navView = findViewById(R.id.nav_view);
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_initiator, R.id.navigation_initiator_configuration,
-                R.id.navigation_responder, R.id.navigation_responder_configuration,
+                R.id.navigation_initiator,
+                R.id.navigation_responder,
                 R.id.navigation_ios_accessory)
                 .setOpenableLayout(drawerLayout)
                 .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
+
+        TabLayout tabLayout = findViewById(R.id.tab_layout);
+        View navHostView = findViewById(R.id.nav_host_fragment);
+        View configContainer = findViewById(R.id.config_fragment_container);
+        View logContainer = findViewById(R.id.log_fragment_container);
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                CharSequence tabText = tab.getText();
+                if (tabText == null) return;
+
+                if (tabText.equals("Session")) {
+                    navHostView.setVisibility(View.VISIBLE);
+                    configContainer.setVisibility(View.GONE);
+                    logContainer.setVisibility(View.GONE);
+                } else if (tabText.equals("Config")) {
+                    navHostView.setVisibility(View.GONE);
+                    configContainer.setVisibility(View.VISIBLE);
+                    logContainer.setVisibility(View.GONE);
+                } else if (tabText.equals("Logs")) {
+                    navHostView.setVisibility(View.GONE);
+                    configContainer.setVisibility(View.GONE);
+                    logContainer.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {}
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {}
+        });
+
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            int destinationId = destination.getId();
+            Fragment configFragment = null;
+            if (destinationId == R.id.navigation_initiator) {
+                configFragment = new InitiatorConfigurationFragment();
+            } else if (destinationId == R.id.navigation_responder) {
+                configFragment = new ResponderConfigurationFragment();
+            }
+
+            if (configFragment != null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.config_fragment_container, configFragment)
+                        .commit();
+                if (tabLayout.getTabCount() == 2) {
+                    tabLayout.addTab(tabLayout.newTab().setText("Config"), 1);
+                }
+            } else {
+                if (tabLayout.getTabCount() == 3) {
+                    tabLayout.removeTabAt(1);
+                }
+            }
+        });
 
         requestPermissions();
     }

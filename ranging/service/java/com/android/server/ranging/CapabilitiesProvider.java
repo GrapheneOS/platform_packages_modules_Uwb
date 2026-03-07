@@ -172,12 +172,15 @@ public class CapabilitiesProvider {
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println("---- Dump of CapabilitiesProvider ----");
+        initializeAdaptersForAllTechnologies();
         for (Map.Entry<RangingTechnology, CapabilitiesAdapter> adapter :
                 mCapabilityAdapters.entrySet()
         ) {
             pw.println("-- Dump of CapabilitiesAdapter for technology " + adapter.getKey() + " --");
+            long token = Binder.clearCallingIdentity();
             pw.println("Availability: " + adapter.getValue().getAvailability());
             pw.println("Capabilities: " + adapter.getValue().getCapabilities());
+            Binder.restoreCallingIdentity(token);
             pw.println("-- Dump of CapabilitiesAdapter for technology " + adapter.getKey() + " --");
         }
         pw.println("---- Dump of CapabilitiesProvider ----");

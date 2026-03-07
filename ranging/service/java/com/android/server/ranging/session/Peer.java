@@ -21,8 +21,10 @@ import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.fusion.DataFusers;
@@ -32,19 +34,21 @@ import com.android.server.ranging.heuristic.RangeHeuristicEventFactory;
 import com.android.server.ranging.heuristic.RangeHeuristicEventFactory.RangeHeuristicEvent;
 import com.android.server.ranging.heuristic.StreakCounter;
 import com.android.server.ranging.oob.packets.DeviceType;
+import com.android.server.ranging.oob.packets.TechnologyTransitioning;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.telemetry.SessionTelemetryLogger;
+
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 /** The state of a peer that is ranging with the local device. */
-class Peer implements AutoCloseable {
+public class Peer implements AutoCloseable {
     private static final String TAG = Peer.class.getSimpleName();
     private static final int PEER_DISCONNECT_STREAK = -5;
 
     private final RangingDevice mDevice;
-    private final DeviceType mDeviceType;
+    private final PeerInfo mInfo;
     private final SessionHandle mSessionHandle;
     /** Technologies that this peer is ranging with. */
     private final ConcurrentHashMap<RangingTechnology, TechnologyInfo> mTechnologies;
@@ -54,6 +58,45 @@ class Peer implements AutoCloseable {
     private final RangeHeuristicEventFactory mEventFactory;
     private final Executor mExecutor;
     private final RangingInjector mInjector;
+
+    public static class PeerInfo {
+        private final DeviceType mDeviceType;
+        private final TechnologyTransitioning mSupportedTransitioning;
+
+        private PeerInfo(Builder builder) {
+            mDeviceType = builder.mDeviceType;
+            mSupportedTransitioning = builder.mSupportedTransitioning;
+        }
+
+        public @NonNull DeviceType getDeviceType() {
+            return mDeviceType;
+        }
+
+        public @Nullable TechnologyTransitioning getSupportedTransitioning() {
+            return mSupportedTransitioning;
+        }
+
+        public static class Builder {
+            private DeviceType mDeviceType = DeviceType.Unknown;
+            private TechnologyTransitioning mSupportedTransitioning = null;
+
+            public PeerInfo build() {
+                return new PeerInfo(this);
+            }
+
+            public Builder setDeviceType(@NonNull DeviceType deviceType) {
+                mDeviceType = deviceType;
+                return this;
+            }
+
+            public Builder setSupportedTransitioning(
+                    @Nullable TechnologyTransitioning transitioning
+            ) {
+                mSupportedTransitioning = transitioning;
+                return this;
+            }
+        }
+    }
 
     private static class TechnologyInfo {
         private final StreakCounter mStreakCounter;
@@ -67,14 +110,14 @@ class Peer implements AutoCloseable {
     }
 
     Peer(
-            @NonNull RangingDevice device, @NonNull DeviceType deviceType,
+            @NonNull RangingDevice device, @NonNull PeerInfo info,
             @NonNull SessionHandle sessionHandle, @NonNull SessionConfig sessionConfig,
             @NonNull FusionEngine.Callback engineListener,
             @NonNull RangeHeuristicEventFactory eventFactory, @NonNull Executor executor,
             @NonNull RangingInjector injector
     ) {
         mDevice = device;
-        mDeviceType = deviceType;
+        mInfo = info;
         mSessionHandle = sessionHandle;
         mTechnologies = new ConcurrentHashMap<>();
         mEventFactory = eventFactory;
@@ -82,19 +125,26 @@ class Peer implements AutoCloseable {
         mInjector = injector;
 
         if (sessionConfig.getSensorFusionParams().isSensorFusionEnabled()) {
+            FusionEngine.DataFuser dataFuser;
+            if (info.getSupportedTransitioning() == TechnologyTransitioning.MakeBeforeBreak) {
+                Log.i(TAG, "Using passthrough data fuser");
+                dataFuser = new DataFusers.PassthroughDataFuser();
+            } else {
+                Log.i(TAG, "Using UWB-preferential data fuser");
+                dataFuser = new DataFusers.PreferentialDataFuser(RangingTechnology.UWB);
+            }
             mFusionEngine = new FilteringFusionEngine(
-                    new DataFusers.PreferentialDataFuser(RangingTechnology.UWB),
-                    sessionConfig.isAngleOfArrivalNeeded(), mInjector);
+                    dataFuser, sessionConfig.isAngleOfArrivalNeeded(), mInjector);
         } else {
             mFusionEngine = new NoOpFusionEngine();
         }
         mFusionEngine.start(data -> {
             synchronized (Peer.this) {
-                mTechnologies.forEach((technology, info) -> {
+                mTechnologies.forEach((technology, techInfo) -> {
                     if (data.getRangingTechnology() == technology.getValue()) {
-                        info.mLastData = data;
+                        techInfo.mLastData = data;
                     }
-                    info.mStreakCounter.onData(data);
+                    techInfo.mStreakCounter.onData(data);
                 });
             }
             engineListener.onData(data);
@@ -137,7 +187,7 @@ class Peer implements AutoCloseable {
         RangingData lastData = mTechnologies.get(technology).mLastData;
         SessionTelemetryLogger logger = mInjector.getTelemetryManager().getLogger(mSessionHandle);
         if (lastData != null && logger != null) {
-            logger.logPeerDisconnected(mDeviceType, lastData);
+            logger.logPeerDisconnected(mInfo.getDeviceType(), lastData);
         }
     }
 

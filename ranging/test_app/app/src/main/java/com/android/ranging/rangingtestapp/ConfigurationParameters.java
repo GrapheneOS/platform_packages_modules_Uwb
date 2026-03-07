@@ -27,10 +27,8 @@ import android.content.SharedPreferences;
 import android.net.MacAddress;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
-import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
-import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -207,12 +205,12 @@ public class ConfigurationParameters {
         }
 
         public void toPref(SharedPreferences.Editor prefEditor) {
-            prefEditor.putInt("securityLevel", securityLevel);
+            prefEditor.putInt("bleCsSecurityLevel", securityLevel);
         }
 
         public static BleCs fromPref(SharedPreferences pref, boolean isResponder) {
             BleCs bleCs = new BleCs();
-            bleCs.securityLevel = pref.getInt("securityLevel", bleCs.securityLevel);
+            bleCs.securityLevel = pref.getInt("bleCsSecurityLevel", bleCs.securityLevel);
             return bleCs;
         }
     }
@@ -258,7 +256,7 @@ public class ConfigurationParameters {
         public byte[] deviceIk = new byte[0];
         public String password = "password";
         public int preambleType = PREAMBLE_LEGACY;
-        public boolean isResponder80211azNtbSupported = true;
+        public boolean isResponder80211azNtbSupported = false;
         public int channelWidth = CHANNEL_WIDTH_20MHZ;
 
         public WifiPd() {
@@ -312,7 +310,7 @@ public class ConfigurationParameters {
          */
         public static Oob fromPref(SharedPreferences pref, boolean isResponder) {
             Oob oob = new Oob();
-            oob.securityLevel = pref.getInt("securityLevel", oob.securityLevel);
+            oob.securityLevel = pref.getInt("oobSecurityLevel", oob.securityLevel);
             oob.mode = pref.getInt("mode", oob.mode);
             Set<Integer> techFilter = new HashSet<>();
             for (String strTechId : Objects.requireNonNull(
@@ -328,7 +326,7 @@ public class ConfigurationParameters {
          * @param prefEditor
          */
         public void toPref(SharedPreferences.Editor prefEditor) {
-            prefEditor.putInt("securityLevel", securityLevel);
+            prefEditor.putInt("oobSecurityLevel", securityLevel);
             prefEditor.putInt("mode", mode);
             Set<String> strTechFilter = new HashSet<>();
             for (Integer techId : techFilter) {

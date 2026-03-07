@@ -16,6 +16,11 @@
 
 package com.android.ranging.rangingtestapp;
 
+import static android.os.Build.VERSION.CODENAME;
+import static android.os.Build.VERSION.SDK_INT;
+
+import androidx.annotation.NonNull;
+
 import java.util.UUID;
 
 abstract class Constants {
@@ -38,5 +43,21 @@ abstract class Constants {
         STARTED,
         STOPPING,
         STOPPED
+    }
+
+    /** Checks if the device is running on a release version of Android CinnamonBun or newer */
+    public static boolean isAtLeastC() {
+        return SDK_INT >= 37
+            || (SDK_INT == 36 && isAtLeastPreReleaseCodename("CinnamonBun"));
+    }
+
+    private static boolean isAtLeastPreReleaseCodename(@NonNull String codename) {
+        // Special case "REL", which means the build is not a pre-release build.
+        if ("REL".equals(CODENAME)) {
+            return false;
+        }
+        // Otherwise lexically compare them. Return true if the build codename is equal to or
+        // greater than the requested codename.
+        return CODENAME.compareTo(codename) >= 0;
     }
 }

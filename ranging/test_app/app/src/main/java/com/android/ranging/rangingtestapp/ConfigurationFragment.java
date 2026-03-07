@@ -18,12 +18,11 @@ package com.android.ranging.rangingtestapp;
 
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
-import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
 import static android.view.View.INVISIBLE;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
+import android.net.MacAddress;
 import android.os.Bundle;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingManager;
@@ -35,9 +34,7 @@ import android.ranging.wifi.pd.WifiPdRangingCapabilities;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.net.MacAddress;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -52,7 +49,6 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** The fragment holds the responder configuration of channel sounding. */
@@ -85,20 +81,23 @@ public class ConfigurationFragment extends Fragment implements
     private ArrayList<Integer> mSelectedTechs = new ArrayList<>();
     private Button mButtonSave;
     private Button mButtonReset;
-    private AtomicReference<ConfigurationParameters> mConfigurationParameters = new AtomicReference<>(null);
-    private boolean mIsResponder;
-    private static final HashBiMap<String, Integer> RANGING_MODE_STRING_TO_INT = HashBiMap.create(
-            ImmutableMap.of(
-                    "AUTO", RANGING_MODE_AUTO,
-                    "HIGH_ACCURACY", RANGING_MODE_HIGH_ACCURACY,
-                    "HIGH_ACCURACY_PREFERRED", RANGING_MODE_HIGH_ACCURACY_PREFERRED,
-                    "FUSED", RANGING_MODE_FUSED));
 
     private static final HashBiMap<String, Integer> WIFI_PD_PASN_MODE_STRING_TO_INT
         = HashBiMap.create(
             ImmutableMap.of(
-                    "UNAUTHENTICATED", WifiPdRangingCapabilities.UNAUTHENTICATED_PASN_MODE,
-                    "AUTHENTICATED", WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE));
+                    "Mode 1", WifiPdRangingCapabilities.UNAUTHENTICATED_PASN_MODE,
+                    "Mode 2", WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE));
+
+    private static final HashBiMap<Integer, String> RANGING_MODE_STRING_TO_INT =
+            HashBiMap.create(
+                    ImmutableMap.of(
+                            RANGING_MODE_AUTO, "Auto",
+                            RANGING_MODE_FUSED, "Fused",
+                            RANGING_MODE_HIGH_ACCURACY_PREFERRED, "High Accuracy Preferred"));
+
+    private final AtomicReference<ConfigurationParameters> mConfigurationParameters =
+            new AtomicReference<>();
+    private boolean mIsResponder;
 
     public void setIsResponder(boolean isResponder) {
         mIsResponder = isResponder;
@@ -106,9 +105,9 @@ public class ConfigurationFragment extends Fragment implements
 
     private void cacheRangingCapabilities() {
         if (mCachedRangingCapabilities != null) return;
-        RangingManager rangingManager = getContext().getSystemService(RangingManager.class);
+        RangingManager rangingManager = requireContext().getSystemService(RangingManager.class);
         rangingManager.registerCapabilitiesCallback(
-                Executors.newSingleThreadExecutor(),
+                requireActivity().getMainExecutor(),
                 rangingCapabilities -> {
                     mCachedRangingCapabilities = rangingCapabilities;
                     populateEditFields();
@@ -143,45 +142,58 @@ public class ConfigurationFragment extends Fragment implements
     }
 
     void populateEditFields() {
-        mGlobalSensorFusionSpinner.setSelection(mGlobalSensorFusionAdapter.getPosition(
-                mConfigurationParameters.get().global.sensorFusionEnabled));
-        mUwbChannelSpinner.setSelection(mUwbChannelAdapter.getPosition(
-                mConfigurationParameters.get().uwb.channel));
-        mUwbPreambleSpinner.setSelection(mUwbPreambleAdapter.getPosition(
-                mConfigurationParameters.get().uwb.preamble));
-        mUwbConfigIdSpinner.setSelection(mUwbConfigIdAdapter.getPosition(
-                mConfigurationParameters.get().uwb.configId));
-        mBleCsSecurityLevelSpinner.setSelection(mBleCsSecurityLevelAdapter.getPosition(
-                mConfigurationParameters.get().bleCs.securityLevel));
-        mWifiNanRttPeriodicRangingSpinner.setSelection(mWifiNanRttPeriodicRangingAdapter.getPosition(
-                mConfigurationParameters.get().wifiNanRtt.isPeriodicRangingEnabled));
-        mWifiPdPasnModeSpinner.setSelection(mWifiPdPasnModeAdapter.getPosition(
-                WIFI_PD_PASN_MODE_STRING_TO_INT.inverse().get(
-                        mConfigurationParameters.get().wifiPd.pasnMode)));
-        mWifiPdOwnMacAddress.setText("02:00:00:00:00:00"); // Default value
-        if (mCachedRangingCapabilities != null
-                && Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA) {
-            try {
-                WifiPdRangingCapabilities wifiPdCapabilities =
-                    (WifiPdRangingCapabilities) mCachedRangingCapabilities.getClass()
-                        .getMethod("getWifiPdRangingCapabilities")
-                        .invoke(mCachedRangingCapabilities);
-                if (wifiPdCapabilities != null) {
-                    mWifiPdOwnMacAddress.setText(
-                        wifiPdCapabilities.getProximityDetectionMacAddress().toString());
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                if (mConfigurationParameters.get() == null) {
+                    return;
                 }
-            } catch (Exception e) {
-            }
+
+                mGlobalSensorFusionSpinner.setSelection(mGlobalSensorFusionAdapter.getPosition(
+                        mConfigurationParameters.get().global.sensorFusionEnabled));
+                mUwbChannelSpinner.setSelection(mUwbChannelAdapter.getPosition(
+                        mConfigurationParameters.get().uwb.channel));
+                mUwbPreambleSpinner.setSelection(mUwbPreambleAdapter.getPosition(
+                        mConfigurationParameters.get().uwb.preamble));
+                mUwbConfigIdSpinner.setSelection(mUwbConfigIdAdapter.getPosition(
+                        mConfigurationParameters.get().uwb.configId));
+                mBleCsSecurityLevelSpinner.setSelection(mBleCsSecurityLevelAdapter.getPosition(
+                        mConfigurationParameters.get().bleCs.securityLevel));
+                mWifiNanRttPeriodicRangingSpinner.setSelection(
+                        mWifiNanRttPeriodicRangingAdapter.getPosition(
+                                mConfigurationParameters.get().wifiNanRtt
+                                        .isPeriodicRangingEnabled));
+                mWifiPdPasnModeSpinner.setSelection(
+                        mWifiPdPasnModeAdapter.getPosition(
+                                WIFI_PD_PASN_MODE_STRING_TO_INT.inverse().get(
+                                        mConfigurationParameters.get().wifiPd.pasnMode)));
+                mWifiPdOwnMacAddress.setText("02:00:00:00:00:00"); // Default value
+                if (mCachedRangingCapabilities != null && Constants.isAtLeastC()) {
+                    try {
+                        WifiPdRangingCapabilities wifiPdCapabilities =
+                                (WifiPdRangingCapabilities) mCachedRangingCapabilities.getClass()
+                                        .getMethod("getWifiPdRangingCapabilities")
+                                        .invoke(mCachedRangingCapabilities);
+                        LoggingListener.getInstance().log("Wifi PD mac address: "
+                            + wifiPdCapabilities.getProximityDetectionMacAddress());
+                        if (wifiPdCapabilities != null) {
+                            mWifiPdOwnMacAddress.setText(
+                                    wifiPdCapabilities.getProximityDetectionMacAddress()
+                                            .toString());
+                        }
+                    } catch (Exception e) {
+                    }
+                }
+                mWifiPdPeerMacAddress.setText(
+                        mConfigurationParameters.get().wifiPd.peerMacAddress.toString());
+                mOobSecurityLevelSpinner.setSelection(mOobSecurityLevelAdapter.getPosition(
+                        mConfigurationParameters.get().oob.securityLevel));
+                mOobModeSpinner.setSelection(
+                        mOobModeAdapter.getPosition(RANGING_MODE_STRING_TO_INT.get(
+                                mConfigurationParameters.get().oob.mode)));
+                mSelectedTechs = new ArrayList<>(mConfigurationParameters.get().oob.techFilter);
+                updateTechFilterSelectionText();
+            });
         }
-        mWifiPdPeerMacAddress.setText(
-                mConfigurationParameters.get().wifiPd.peerMacAddress.toString());
-        mOobSecurityLevelSpinner.setSelection(mOobSecurityLevelAdapter.getPosition(
-                mConfigurationParameters.get().oob.securityLevel));
-        mOobModeSpinner.setSelection(
-                mOobModeAdapter.getPosition(RANGING_MODE_STRING_TO_INT.inverse().get(
-                        mConfigurationParameters.get().oob.mode)));
-        mSelectedTechs = new ArrayList<>(mConfigurationParameters.get().oob.techFilter);
-        updateTechFilterSelectionText();
     }
 
     @Override
@@ -193,6 +205,7 @@ public class ConfigurationFragment extends Fragment implements
         mGlobalSensorFusionAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mGlobalSensorFusionSpinner.setAdapter(mGlobalSensorFusionAdapter);
+
         mUwbChannelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
@@ -221,19 +234,18 @@ public class ConfigurationFragment extends Fragment implements
         mUwbPreambleAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mUwbPreambleSpinner.setAdapter(mUwbPreambleAdapter);
+
         mUwbConfigIdAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
                                 UwbRangingParams.CONFIG_UNICAST_DS_TWR,
                                 UwbRangingParams.CONFIG_MULTICAST_DS_TWR,
-                                UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR,
-                                UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR,
-                                UwbRangingParams.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
-                                UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST
+                                UwbRangingParams.CONFIG_PROVISIONED_UNICAST_DS_TWR
                         ));
         mUwbConfigIdAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mUwbConfigIdSpinner.setAdapter(mUwbConfigIdAdapter);
+
         mBleCsSecurityLevelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
@@ -243,184 +255,111 @@ public class ConfigurationFragment extends Fragment implements
         mBleCsSecurityLevelAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mBleCsSecurityLevelSpinner.setAdapter(mBleCsSecurityLevelAdapter);
+
         mWifiNanRttPeriodicRangingAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(true, false));
         mWifiNanRttPeriodicRangingAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mWifiNanRttPeriodicRangingSpinner.setAdapter(mWifiNanRttPeriodicRangingAdapter);
+
         mWifiPdPasnModeAdapter =
                 new ArrayAdapter<>(
-                        getContext(), android.R.layout.simple_spinner_item,
-                        WIFI_PD_PASN_MODE_STRING_TO_INT.keySet().stream().toList());
+                        getContext(),
+                        android.R.layout.simple_spinner_item,
+                        new ArrayList<>(WIFI_PD_PASN_MODE_STRING_TO_INT.keySet()));
         mWifiPdPasnModeAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mWifiPdPasnModeSpinner.setAdapter(mWifiPdPasnModeAdapter);
+
         mOobSecurityLevelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
-                                OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC,
-                                OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE
-                        ));
+                        OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC,
+                        OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE
+                ));
         mOobSecurityLevelAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mOobSecurityLevelSpinner.setAdapter(mOobSecurityLevelAdapter);
+
         mOobModeAdapter =
                 new ArrayAdapter<>(
-                        getContext(), android.R.layout.simple_spinner_item,
-                        RANGING_MODE_STRING_TO_INT.keySet().stream().toList());
+                        getContext(),
+                        android.R.layout.simple_spinner_item,
+                        new ArrayList<>(RANGING_MODE_STRING_TO_INT.values()));
         mOobModeAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mOobModeSpinner.setAdapter(mOobModeAdapter);
 
-        mTechFilterSelection.setOnClickListener(v -> {
-            MultiSelectDialogFragment dialog = MultiSelectDialogFragment.newInstance(
-                    mSelectedTechs);
-            dialog.setTargetFragment(ConfigurationFragment.this, 0);
-            dialog.show(getParentFragmentManager(), "MultiSelectDialogFragment");
-        });
-
-        mConfigurationParameters.set(
-                ConfigurationParameters.restoreInstance(getContext(), mIsResponder));
-        cacheRangingCapabilities();
-        populateEditFields();
-
-        mGlobalSensorFusionSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().global.sensorFusionEnabled =
-                                (boolean) mGlobalSensorFusionSpinner.getItemAtPosition(position);
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
+        mTechFilterSelection.setOnClickListener(
+                v -> {
+                    MultiSelectDialogFragment dialog =
+                            MultiSelectDialogFragment.newInstance(
+                                    new ArrayList<>(mSelectedTechs));
+                    dialog.setTargetFragment(this, 0);
+                    dialog.show(getParentFragmentManager(), "MultiSelectDialogFragment");
                 });
-        mUwbChannelSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().uwb.channel =
-                                (int) mUwbChannelSpinner.getItemAtPosition(position);
-                    }
 
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mUwbPreambleSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().uwb.preamble =
-                                (int) mUwbPreambleSpinner.getItemAtPosition(position);
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mUwbConfigIdSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().uwb.configId =
-                                (int) mUwbConfigIdSpinner.getItemAtPosition(position);
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mBleCsSecurityLevelSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().bleCs.securityLevel =
-                                (int) mBleCsSecurityLevelSpinner.getItemAtPosition(position);
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mWifiNanRttPeriodicRangingSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        mConfigurationParameters.get().wifiNanRtt.isPeriodicRangingEnabled =
-                                (boolean) mWifiNanRttPeriodicRangingSpinner.getItemAtPosition(position);
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mWifiPdPasnModeSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
-                        Integer mode = WIFI_PD_PASN_MODE_STRING_TO_INT.get(
-                                (String) mWifiPdPasnModeSpinner.getItemAtPosition(position));
-                        mConfigurationParameters.get().wifiPd.pasnMode =
-                                (mode != null)
-                                ? mode
-                                : WifiPdRangingCapabilities.UNAUTHENTICATED_PASN_MODE;
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> adapterView) {
-                    }
-                });
-        mOobSecurityLevelSpinner.setOnItemSelectedListener(
-                new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                mConfigurationParameters.get().oob.securityLevel =
-                                (int) mOobSecurityLevelSpinner.getItemAtPosition(position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        mOobModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Integer mode = RANGING_MODE_STRING_TO_INT.get(
-                        (String) mOobModeSpinner.getItemAtPosition(position));
-                mConfigurationParameters.get().oob.mode = (mode != null)
-                        ? mode : RANGING_MODE_AUTO;
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
         mButtonSave.setOnClickListener(
                 v -> {
-                    try {
-                        String macString = mWifiPdPeerMacAddress.getText().toString();
-                        if (!macString.isEmpty()) {
-                            mConfigurationParameters.get().wifiPd.peerMacAddress =
-                                    MacAddress.fromString(macString);
-                        }
-                    } catch (IllegalArgumentException e) {
-                    }
-                    mConfigurationParameters.get().saveInstance(getContext());
+                    ConfigurationParameters params = mConfigurationParameters.get();
+                    params.global.sensorFusionEnabled =
+                            (boolean) mGlobalSensorFusionSpinner.getSelectedItem();
+                    params.uwb.channel = (int) mUwbChannelSpinner.getSelectedItem();
+                    params.uwb.preamble = (int) mUwbPreambleSpinner.getSelectedItem();
+                    params.uwb.configId = (int) mUwbConfigIdSpinner.getSelectedItem();
+                    params.bleCs.securityLevel = (int) mBleCsSecurityLevelSpinner.getSelectedItem();
+                    params.wifiNanRtt.isPeriodicRangingEnabled =
+                            (boolean) mWifiNanRttPeriodicRangingSpinner.getSelectedItem();
+                    params.wifiPd.pasnMode =
+                            WIFI_PD_PASN_MODE_STRING_TO_INT.get(
+                                    mWifiPdPasnModeSpinner.getSelectedItem().toString());
+                    params.wifiPd.peerMacAddress =
+                            MacAddress.fromString(mWifiPdPeerMacAddress.getText().toString());
+                    params.oob.securityLevel = (int) mOobSecurityLevelSpinner.getSelectedItem();
+                    params.oob.mode =
+                            RANGING_MODE_STRING_TO_INT.inverse().get(
+                                    mOobModeSpinner.getSelectedItem().toString());
+                    params.oob.techFilter = new HashSet<>(mSelectedTechs);
+                    params.saveInstance(getContext());
                 });
+
         mButtonReset.setOnClickListener(
                 v -> {
                     mConfigurationParameters.set(
                             ConfigurationParameters.resetInstance(getContext(), mIsResponder));
                     populateEditFields();
                 });
+
+        mConfigurationParameters.set(
+                ConfigurationParameters.restoreInstance(getContext(), mIsResponder));
+        cacheRangingCapabilities();
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    private void updateTechFilterSelectionText() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < mSelectedTechs.size(); i++) {
+            sb.append(getTechnologyName(mSelectedTechs.get(i)));
+            if (i < mSelectedTechs.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        if (sb.length() == 0) {
+            sb.append("None");
+        }
+        mTechFilterSelection.setText(sb.toString());
+    }
+
+    private String getTechnologyName(int technology) {
+        switch (technology) {
+            case RangingManager.UWB: return "UWB";
+            case RangingManager.BLE_CS: return "BLE CS";
+            case RangingManager.WIFI_NAN_RTT: return "Wi-Fi RTT";
+            case RangingManager.WIFI_STA_RTT: return "Wi-Fi STA RTT";
+            case RangingManager.WIFI_PD: return "Wi-Fi PD";
+            case RangingManager.BLE_RSSI: return "BLE RSSI";
+            default: return "Other (" + technology + ")";
+        }
     }
 
     @Override
@@ -429,13 +368,5 @@ public class ConfigurationFragment extends Fragment implements
         mSelectedTechs.addAll(selectedItems);
         mConfigurationParameters.get().oob.techFilter = new HashSet<>(selectedItems);
         updateTechFilterSelectionText();
-    }
-
-    private void updateTechFilterSelectionText() {
-        if (mSelectedTechs.isEmpty()) {
-            mTechFilterSelection.setText("Not set");
-        } else {
-            mTechFilterSelection.setText("Set (" + mSelectedTechs.size() + ")");
-        }
     }
 }
