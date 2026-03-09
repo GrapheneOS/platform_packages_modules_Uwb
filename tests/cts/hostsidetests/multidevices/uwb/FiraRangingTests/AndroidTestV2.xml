@@ -45,4 +45,5 @@
 
     <option name="mobly_pkg" key="file" value="CtsUwbMultiDeviceFiraRangingTests" />
     <option name="build_apk" key="file" value="uwb_snippet.apk" />
+    <option name="build_apk" key="file" value="bluetooth_multi_devices_snippet.apk" />
 </configuration>

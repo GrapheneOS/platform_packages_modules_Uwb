@@ -23,6 +23,7 @@ class UwbBaseTest(base_test.BaseTestClass):
                                                     min_number=2)
     for ad in self.android_devices:
       ad.load_snippet("uwb", "com.google.snippet.uwb")
+      ad.load_snippet("bluetooth", "com.google.snippet.bluetooth")
 
     for ad in self.android_devices:
       uwb_test_utils.request_hw_enable_if_required(ad)
