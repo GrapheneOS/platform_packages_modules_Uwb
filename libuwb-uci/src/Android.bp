@@ -110,6 +110,14 @@ rust_defaults {
         "libuwb_uci_packets",
         "libzeroize",
     ],
+    target: {
+        android: {
+            rustlibs: [
+                "android.system.suspend-V1-rust",
+                "libbinder_rs",
+            ],
+        },
+    },
     proc_macros: [
         "libasync_trait",
         "libnum_derive",
