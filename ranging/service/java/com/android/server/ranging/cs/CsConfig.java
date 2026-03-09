@@ -31,9 +31,10 @@ import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.raw.RawRangingDevice;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -42,7 +43,7 @@ import java.util.Objects;
  * Only the CS initiator needs to be configured. The responder does not need to call into any API
  * and therefore has no configuration or adapter.
  */
-public class CsConfig implements UnicastTechnologyConfig {
+public class CsConfig implements TechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
 
     // TODO(390665219): Update this once we decide on a set of measurement intervals for channel
@@ -98,8 +99,8 @@ public class CsConfig implements UnicastTechnologyConfig {
     }
 
     @Override
-    public @NonNull RangingDevice getPeerDevice() {
-        return mPeerDevice;
+    public @NonNull ImmutableSet<RangingDevice> getPeerDevices() {
+        return ImmutableSet.of(mPeerDevice);
     }
 
     public @Nullable BluetoothDevice getPeerBluetoothDevice() {

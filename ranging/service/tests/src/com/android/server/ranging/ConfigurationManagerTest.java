@@ -35,7 +35,6 @@ import android.util.Pair;
 import androidx.test.filters.SmallTest;
 
 import com.android.server.ranging.common.ConfigurationUtils;
-import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
@@ -97,12 +96,10 @@ public class ConfigurationManagerTest {
         TechnologyConfig tc = Iterables.getOnlyElement(tcs);
 
         Assert.assertEquals(RangingTechnology.UWB, tc.getTechnology());
-        Assert.assertTrue(tc instanceof MulticastTechnologyConfig);
 
-        MulticastTechnologyConfig mtc = (MulticastTechnologyConfig) tc;
-        Assert.assertEquals(2, mtc.getPeerDevices().size());
-        Assert.assertTrue(mtc.getPeerDevices().contains(peers.get(0).first));
-        Assert.assertTrue(mtc.getPeerDevices().contains(peers.get(1).first));
+        Assert.assertEquals(2, tc.getPeerDevices().size());
+        Assert.assertTrue(tc.getPeerDevices().contains(peers.get(0).first));
+        Assert.assertTrue(tc.getPeerDevices().contains(peers.get(1).first));
     }
 
     @Test
@@ -134,10 +131,8 @@ public class ConfigurationManagerTest {
 
         for (TechnologyConfig tc : tcs) {
             Assert.assertEquals(RangingTechnology.UWB, tc.getTechnology());
-            Assert.assertTrue(tc instanceof MulticastTechnologyConfig);
 
-            MulticastTechnologyConfig mtc = (MulticastTechnologyConfig) tc;
-            Assert.assertEquals(1, mtc.getPeerDevices().size());
+            Assert.assertEquals(1, tc.getPeerDevices().size());
         }
     }
 }

@@ -27,6 +27,8 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 
 import androidx.test.filters.SmallTest;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -56,7 +58,7 @@ public class BleRssiConfigTest {
         assertEquals(config.getDeviceRole(), DEVICE_ROLE_RESPONDER);
         assertEquals(config.getRangingParams(), bleRssiRangingParams);
         assertEquals(config.getSessionConfig(), sessionConfig);
-        assertEquals(config.getPeerDevice(), rangingDevice);
+        assertEquals(config.getPeerDevices(), ImmutableSet.of(rangingDevice));
         assertEquals(config.getPeerBluetoothDevice(), mMockBluetoothDevice);
 
     }

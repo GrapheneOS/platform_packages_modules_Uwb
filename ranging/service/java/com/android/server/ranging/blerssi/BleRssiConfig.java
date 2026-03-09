@@ -31,14 +31,15 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.time.Duration;
 import java.util.Objects;
 
-public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConfig {
+public class BleRssiConfig implements TechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();
 
     public static final ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
@@ -101,8 +102,8 @@ public class BleRssiConfig implements ConfigurationManager.UnicastTechnologyConf
     }
 
     @Override
-    public @NonNull RangingDevice getPeerDevice() {
-        return mPeerDevice;
+    public @NonNull ImmutableSet<RangingDevice> getPeerDevices() {
+        return ImmutableSet.of(mPeerDevice);
     }
 
     @Override

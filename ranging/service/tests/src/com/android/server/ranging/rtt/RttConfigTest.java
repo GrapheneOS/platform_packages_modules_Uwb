@@ -32,6 +32,8 @@ import androidx.test.filters.SmallTest;
 import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -58,7 +60,7 @@ public class RttConfigTest {
         assertEquals(config.getRangingParams(), rttRangingParams);
         assertEquals(config.getDeviceRole(), deviceRole);
         assertEquals(config.getSessionConfig(), sessionConfig);
-        assertEquals(config.getPeerDevice(), peerDevice);
+        assertEquals(config.getPeerDevices(), ImmutableSet.of(peerDevice));
 
         RttRangingParameters params = config.asBackendParameters();
         assertThat(params).isNotNull();
@@ -83,7 +85,7 @@ public class RttConfigTest {
         assertEquals(config.getStationRangingParams(), rttStationRangingParams);
         assertEquals(config.getDeviceRole(), deviceRole);
         assertEquals(config.getSessionConfig(), sessionConfig);
-        assertEquals(config.getPeerDevice(), peerDevice);
+        assertEquals(config.getPeerDevices(), ImmutableSet.of(peerDevice));
 
         RttRangingParameters params = config.asBackendParameters();
         assertThat(params).isNotNull();
