@@ -153,7 +153,9 @@ public class CsAdapter implements RangingAdapter {
                     mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
             Log.v(TAG, "BluetoothDevice not provided, using provided BLE address");
         }
-        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress();
+        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress() != null
+                ? mPeerBluetoothDevice.getIdentityAddress()
+                : mPeerBluetoothDevice.getAddress();
         mDataNotificationManager = new DataNotificationManager(
                 mConfig.getSessionConfig().getDataNotificationConfig(),
                 mConfig.getSessionConfig().getDataNotificationConfig());
