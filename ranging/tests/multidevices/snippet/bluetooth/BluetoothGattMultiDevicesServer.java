@@ -51,6 +51,7 @@ public final class BluetoothGattMultiDevicesServer {
     private Context mContext;
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothGattServer mBluetoothGattServer;
     private OobData mOobData;
 
     public BluetoothGattMultiDevicesServer(Context context, BluetoothManager manager) {
@@ -60,11 +61,26 @@ public final class BluetoothGattMultiDevicesServer {
     }
 
     public BluetoothGattServer createGattServer(String uuid) {
-        var bluetoothGattServer =
+        mBluetoothGattServer =
                 mBluetoothManager.openGattServer(mContext, new BluetoothGattServerCallback() {});
         var service = new BluetoothGattService(UUID.fromString(uuid), SERVICE_TYPE_PRIMARY);
-        bluetoothGattServer.addService(service);
-        return bluetoothGattServer;
+        mBluetoothGattServer.addService(service);
+        return mBluetoothGattServer;
+    }
+
+    public void setPreferredPhy(int txPhy, int rxPhy, int phyOptions) {
+        if (mBluetoothGattServer == null) {
+            throw new IllegalStateException("BluetoothGattServer is null");
+        }
+        List<BluetoothDevice> connectedDevices = getConnectedDevices();
+        if (connectedDevices.isEmpty()) {
+            throw new IllegalStateException("No connected devices to set PHY for");
+        }
+        for (BluetoothDevice device : connectedDevices) {
+            Log.i(TAG, "setPreferredPhy for device " + device.getAddress() + ": txPhy=" + txPhy
+                    + ", rxPhy=" + rxPhy + ", phyOptions=" + phyOptions);
+            mBluetoothGattServer.setPreferredPhy(device, txPhy, rxPhy, phyOptions);
+        }
     }
 
     public List<BluetoothDevice> getConnectedDevices() {

@@ -558,6 +558,8 @@ public class UwbTimesyncManager {
     public void unregisterEventCallback(ITimesyncCallbackListener callback,
             BluetoothAddress bluetoothAddress)
             throws RemoteException {
+        Log.i(TAG, "Unregistering for  timesync events address xx:xx:xx:xx:"
+                + bluetoothAddress.getAddress().substring(12));
         if (sAddressCallbackMap.containsKey(bluetoothAddress.getAddress())
                 && sAddressCallbackMap.get(
                 bluetoothAddress.getAddress()).mCallbackListener == callback) {

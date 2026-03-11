@@ -39,6 +39,7 @@ import android.os.Process;
 import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.ranging.RangingCapabilities;
+import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
@@ -49,6 +50,7 @@ import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
+import com.android.server.ranging.common.NoOpRangingAdapter;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.cs.CsConfigSelector;
@@ -193,26 +195,23 @@ public class RangingInjector {
             @NonNull ListeningExecutorService executor,
             @NonNull Object lock
     ) {
-        switch (config.getTechnology()) {
-            case UWB:
-                return new UwbAdapter(
-                        mContext, this, attributionSource, executor, lock, config.getDeviceRole());
-            case CS:
-                return new CsAdapter(mContext, this, lock);
-            case RTT:
-            case RTT_STATION:
-                return new RttAdapter(
-                        mContext, this, executor, lock, config.getDeviceRole(),
-                        config.getTechnology());
-            case RSSI:
-                return new BleRssiAdapter(mContext, this, lock);
-            case WIFI_PD:
-                return new WifiPdAdapter(mContext, this, attributionSource, executor, lock,
-                        config.getDeviceRole());
-            default:
-                throw new IllegalArgumentException(
-                        "Adapter does not exist for technology " + config.getTechnology());
-        }
+        return switch (config.getTechnology()) {
+            case UWB -> new UwbAdapter(
+                    mContext, this, attributionSource, executor, lock, config.getDeviceRole());
+            case CS -> config.getDeviceRole() == RangingPreference.DEVICE_ROLE_INITIATOR
+                    ? new CsAdapter(mContext, this, lock)
+                    : new NoOpRangingAdapter(RangingTechnology.CS, lock);
+            case RTT, RTT_STATION -> new RttAdapter(
+                    mContext, this, executor, lock, config.getDeviceRole(),
+                    config.getTechnology());
+            case RSSI -> config.getDeviceRole() == RangingPreference.DEVICE_ROLE_INITIATOR
+                    ? new BleRssiAdapter(mContext, this, lock)
+                    : new NoOpRangingAdapter(RangingTechnology.RSSI, lock);
+            case WIFI_PD -> new WifiPdAdapter(mContext, this, attributionSource, executor, lock,
+                    config.getDeviceRole());
+            default -> throw new IllegalArgumentException(
+                    "Adapter does not exist for technology " + config.getTechnology());
+        };
     }
 
     public @NonNull CapabilitiesAdapter createCapabilitiesAdapter(

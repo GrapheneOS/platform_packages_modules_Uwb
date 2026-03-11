@@ -45,27 +45,14 @@ public class ConfigurationManager {
 
     /** A complete configuration for a session within a specific ranging technology's stack */
     public interface TechnologyConfig {
-        @NonNull
-        RangingTechnology getTechnology();
+        @NonNull RangingTechnology getTechnology();
 
         @RangingPreference.DeviceRole int getDeviceRole();
 
         Duration getRangingInterval();
-    }
 
-    /** A config for a technology that only supports 1 peer per session. */
-    public interface UnicastTechnologyConfig extends TechnologyConfig {
-        @NonNull
-        RangingDevice getPeerDevice();
-    }
-
-    /** A config for a technology that supports multiple peers per session. */
-    public interface MulticastTechnologyConfig extends TechnologyConfig {
-        /**
-         * @return the set of peers within this technology-specific session.
-         */
-        @NonNull
-        ImmutableSet<RangingDevice> getPeerDevices();
+        /** @return the set of peers to which this configuration applies. */
+        @NonNull ImmutableSet<RangingDevice> getPeerDevices();
     }
 
     /**

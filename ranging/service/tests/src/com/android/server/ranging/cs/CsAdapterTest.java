@@ -45,6 +45,8 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -123,7 +125,7 @@ public class CsAdapterTest {
         when(mMockBluetoothDevice.getIdentityAddress()).thenReturn(MOCK_IDENTITY_ADDRESS);
 
         when(mMockCsConfig.getRangingParams()).thenReturn(mMockRangingParams);
-        when(mMockCsConfig.getPeerDevice()).thenReturn(mMockRangingDevice);
+        when(mMockCsConfig.getPeerDevices()).thenReturn(ImmutableSet.of(mMockRangingDevice));
         when(mMockCsConfig.getSessionConfig()).thenReturn(mMockSessionConfig);
         when(mMockCsConfig.getPeerBluetoothDevice()).thenReturn(mMockBluetoothDevice);
 

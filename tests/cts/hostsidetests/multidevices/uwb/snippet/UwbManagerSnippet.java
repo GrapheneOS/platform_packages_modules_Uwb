@@ -30,6 +30,7 @@ import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
+import android.uwb.timesync.TimesyncEvent;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -54,7 +55,6 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -92,6 +92,8 @@ public class UwbManagerSnippet implements Snippet {
             new HashMap<String, RangingSessionCallback>();
     private static HashMap<String, UwbAdapterStateCallback> sUwbAdapterStateCallbackMap =
             new HashMap<String, UwbAdapterStateCallback>();
+    private static HashMap<String, TimesyncCallbackImpl> sTimesyncCallbackMap =
+            new HashMap<String, TimesyncCallbackImpl>();
 
     public UwbManagerSnippet() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -451,6 +453,49 @@ public class UwbManagerSnippet implements Snippet {
         }
     }
 
+    class TimesyncCallbackImpl implements UwbManager.TimesyncCallback {
+        public String mId;
+
+        TimesyncCallbackImpl(String id) {
+            mId = id;
+        }
+
+        @Override
+        public void onRegistered() {
+            Log.d(TAG + "TimesyncCallback#onRegistered() called");
+            SnippetEvent event = new SnippetEvent(mId, "TimesyncCallback");
+            event.getData().putString("timesyncEvent", "onRegistered");
+            mEventCache.postEvent(event);
+        }
+
+        @Override
+        public void onRegisteredFailed() {
+            Log.d(TAG + "TimesyncCallback#onRegisteredFailed() called");
+            SnippetEvent event = new SnippetEvent(mId, "TimesyncCallback");
+            event.getData().putString("timesyncEvent", "onRegisteredFailed");
+            mEventCache.postEvent(event);
+        }
+
+        @Override
+        public void onTimesyncEvent(TimesyncEvent event) {
+            Log.d(TAG + "onTimesyncEvent: mac=" + event.getMacAddress() + " type="
+                    + event.getAddressType()
+                    + " event=" + event.getEvent() + " direction=" + event.getDirection()
+                    + " uwbTimestampUs=" + event.getUwbTimestampUs());
+            SnippetEvent snippetEvent = new SnippetEvent(mId, "TimesyncCallback");
+            snippetEvent.getData().putString("timesyncEvent", "onTimesyncEvent");
+            snippetEvent.getData().putString("macAddress", event.getMacAddress());
+            snippetEvent.getData().putInt("event", event.getEvent());
+            snippetEvent.getData().putInt("direction", event.getDirection());
+            snippetEvent.getData().putLong("uwbTimestampUs", event.getUwbTimestampUs());
+            snippetEvent.getData().putLong("deviceTimeUncertaintyUs",
+                    event.getDeviceTimeUncertaintyUs());
+            snippetEvent.getData().putInt("maxClockSkewPpm", event.getMaxClockSkewPpm());
+            snippetEvent.getData().putInt("eventCounter", event.getEventCounter());
+            mEventCache.postEvent(snippetEvent);
+        }
+    }
+
     /** Register uwb adapter state callback. */
     @AsyncRpc(description = "Register uwb adapter state callback")
     public void registerUwbAdapterStateCallback(String callbackId, String key) throws Throwable {
@@ -467,6 +512,29 @@ public class UwbManagerSnippet implements Snippet {
         runWithShellPermission(() ->
                 mUwbManager.unregisterAdapterStateCallback(uwbAdapterStateCallback));
         sUwbAdapterStateCallbackMap.remove(key);
+    }
+
+    /** Register timesync callback. */
+    @AsyncRpc(description = "Register timesync callback")
+    public void registerTimesyncCallback(String callbackId, String key, String macAddress,
+            int addressType)
+            throws Throwable {
+        Log.d(TAG + "registerTimesyncCallback: mac=" + macAddress + " type=" + addressType);
+        TimesyncCallbackImpl timesyncCallback = new TimesyncCallbackImpl(callbackId);
+        sTimesyncCallbackMap.put(key, timesyncCallback);
+        runWithShellPermission(() ->
+                mUwbManager.registerTimesyncCallback(mExecutor, macAddress, addressType,
+                        timesyncCallback));
+    }
+
+    /** Unregister timesync callback. */
+    @Rpc(description = "Unregister timesync callback")
+    public void unregisterTimesyncCallback(String key) throws Throwable {
+        TimesyncCallbackImpl timesyncCallback = sTimesyncCallbackMap.remove(key);
+        if (timesyncCallback != null) {
+            runWithShellPermission(() ->
+                    mUwbManager.unregisterTimesyncCallback(timesyncCallback));
+        }
     }
 
     /** Get UWB adapter state. */

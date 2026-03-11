@@ -17,16 +17,18 @@
 package com.android.server.ranging.uwb;
 
 import android.annotation.NonNull;
-import android.ranging.RangingPreference;
-import android.ranging.uwb.DlTdoaRangingParams;
-import android.ranging.SessionConfig;
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
+import android.ranging.SessionConfig;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -55,6 +57,12 @@ public class DlTdoaConfig implements TechnologyConfig {
     @Override
     public RangingTechnology getTechnology() {
         return RangingTechnology.UWB;
+    }
+
+    @NonNull
+    @Override
+    public ImmutableSet<RangingDevice> getPeerDevices() {
+        return ImmutableSet.of();
     }
 
     @Override

@@ -18,6 +18,7 @@ package com.android.server.ranging.common;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
@@ -38,12 +39,11 @@ import com.android.ranging.flags.Flags;
 import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfig;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.rtt.RttConfig;
-import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
-import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 import com.android.server.ranging.uwb.DlTdoaConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 import com.android.server.ranging.wifipd.WifiPdConfig;
@@ -95,11 +95,11 @@ public class ConfigurationUtils {
         return ImmutableSet.copyOf(configs);
     }
 
-    private static @NonNull Set<MulticastTechnologyConfig> extractMulticastTechnologies(
+    private static @NonNull Set<TechnologyConfig> extractMulticastTechnologies(
             @NonNull Collection<RawRangingDevice> peerParams,
             SessionConfig sessionConfig, @RangingPreference.DeviceRole int role
     ) {
-        Set<MulticastTechnologyConfig> configs = new HashSet<>();
+        Set<TechnologyConfig> configs = new HashSet<>();
 
         Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                 uwbPeersByParams = PeerIgnoringParamsHasher.groupUwbPeersByParams(peerParams);
@@ -117,11 +117,11 @@ public class ConfigurationUtils {
         return configs;
     }
 
-    private static @NonNull Set<UnicastTechnologyConfig> extractUnicastTechnologies(
+    private static @NonNull Set<TechnologyConfig> extractUnicastTechnologies(
             @NonNull Collection<RawRangingDevice> peerParams,
             @NonNull SessionConfig sessionConfig, @RangingPreference.DeviceRole int role
     ) {
-        Set<UnicastTechnologyConfig> configs = new HashSet<>();
+        Set<TechnologyConfig> configs = new HashSet<>();
 
         for (RawRangingDevice peer : peerParams) {
             if (peer.getRangingDevice() == null) continue;
@@ -130,15 +130,31 @@ public class ConfigurationUtils {
                 configs.add(new RttConfig(
                         role, peer.getRttRangingParams(), sessionConfig, peer.getRangingDevice()));
             }
+
             if (peer.getBleRssiRangingParams() != null) {
-                configs.add(new BleRssiConfig(
-                        role, peer.getBleRssiRangingParams(), sessionConfig,
-                        peer.getRangingDevice(), null));
+                if (role == DEVICE_ROLE_INITIATOR) {
+                    configs.add(new BleRssiConfig(
+                            role, peer.getBleRssiRangingParams(), sessionConfig,
+                            peer.getRangingDevice(), null));
+                } else {
+                    // BLE RSSI responder does not need configuration parameters.
+                    configs.add(new EmptyTechnologyConfig(
+                            RangingTechnology.RSSI, DEVICE_ROLE_RESPONDER,
+                            ImmutableSet.of(peer.getRangingDevice())));
+                }
             }
-            // Only CS initiator needs to be configured.
-            if (peer.getCsRangingParams() != null && role == DEVICE_ROLE_INITIATOR) {
-                configs.add(new CsConfig(
-                        peer.getCsRangingParams(), sessionConfig, peer.getRangingDevice(), null));
+
+            if (peer.getCsRangingParams() != null) {
+                if (role == DEVICE_ROLE_INITIATOR) {
+                    configs.add(new CsConfig(
+                            peer.getCsRangingParams(), sessionConfig, peer.getRangingDevice(),
+                            null));
+                } else {
+                    // BLE CS responder does not need configuration parameters.
+                    configs.add(new EmptyTechnologyConfig(
+                            RangingTechnology.CS, DEVICE_ROLE_RESPONDER,
+                            ImmutableSet.of(peer.getRangingDevice())));
+                }
             }
 
             if (Flags.rangingStackUpdates25q4() && peer.getRttStationRangingParams() != null) {

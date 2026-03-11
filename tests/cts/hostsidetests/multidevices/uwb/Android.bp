@@ -48,6 +48,7 @@ python_test_host {
     device_common_data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+        ":bluetooth_multi_devices_snippet",
         "README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
@@ -70,6 +71,7 @@ python_test_host {
     device_common_data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+        ":bluetooth_multi_devices_snippet",
         "README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
@@ -97,6 +99,7 @@ python_test_host {
     device_common_data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+        ":bluetooth_multi_devices_snippet",
         "README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
@@ -123,6 +126,7 @@ python_test_host {
     device_common_data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+        ":bluetooth_multi_devices_snippet",
         "README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],

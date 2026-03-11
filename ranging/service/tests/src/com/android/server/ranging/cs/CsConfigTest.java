@@ -30,6 +30,8 @@ import android.ranging.ble.cs.BleCsRangingParams;
 
 import androidx.test.filters.SmallTest;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -62,7 +64,7 @@ public class CsConfigTest {
         assertEquals(config.getDeviceRole(), DEVICE_ROLE_INITIATOR);
         assertEquals(config.getRangingParams(), bleCsRangingParams);
         assertEquals(config.getSessionConfig(), sessionConfig);
-        assertEquals(config.getPeerDevice(), rangingDevice);
+        assertEquals(config.getPeerDevices(), ImmutableSet.of(rangingDevice));
         assertEquals(config.getPeerBluetoothDevice(), mMockBluetoothDevice);
 
     }

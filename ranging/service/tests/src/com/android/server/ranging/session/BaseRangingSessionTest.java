@@ -50,9 +50,7 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
-import com.android.server.ranging.session.ConfigurationManager.MulticastTechnologyConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
-import com.android.server.ranging.session.ConfigurationManager.UnicastTechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -121,11 +119,7 @@ public class BaseRangingSessionTest {
 
             verify(mMockAdapters.get(config)).start(eq(config), any(), callbackCaptor.capture());
 
-            if (config instanceof MulticastTechnologyConfig c) {
-                callbackCaptor.getValue().onStarted(c.getPeerDevices());
-            } else if (config instanceof UnicastTechnologyConfig c) {
-                callbackCaptor.getValue().onStarted(ImmutableSet.of(c.getPeerDevice()));
-            }
+            callbackCaptor.getValue().onStarted(config.getPeerDevices());
 
             adapterCallbacks.put(config, callbackCaptor.getValue());
         }
@@ -138,31 +132,23 @@ public class BaseRangingSessionTest {
             verify(mMockAdapters.get(config)).stop();
 
             callbacks.get(config).onClosed(InternalReason.LOCAL_REQUEST);
-            if (config instanceof MulticastTechnologyConfig c) {
-                callbacks.get(config).onStopped(c.getPeerDevices(), InternalReason.LOCAL_REQUEST);
-            } else if (config instanceof UnicastTechnologyConfig c) {
-                callbacks.get(config).onStopped(
-                        ImmutableSet.of(c.getPeerDevice()), InternalReason.LOCAL_REQUEST);
-            }
+            callbacks.get(config).onStopped(config.getPeerDevices(), InternalReason.LOCAL_REQUEST);
         }
     }
 
-    private MulticastTechnologyConfig mockTechnologyConfig(
+    private TechnologyConfig mockTechnologyConfig(
             RangingTechnology technology, Set<RangingDevice> peers
     ) {
-        MulticastTechnologyConfig config = mock(MulticastTechnologyConfig.class);
+        TechnologyConfig config = mock(TechnologyConfig.class);
         when(config.getTechnology()).thenReturn(technology);
         when(config.getPeerDevices()).thenReturn(ImmutableSet.copyOf(peers));
         return config;
     }
 
-    private UnicastTechnologyConfig mockTechnologyConfig(
+    private TechnologyConfig mockTechnologyConfig(
             RangingTechnology technology, RangingDevice peer
     ) {
-        UnicastTechnologyConfig config = mock(UnicastTechnologyConfig.class);
-        when(config.getTechnology()).thenReturn(technology);
-        when(config.getPeerDevice()).thenReturn(peer);
-        return config;
+        return mockTechnologyConfig(technology, Set.of(peer));
     }
 
 
@@ -337,7 +323,7 @@ public class BaseRangingSessionTest {
     @Test
     public void shouldStop_whenTechnologyStops() {
         RangingDevice peer = mock(RangingDevice.class);
-        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        TechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
         setupAdapterMocks(configs);
@@ -357,7 +343,7 @@ public class BaseRangingSessionTest {
     @Test
     public void shouldStop_whenTechnologyFailsToStart() {
         RangingDevice peer = mock(RangingDevice.class);
-        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        TechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
         setupAdapterMocks(configs);
@@ -377,7 +363,7 @@ public class BaseRangingSessionTest {
         RangingDevice peer = mock(RangingDevice.class);
         RangingData data = generateData(UWB);
 
-        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        TechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
         setupAdapterMocks(configs);
@@ -396,7 +382,7 @@ public class BaseRangingSessionTest {
     @Test
     public void dynamicAddOrRemovePeer_callsAdapterAddOrRemovePeer() {
         RangingDevice peer = mock(RangingDevice.class);
-        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        TechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
         setupAdapterMocks(configs);
@@ -424,7 +410,7 @@ public class BaseRangingSessionTest {
     @Test
     public void fgStateUpdate_callsAdapterFgStateUpdate() {
         RangingDevice peer = mock(RangingDevice.class);
-        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        TechnologyConfig config = mockTechnologyConfig(UWB, peer);
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
         setupAdapterMocks(configs);

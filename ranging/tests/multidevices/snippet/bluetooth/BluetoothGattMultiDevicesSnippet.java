@@ -46,6 +46,7 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
 
     private Context mContext;
     private BluetoothManager mBluetoothManager;
+    private BluetoothDevice mFoundDevice;
 
     public BluetoothGattMultiDevicesSnippet() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -74,6 +75,54 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
     @Rpc(description = "Connect to the peer device advertising the specified UUID")
     public String connectGatt(String uuid) throws Throwable {
         return runWithShellPermission(() -> Utils.convertBtDeviceToJson(mGattClient.connect(uuid)));
+    }
+
+    @Rpc(description = "Scan for a device with the given UUID")
+    public JSONObject scanForDevice(String uuid) throws Throwable {
+        return runWithShellPermission(() -> {
+            mFoundDevice = mGattClient.scan(uuid);
+            if (mFoundDevice == null) {
+                return null;
+            }
+            int addressType = 0; // Default to PUBLIC
+            try {
+                java.lang.reflect.Method getAddressTypeMethod =
+                        BluetoothDevice.class.getMethod("getAddressType");
+                addressType = (int) getAddressTypeMethod.invoke(mFoundDevice);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to get address type via reflection", e);
+            }
+            Log.i(TAG, "Discovered device: " + mFoundDevice.getAddress() + " type: " + addressType);
+            return new JSONObject()
+                    .put("address", mFoundDevice.getAddress())
+                    .put("address_type", addressType);
+        });
+    }
+
+    @Rpc(description = "Connect to the previously found device")
+    public String connectToFoundDevice() throws Throwable {
+        return runWithShellPermission(() -> {
+            if (mFoundDevice == null) {
+                throw new IllegalStateException("No device found to connect to");
+            }
+            return Utils.convertBtDeviceToJson(mGattClient.connectToDevice(mFoundDevice));
+        });
+    }
+
+    @Rpc(description = "Connect to a specific Bluetooth device address")
+    public String connectToDevice(String address) throws Throwable {
+        return runWithShellPermission(
+                () -> Utils.convertBtDeviceToJson(mGattClient.connectToAddress(address)));
+    }
+
+    @Rpc(description = "Sets preferred PHY for the GATT connection (Client side)")
+    public void setPreferredPhy(int txPhy, int rxPhy, int phyOptions) throws Throwable {
+        runWithShellPermission(() -> mGattClient.setPreferredPhy(txPhy, rxPhy, phyOptions));
+    }
+
+    @Rpc(description = "Sets preferred PHY for the GATT connection (Server side)")
+    public void serverSetPreferredPhy(int txPhy, int rxPhy, int phyOptions) throws Throwable {
+        runWithShellPermission(() -> mGattServer.setPreferredPhy(txPhy, rxPhy, phyOptions));
     }
 
     @Rpc(description = "Disconnect to the peer device advertising the specified UUID")
@@ -125,6 +174,11 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
     @Rpc(description = "Checks Bluetooth state")
     public boolean isBluetoothOn() {
         return mBluetoothManager.getAdapter().isEnabled();
+    }
+
+    @Rpc(description = "Get the local Bluetooth address")
+    public String getBluetoothAddress() throws Throwable {
+        return runWithShellPermission(() -> mBluetoothManager.getAdapter().getAddress());
     }
 
     @Rpc(description = "Whether the connected peer has a service of the given UUID")

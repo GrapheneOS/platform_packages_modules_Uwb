@@ -54,6 +54,7 @@ import com.android.server.ranging.session.ConfigurationManager;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -188,7 +189,7 @@ public class RttAdapter implements RangingAdapter {
             return;
         }
         mConfig = rttConfig;
-        mPeerDevice = rttConfig.getPeerDevice();
+        mPeerDevice = Iterables.getOnlyElement(rttConfig.getPeerDevices());
         mRttClient.setRangingParameters(rttConfig.asBackendParameters());
         mRttClient.setRangingRequestDelay(
                 mRangingInjector.getDeviceConfigFacade().getRttRangingRequestDelay());

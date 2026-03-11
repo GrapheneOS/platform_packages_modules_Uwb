@@ -29,6 +29,7 @@
     <device name="device1">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="test-file-name" value="uwb_snippet.apk" />
+            <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
@@ -38,6 +39,7 @@
     <device name="device2">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="test-file-name" value="uwb_snippet.apk" />
+            <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />

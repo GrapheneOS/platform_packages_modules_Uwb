@@ -30,11 +30,13 @@ import android.ranging.wifi.pd.WifiPdRangingParams;
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+
+import com.google.common.collect.ImmutableSet;
 
 import java.time.Duration;
 
-public class WifiPdConfig implements ConfigurationManager.UnicastTechnologyConfig {
+public class WifiPdConfig implements TechnologyConfig {
 
     private final SessionConfig mSessionConfig;
     private final WifiPdRangingParams mPdRangingParams;
@@ -64,8 +66,8 @@ public class WifiPdConfig implements ConfigurationManager.UnicastTechnologyConfi
 
     @NonNull
     @Override
-    public RangingDevice getPeerDevice() {
-        return mPeerDevice;
+    public ImmutableSet<RangingDevice> getPeerDevices() {
+        return ImmutableSet.of(mPeerDevice);
     }
 
     @NonNull

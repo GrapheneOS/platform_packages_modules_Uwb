@@ -123,6 +123,29 @@ def set_airplane_mode(ad: android_device.AndroidDevice, state: bool):
       asserts.fail("Failed to set airplane mode to: %s" % state)
 
 
+def set_bt_state_and_verify(
+    ad: android_device.AndroidDevice,
+    state: bool
+):
+  """Sets BT state to on or off and verifies it.
+
+  Args:
+    ad: android device object.
+    state: bool, True for BT on, False for off.
+  """
+  if state and not ad.bluetooth.isBluetoothOn():
+    ad.bluetooth.enableBluetooth()
+  elif not state and ad.bluetooth.isBluetoothOn() :
+    ad.bluetooth.disableBluetooth()
+
+  start_time = time.time()
+  while ad.bluetooth.isBluetoothOn() != state:
+    if time.time() - start_time > 10:
+        asserts.fail(f"Failed to set Bluetooth to {state}")
+    time.sleep(0.5)
+  ad.bluetooth.reset()
+
+
 def get_airplane_mode(ad: android_device.AndroidDevice) -> bool:
   """Gets the airplane mode.
 

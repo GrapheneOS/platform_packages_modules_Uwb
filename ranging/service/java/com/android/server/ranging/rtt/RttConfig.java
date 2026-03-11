@@ -33,12 +33,14 @@ import androidx.annotation.NonNull;
 import com.android.ranging.flags.Flags;
 import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.ConfigurationManager;
+import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
+
+import com.google.common.collect.ImmutableSet;
 
 import java.time.Duration;
 import java.util.Objects;
 
-public class RttConfig implements ConfigurationManager.UnicastTechnologyConfig {
+public class RttConfig implements TechnologyConfig {
 
     private final SessionConfig mSessionConfig;
     private final RttRangingParams mRangingParams;
@@ -125,8 +127,8 @@ public class RttConfig implements ConfigurationManager.UnicastTechnologyConfig {
     }
 
     @Override
-    public @NonNull RangingDevice getPeerDevice() {
-        return mPeerDevice;
+    public @NonNull ImmutableSet<RangingDevice> getPeerDevices() {
+        return ImmutableSet.of(mPeerDevice);
     }
 
     public RttRangingParameters asBackendParameters() {
