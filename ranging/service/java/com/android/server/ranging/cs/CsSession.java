@@ -81,7 +81,10 @@ class CsSession {
         Log.i(TAG, "Registering adapter: " + adapter.getId());
 
         synchronized (sCsSessions) {
-            CsSession currentSession = sCsSessions.get(bluetoothDevice.getIdentityAddress());
+            String address = bluetoothDevice.getIdentityAddress() != null
+                    ? bluetoothDevice.getIdentityAddress()
+                    : bluetoothDevice.getAddress();
+            CsSession currentSession = sCsSessions.get(address);
 
             if (currentSession != null) {
                 Log.i(TAG,
@@ -100,7 +103,7 @@ class CsSession {
                     csConfig,
                     lock);
             currentSession.mCsAdapters.add(adapter);
-            sCsSessions.put(bluetoothDevice.getIdentityAddress(), currentSession);
+            sCsSessions.put(address, currentSession);
             currentSession.start();
         }
     }
@@ -142,7 +145,9 @@ class CsSession {
             Object lock) {
         mBluetoothAdapter = bluetoothAdapter;
         mPeerBluetoothDevice = bluetoothDevice;
-        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress();
+        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress() != null
+                ? mPeerBluetoothDevice.getIdentityAddress()
+                : mPeerBluetoothDevice.getAddress();
         mAlarmManager = alarmManager;
         mConfig = config;
         mLock = lock;
