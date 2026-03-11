@@ -52,6 +52,13 @@ use uwb_uci_packets::{
     RawUciControlPacket, UciDefragPacket,
 };
 
+#[cfg(target_os = "android")]
+use android_system_suspend::aidl::android::system::suspend::{
+    ISystemSuspend::ISystemSuspend, IWakeLock::IWakeLock, WakeLockType::WakeLockType,
+};
+#[cfg(target_os = "android")]
+use binder::Strong;
+
 const UCI_TIMEOUT_MS: u64 = 2000;
 const MAX_RETRY_COUNT: usize = 3;
 // Initialize to a safe (minimum) value for a Data packet fragment's payload size.
@@ -997,6 +1004,11 @@ struct UciManagerActor<T: UciHal, U: UciLogger> {
 
     // Fira Logical Link version
     fira_ll_version: u8,
+
+    #[cfg(target_os = "android")]
+    system_suspend: Option<Strong<dyn ISystemSuspend>>,
+    #[cfg(target_os = "android")]
+    wakelock: Option<Strong<dyn IWakeLock>>,
 }
 
 impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
@@ -1038,11 +1050,17 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
             is_multicast_list_ntf_v2_supported: false,
             is_multicast_list_rsp_v2_supported: false,
             fira_ll_version: FIRA_LOGICAL_LINK_VERSION_DEFAULT,
+
+            #[cfg(target_os = "android")]
+            system_suspend: None,
+            #[cfg(target_os = "android")]
+            wakelock: None,
         }
     }
 
     async fn run(&mut self) {
         loop {
+            self.update_wakelock();
             tokio::select! {
                 // Handle the next command. Only when the previous command already received the
                 // response.
@@ -1238,6 +1256,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     return;
                 }
 
+                self.ensure_wakelock();
                 let (packet_sender, packet_receiver) = mpsc::unbounded_channel();
                 let result = self.hal.open(packet_sender).await;
                 self.logger.log_hal_open(&result);
@@ -1344,6 +1363,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 return;
             }
 
+            self.ensure_wakelock();
             match self.send_uci_command(uci_cmd_retryer.cmd.clone()).await {
                 Ok(_) => {
                     self.wait_resp_timeout = PinSleep::new(Duration::from_millis(UCI_TIMEOUT_MS));
@@ -1367,6 +1387,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 return;
             }
 
+            self.ensure_wakelock();
             match self
                 .hal
                 .send_packet(uci_data_snd_retryer.data_packet.encode_to_vec().unwrap())
@@ -1911,6 +1932,56 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
     fn is_waiting_device_status(&self) -> bool {
         self.open_hal_result_sender.is_some()
     }
+
+    #[cfg(target_os = "android")]
+    fn acquire_wakelock(&mut self) -> Option<Strong<dyn IWakeLock>> {
+        if self.system_suspend.is_none() {
+            self.system_suspend =
+                binder::get_interface("android.system.suspend.ISystemSuspend/default").ok();
+        }
+
+        match self.system_suspend.as_ref() {
+            Some(suspend_service) => {
+                match suspend_service.acquireWakeLock(WakeLockType::PARTIAL, "UwbUciWakelock") {
+                    Ok(lock) => {
+                        debug!("UwbUciWakelock acquired successfully");
+                        Some(lock)
+                    }
+                    Err(e) => {
+                        error!("Failed to acquire UwbUciWakelock: {}", e);
+                        None
+                    }
+                }
+            }
+            None => {
+                error!("Failed to get ISystemSuspend service for UwbUciWakelock");
+                None
+            }
+        }
+    }
+
+    #[cfg(target_os = "android")]
+    fn update_wakelock(&mut self) {
+        if self.is_waiting_resp() || self.is_waiting_device_status() {
+            self.ensure_wakelock();
+        } else if self.wakelock.is_some() {
+            debug!("Releasing UwbUciWakelock");
+            self.wakelock = None;
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    fn update_wakelock(&mut self) {}
+
+    #[cfg(target_os = "android")]
+    fn ensure_wakelock(&mut self) {
+        if self.wakelock.is_none() {
+            self.wakelock = self.acquire_wakelock();
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    fn ensure_wakelock(&mut self) {}
 }
 
 impl<T: UciHal, U: UciLogger> Drop for UciManagerActor<T, U> {
