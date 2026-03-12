@@ -30,13 +30,14 @@ use crate::params::uci_packets::{
     BitsPerSample, ControleeDeviceRole, ControleeStatusV1, ControleeStatusV2,
     CreateLogicalLinkNtfStatusCode, CreditAvailability, DataRcvStatusCode,
     DataTransferNtfStatusCode, DataTransferPhaseConfigUpdateStatusCode, DeviceState,
-    ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
-    ExtendedAddressTwoWayRangingMeasurement, FiraLogicalLinkVersion, LogicalLinkCloseStatus,
-    RadarDataType, RangingMeasurementType, RawUciMessage, SessionId, SessionState, SessionToken,
+    ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressDlTdoaRangingMeasurementV2,
+    ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
+    FiraLogicalLinkVersion, LogicalLinkCloseStatus, RadarDataType, RangingMeasurementType,
+    RawUciMessage, SessionId, SessionState, SessionToken,
     SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload, ShortAddressDlTdoaRangingMeasurement,
-    ShortAddressOwrAoaRangingMeasurement, ShortAddressTwoWayRangingMeasurement, StatusCode,
-    UCIMajorVersion,
+    ShortAddressDlTdoaRangingMeasurementV2, ShortAddressOwrAoaRangingMeasurement,
+    ShortAddressTwoWayRangingMeasurement, StatusCode, UCIMajorVersion,
 };
 use crate::params::ConnectId;
 
@@ -345,6 +346,12 @@ pub enum RangingMeasurements {
 
     /// Dl-TDoA measurement with extended address.
     ExtendedAddressDltdoa(Vec<ExtendedAddressDlTdoaRangingMeasurement>),
+
+    /// Dl-TDoA measurement with short address V2.
+    ShortAddressDltdoaV2(Vec<ShortAddressDlTdoaRangingMeasurementV2>),
+
+    /// Dl-TDoA measurement with extended address V2.
+    ExtendedAddressDltdoaV2(Vec<ExtendedAddressDlTdoaRangingMeasurementV2>),
 
     /// OWR for AoA measurement with short address.
     ShortAddressOwrAoa(ShortAddressOwrAoaRangingMeasurement),
@@ -889,6 +896,38 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                     Some(v) => {
                         if v.len() == evt.no_of_ranging_measurements().into() {
                             RangingMeasurements::ExtendedAddressDltdoa(v)
+                        } else {
+                            error!("Wrong count of ranging measurements {evt:?}");
+                            return Err(Error::BadParameters);
+                        }
+                    }
+                    None => return Err(Error::BadParameters),
+                }
+            }
+            Ok(SessionInfoNtfChild::ShortMacDlTDoAV2SessionInfoNtf(evt)) => {
+                match ShortAddressDlTdoaRangingMeasurementV2::decode_full(
+                    evt.dl_tdoa_measurements(),
+                    evt.no_of_ranging_measurements(),
+                ) {
+                    Some(v) => {
+                        if v.len() == evt.no_of_ranging_measurements().into() {
+                            RangingMeasurements::ShortAddressDltdoaV2(v)
+                        } else {
+                            error!("Wrong count of ranging measurements {evt:?}");
+                            return Err(Error::BadParameters);
+                        }
+                    }
+                    None => return Err(Error::BadParameters),
+                }
+            }
+            Ok(SessionInfoNtfChild::ExtendedMacDlTDoAV2SessionInfoNtf(evt)) => {
+                match ExtendedAddressDlTdoaRangingMeasurementV2::decode_full(
+                    evt.dl_tdoa_measurements(),
+                    evt.no_of_ranging_measurements(),
+                ) {
+                    Some(v) => {
+                        if v.len() == evt.no_of_ranging_measurements().into() {
+                            RangingMeasurements::ExtendedAddressDltdoaV2(v)
                         } else {
                             error!("Wrong count of ranging measurements {evt:?}");
                             return Err(Error::BadParameters);

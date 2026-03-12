@@ -402,6 +402,18 @@ public class BaseRangingSession {
         }
 
         @Override
+        public void onDlTdoaRangingResult(@NonNull RangingDevice anchor,
+                @NonNull android.ranging.DlTdoaMeasurement measurement) {
+            synchronized (BaseRangingSession.this) {
+                if (mStateMachine.getState() != State.STOPPING
+                        && mStateMachine.getState() != State.STOPPED
+                ) {
+                    mSessionListener.onDlTdoaResults(anchor, measurement);
+                }
+            }
+        }
+
+        @Override
         public void onClosed(@InternalReason int reason) {
             synchronized (BaseRangingSession.this) {
                 mAdapters.remove(mConfig);

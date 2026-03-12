@@ -208,6 +208,7 @@ public class ConfigurationManagerTest {
                         new UwbRangeLimitsConfig.Builder().build(), /* rangeLimitsConfig */
                         rangingIntervalMs,
                         slotsPerRangingRound,
+                        DlTdoaMeasurement.MEASUREMENT_VERSION_1,
                         new byte[]{0} /* rangingRoundIndexes */);
 
         FiraOpenSessionParams params =

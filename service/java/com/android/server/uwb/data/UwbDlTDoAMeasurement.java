@@ -18,6 +18,10 @@ package com.android.server.uwb.data;
 
 import com.android.server.uwb.util.UwbUtil;
 
+import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class UwbDlTDoAMeasurement {
@@ -38,6 +42,8 @@ public class UwbDlTDoAMeasurement {
     public int mRssi;
     public long mTxTimestamp;
     public long mRxTimestamp;
+    public byte[] mTxTimestampV2;
+    public byte[] mRxTimestampV2;
     public float mAnchorCfo;
     public float mCfo;
     public long mInitiatorReplyTime;
@@ -45,12 +51,26 @@ public class UwbDlTDoAMeasurement {
     public int mInitiatorResponderTof;
     public byte[] mAnchorLocation;
     public byte[] mActiveRangingRounds;
+    public int mSuperclusterId;
 
     public UwbDlTDoAMeasurement(byte[] macAddress, int status, int messageType, int messageControl,
             int blockIndex, int roundIndex, int nLoS, int aoaAzimuth, int aoaAzimuthFom,
             int aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
             int anchorCfo, int cfo, long initiatorReplyTime, long responderReplyTime,
             int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds) {
+        this(macAddress, status, messageType, messageControl, blockIndex, roundIndex, nLoS,
+                aoaAzimuth, aoaAzimuthFom, aoaElevation, aoaElevationFom, rssi, txTimestamp,
+                rxTimestamp, anchorCfo, cfo, initiatorReplyTime, responderReplyTime,
+                initiatorResponderTof, anchorLocation, activeRangingRounds,
+                DlTDoAMeasurement.SUPERCLUSTER_ID_ABSENT);
+    }
+
+    public UwbDlTDoAMeasurement(byte[] macAddress, int status, int messageType, int messageControl,
+            int blockIndex, int roundIndex, int nLoS, int aoaAzimuth, int aoaAzimuthFom,
+            int aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
+            int anchorCfo, int cfo, long initiatorReplyTime, long responderReplyTime,
+            int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds,
+            int superclusterId) {
         mMacAddress = macAddress;
         mStatus = status;
         mMessageType = messageType;
@@ -65,6 +85,10 @@ public class UwbDlTDoAMeasurement {
         mRssi = -(rssi / 2);
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
+        mTxTimestampV2 = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(txTimestamp).array();
+        mRxTimestampV2 = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(rxTimestamp).array();
         mAnchorCfo = anchorCfo == ANCHOR_CFO_UNAVAILABLE_RAW_VALUE
                 ? Float.NaN : toFloatFromQ6_10_Format(anchorCfo);
         mCfo = cfo == CFO_UNAVAILABLE_RAW_VALUE
@@ -74,6 +98,48 @@ public class UwbDlTDoAMeasurement {
         mInitiatorResponderTof = initiatorResponderTof;
         mAnchorLocation = anchorLocation;
         mActiveRangingRounds = activeRangingRounds;
+        mSuperclusterId = superclusterId;
+    }
+
+    public UwbDlTDoAMeasurement(byte[] macAddress, int status, int messageType, int messageControl,
+            int blockIndex, int roundIndex, int nLoS, int aoaAzimuth, int aoaAzimuthFom,
+            int aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
+            byte[] txTimestampV2, byte[] rxTimestampV2,
+            int anchorCfo, int cfo, long initiatorReplyTime, long responderReplyTime,
+            int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds,
+            int superclusterId) {
+        mMacAddress = macAddress;
+        mStatus = status;
+        mMessageType = messageType;
+        mMessageControl = messageControl;
+        mBlockIndex = blockIndex;
+        mRoundIndex = roundIndex;
+        mNLoS = nLoS;
+        mAoaAzimuth = toFloatFromQ9_7_Format(aoaAzimuth);
+        mAoaAzimuthFom = aoaAzimuthFom;
+        mAoaElevation = toFloatFromQ9_7_Format(aoaElevation);
+        mAoaElevationFom = aoaElevationFom;
+        mRssi = -(rssi / 2);
+        mTxTimestamp = txTimestamp;
+        mRxTimestamp = rxTimestamp;
+        mTxTimestampV2 = (txTimestampV2 != null && txTimestampV2.length > 0)
+                ? txTimestampV2
+                : ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(txTimestamp).array();
+        mRxTimestampV2 = (rxTimestampV2 != null && rxTimestampV2.length > 0)
+                ? rxTimestampV2
+                : ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(rxTimestamp).array();
+        mAnchorCfo = anchorCfo == ANCHOR_CFO_UNAVAILABLE_RAW_VALUE
+                ? Float.NaN : toFloatFromQ6_10_Format(anchorCfo);
+        mCfo = cfo == CFO_UNAVAILABLE_RAW_VALUE
+                ? Float.NaN : toFloatFromQ6_10_Format(cfo);
+        mInitiatorReplyTime = initiatorReplyTime;
+        mResponderReplyTime = responderReplyTime;
+        mInitiatorResponderTof = initiatorResponderTof;
+        mAnchorLocation = anchorLocation;
+        mActiveRangingRounds = activeRangingRounds;
+        mSuperclusterId = superclusterId;
     }
 
     public byte[] getMacAddress() {
@@ -132,6 +198,14 @@ public class UwbDlTDoAMeasurement {
         return mRxTimestamp;
     }
 
+    public byte[] getTxTimestampV2() {
+        return mTxTimestampV2;
+    }
+
+    public byte[] getRxTimestampV2() {
+        return mRxTimestampV2;
+    }
+
     public float getAnchorCfo() {
         return mAnchorCfo;
     }
@@ -158,6 +232,10 @@ public class UwbDlTDoAMeasurement {
 
     public byte[] getActiveRangingRounds() {
         return mActiveRangingRounds;
+    }
+
+    public int getSuperclusterId() {
+        return mSuperclusterId;
     }
 
     private float toFloatFromQ9_7_Format(int value) {
@@ -187,6 +265,8 @@ public class UwbDlTDoAMeasurement {
                 ", Rssi=" + mRssi +
                 ", TxTimestamp=" + mTxTimestamp +
                 ", RxTimestamp=" + mRxTimestamp +
+                ", TxTimestampV2=" + Arrays.toString(mTxTimestampV2) +
+                ", RxTimestampV2=" + Arrays.toString(mRxTimestampV2) +
                 ", AnchorCfo=" + mAnchorCfo +
                 ", Cfo=" + mCfo +
                 ", InitiatorReplyTime=" + mInitiatorReplyTime +
@@ -194,6 +274,7 @@ public class UwbDlTDoAMeasurement {
                 ", InitiatorResponderTof=" + mInitiatorResponderTof +
                 ", AnchorLocation=" + Arrays.toString(mAnchorLocation) +
                 ", ActiveRangingRounds=" + Arrays.toString(mActiveRangingRounds) +
+                ", SuperclusterId=" + mSuperclusterId +
                 '}';
     }
 }

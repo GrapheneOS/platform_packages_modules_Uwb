@@ -529,12 +529,27 @@ enum_mapping! {
     UCI_LOGGER_MODE_FILTERED => Filtered,
 }
 
-enum_mapping! {
-    ProtoRangingMeasurementType => RangingMeasurementType,
-    ONE_WAY => OneWay,
-    TWO_WAY => TwoWay,
-    DL_TDOA => DlTdoa,
-    OWR_AOA => OwrAoa,
+impl From<ProtoRangingMeasurementType> for RangingMeasurementType {
+    fn from(item: ProtoRangingMeasurementType) -> Self {
+        match item {
+            ProtoRangingMeasurementType::ONE_WAY => RangingMeasurementType::OneWay,
+            ProtoRangingMeasurementType::TWO_WAY => RangingMeasurementType::TwoWay,
+            ProtoRangingMeasurementType::DL_TDOA => RangingMeasurementType::DlTdoa,
+            ProtoRangingMeasurementType::OWR_AOA => RangingMeasurementType::OwrAoa,
+        }
+    }
+}
+
+impl From<RangingMeasurementType> for ProtoRangingMeasurementType {
+    fn from(item: RangingMeasurementType) -> Self {
+        match item {
+            RangingMeasurementType::OneWay => ProtoRangingMeasurementType::ONE_WAY,
+            RangingMeasurementType::TwoWay => ProtoRangingMeasurementType::TWO_WAY,
+            RangingMeasurementType::DlTdoa => ProtoRangingMeasurementType::DL_TDOA,
+            RangingMeasurementType::OwrAoa => ProtoRangingMeasurementType::OWR_AOA,
+            RangingMeasurementType::DlTdoaV2 => ProtoRangingMeasurementType::DL_TDOA,
+        }
+    }
 }
 
 enum_mapping! {
@@ -922,6 +937,7 @@ fn to_proto_ranging_measurements(item: RangingMeasurements) -> ProtoRangingMeasu
         RangingMeasurements::ExtendedAddressDltdoa(arr) => {
             ProtoRangingMeasurements::DlTDoa(arr.into_iter().map(|item| item.into()).collect())
         }
+        _ => ProtoRangingMeasurements::DlTDoa(vec![]),
     }
 }
 

@@ -48,11 +48,27 @@ public class DlTdoaMeasurement {
     private final int mInitiatorResponderTof;
     private final byte[] mAnchorLocation;
     private final byte[] mActiveRangingRounds;
+    private final byte[] mTxTimestampV2;
+    private final byte[] mRxTimestampV2;
     private final int mSuperclusterId;
 
     public DlTdoaMeasurement(int measurementVersion, int messageType, int messageControl,
             int blockIndex, int roundIndex, int nLoS, float aoaAzimuth, int aoaAzimuthFom,
             float aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
+            float anchorCfo, float cfo, long initiatorReplyTime, long responderReplyTime,
+            int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds,
+            int superclusterId) {
+        this(measurementVersion, messageType, messageControl, blockIndex, roundIndex, nLoS,
+                aoaAzimuth, aoaAzimuthFom, aoaElevation, aoaElevationFom, rssi, txTimestamp,
+                rxTimestamp, null, null, anchorCfo, cfo, initiatorReplyTime,
+                responderReplyTime, initiatorResponderTof, anchorLocation, activeRangingRounds,
+                superclusterId);
+    }
+
+    public DlTdoaMeasurement(int measurementVersion, int messageType, int messageControl,
+            int blockIndex, int roundIndex, int nLoS, float aoaAzimuth, int aoaAzimuthFom,
+            float aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
+            byte[] txTimestampV2, byte[] rxTimestampV2,
             float anchorCfo, float cfo, long initiatorReplyTime, long responderReplyTime,
             int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds,
             int superclusterId) {
@@ -69,6 +85,8 @@ public class DlTdoaMeasurement {
         mRssi = rssi;
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
+        mTxTimestampV2 = txTimestampV2;
+        mRxTimestampV2 = rxTimestampV2;
         mAnchorCfo = anchorCfo;
         mCfo = cfo;
         mInitiatorReplyTime = initiatorReplyTime;
@@ -131,6 +149,14 @@ public class DlTdoaMeasurement {
         return mRxTimestamp;
     }
 
+    public byte[] getTxTimestampV2() {
+        return mTxTimestampV2;
+    }
+
+    public byte[] getRxTimestampV2() {
+        return mRxTimestampV2;
+    }
+
     public float getAnchorCfo() {
         return mAnchorCfo;
     }
@@ -178,6 +204,8 @@ public class DlTdoaMeasurement {
                 + String.format(Locale.US, " | rssi : %d", mRssi)
                 + String.format(Locale.US, " | txTimestamp : %d", mTxTimestamp)
                 + String.format(Locale.US, " | rxTimestamp : %d", mRxTimestamp)
+                + String.format(Locale.US, " | txTimestampV2 : %s", Arrays.toString(mTxTimestampV2))
+                + String.format(Locale.US, " | rxTimestampV2 : %s", Arrays.toString(mRxTimestampV2))
                 + String.format(Locale.US, " | anchorCfo : %f", mAnchorCfo)
                 + String.format(Locale.US, " | cfo : %f", mCfo)
                 + String.format(Locale.US, " | initiatorReplyTime : %d", mInitiatorReplyTime)

@@ -75,6 +75,158 @@ pub enum DTAnchorLocationType {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
+pub struct DlTdoaRangingMeasurementV2 {
+    pub status: u8,
+    pub message_type: u8,
+    pub block_index: u16,
+    pub round_index: u8,
+    pub nlos: u8,
+    pub aoa_azimuth: u16,
+    pub aoa_azimuth_fom: u8,
+    pub aoa_elevation: u16,
+    pub aoa_elevation_fom: u8,
+    pub rssi: u8,
+    pub anchor_cfo: u16,
+    pub cfo: u16,
+    pub initiator_reply_time: u32,
+    pub responder_reply_time: u32,
+    pub initiator_responder_tof: u16,
+    pub rx_timestamp: Vec<u8>,
+    pub message_control: u32,
+    pub tx_timestamp: Vec<u8>,
+    pub ranging_rounds: Vec<u8>,
+    pub anchor_location: Vec<u8>,
+    pub supercluster_id: Option<u8>,
+}
+
+impl DlTdoaRangingMeasurementV2 {
+    pub fn parse_one(bytes: &[u8], mac_address_len: usize) -> Option<(Self, usize)> {
+        let mut ptr = 0;
+        let measurement_size = extract_u16(bytes, &mut ptr, 2)? as usize;
+        if bytes.len() < measurement_size {
+            return None;
+        }
+
+        // The MAC address is part of the measurement in v2
+        ptr += mac_address_len;
+
+        let status = extract_u8(bytes, &mut ptr, 1)?;
+        let message_type = extract_u8(bytes, &mut ptr, 1)?;
+        let block_index = extract_u16(bytes, &mut ptr, 2)?;
+        let round_index = extract_u8(bytes, &mut ptr, 1)?;
+        let nlos = extract_u8(bytes, &mut ptr, 1)?;
+        let aoa_azimuth = extract_u16(bytes, &mut ptr, 2)?;
+        let aoa_azimuth_fom = extract_u8(bytes, &mut ptr, 1)?;
+        let aoa_elevation = extract_u16(bytes, &mut ptr, 2)?;
+        let aoa_elevation_fom = extract_u8(bytes, &mut ptr, 1)?;
+        let rssi = extract_u8(bytes, &mut ptr, 1)?;
+        let anchor_cfo = extract_u16(bytes, &mut ptr, 2)?;
+        let cfo = extract_u16(bytes, &mut ptr, 2)?;
+        let initiator_reply_time = extract_u32(bytes, &mut ptr, 4)?;
+        let responder_reply_time = extract_u32(bytes, &mut ptr, 4)?;
+        let initiator_responder_tof = extract_u16(bytes, &mut ptr, 2)?;
+
+        let rx_timestamp_len = extract_u8(bytes, &mut ptr, 1)? as usize;
+        let rx_timestamp = extract_vec(bytes, &mut ptr, rx_timestamp_len)?;
+
+        let message_control = extract_u32(bytes, &mut ptr, 4)?;
+
+        let tx_timestamp_len = extract_u8(bytes, &mut ptr, 1)? as usize;
+        let tx_timestamp = extract_vec(bytes, &mut ptr, tx_timestamp_len)?;
+
+        let ranging_rounds = if (message_control & 0x2) != 0 {
+            let len = extract_u8(bytes, &mut ptr, 1)? as usize;
+            extract_vec(bytes, &mut ptr, len)?
+        } else {
+            vec![]
+        };
+
+        let anchor_location = if (message_control & 0x4) != 0 {
+            let len = extract_u8(bytes, &mut ptr, 1)? as usize;
+            extract_vec(bytes, &mut ptr, len)?
+        } else {
+            vec![]
+        };
+
+        let supercluster_id =
+            if (message_control & 0x8) != 0 { Some(extract_u8(bytes, &mut ptr, 1)?) } else { None };
+
+        Some((
+            DlTdoaRangingMeasurementV2 {
+                status,
+                message_type,
+                block_index,
+                round_index,
+                nlos,
+                aoa_azimuth,
+                aoa_azimuth_fom,
+                aoa_elevation,
+                aoa_elevation_fom,
+                rssi,
+                anchor_cfo,
+                cfo,
+                initiator_reply_time,
+                responder_reply_time,
+                initiator_responder_tof,
+                rx_timestamp,
+                message_control,
+                tx_timestamp,
+                ranging_rounds,
+                anchor_location,
+                supercluster_id,
+            },
+            measurement_size,
+        ))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShortAddressDlTdoaRangingMeasurementV2 {
+    pub mac_address: u16,
+    pub measurement: DlTdoaRangingMeasurementV2,
+}
+
+impl ShortAddressDlTdoaRangingMeasurementV2 {
+    pub fn decode_full(bytes: &[u8], no_of_ranging_measurement: u8) -> Option<Vec<Self>> {
+        let mut ptr = 0;
+        let mut measurements = vec![];
+        for _ in 0..no_of_ranging_measurement {
+            let rem = &bytes[ptr..];
+            let mut mac_ptr = 2; // Skip measurement size
+            let mac_address = extract_u16(rem, &mut mac_ptr, 2)?;
+            let (measurement, size) = DlTdoaRangingMeasurementV2::parse_one(rem, 2)?;
+            ptr += size;
+            measurements.push(ShortAddressDlTdoaRangingMeasurementV2 { mac_address, measurement });
+        }
+        Some(measurements)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExtendedAddressDlTdoaRangingMeasurementV2 {
+    pub mac_address: u64,
+    pub measurement: DlTdoaRangingMeasurementV2,
+}
+
+impl ExtendedAddressDlTdoaRangingMeasurementV2 {
+    pub fn decode_full(bytes: &[u8], no_of_ranging_measurement: u8) -> Option<Vec<Self>> {
+        let mut ptr = 0;
+        let mut measurements = vec![];
+        for _ in 0..no_of_ranging_measurement {
+            let rem = &bytes[ptr..];
+            let mut mac_ptr = 2; // Skip measurement size
+            let mac_address = extract_u64(rem, &mut mac_ptr, 8)?;
+            let (measurement, size) = DlTdoaRangingMeasurementV2::parse_one(rem, 8)?;
+            ptr += size;
+            measurements
+                .push(ExtendedAddressDlTdoaRangingMeasurementV2 { mac_address, measurement });
+        }
+        Some(measurements)
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DlTdoaRangingMeasurement {
     pub status: u8,
     pub message_type: u8,
@@ -1069,6 +1221,144 @@ mod tests {
     }
 
     #[test]
+    fn test_short_dltdoa_ranging_measurement_v2() {
+        let bytes = [
+            // All Fields in Little Endian (LE)
+            // First measurement
+            0x3a, 0x00, // 2(Measurement Size = 58)
+            0x0a, 0x01, // 2(Mac address)
+            0x00, 0x05, // Status, Message Type
+            0x02, 0x05, // 2(Block Index)
+            0x07, 0x09, // Round Index, NLoS
+            0x0a, 0x01, // 2(AoA Azimuth)
+            0x02, 0x05, 0x07, // 1AoA Azimuth FOM, 2(AoA Elevation)
+            0x09, 0x0a, // AoA Elevation FOM, RSSI
+            0x01, 0x02, // 2(Anchor Cfo)
+            0x05, 0x07, // 2(Cfo)
+            0x09, 0x05, 0x07, 0x09, // 4(Initiator Reply Time)
+            0x0a, 0x01, 0x02, 0x05, // 4(Responder Reply Time)
+            0x07, 0x09, // 2(Initiator-Responder ToF)
+            0x05, // RX Timestamp Length
+            0x01, 0x02, 0x03, 0x04, 0x05, // 5(RX Timestamp)
+            0x0e, 0x00, 0x00, 0x00, // 4(Message Control: b1, b2, b3 set)
+            0x08, // TX Timestamp Length
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // 8(TX Timestamp)
+            0x02, // Active Ranging Rounds Length
+            0x11, 0x22, // 2(Active Ranging Rounds)
+            0x03, // Anchor Location Length
+            0xaa, 0xbb, 0xcc, // 3(Anchor Location)
+            0x55, // Supercluster ID
+            // Second measurement
+            0x31, 0x00, // 2(Measurement Size = 49)
+            0x0b, 0x02, // 2(Mac address)
+            0x01, 0x05, // Status, Message Type
+            0x06, 0x03, // 2(Block Index)
+            0x08, 0x01, // Round Index, NLoS
+            0x0b, 0x02, // 2(AoA Azimuth)
+            0x03, 0x06, 0x08, // AoA Azimuth FOM, 2(AoA Elevation)
+            0x0a, 0x0b, // AoA Elevation FOM, RSSI
+            0x03, 0x02, // 2(Anchor Cfo)
+            0x08, 0x06, // 2(Cfo)
+            0x0a, 0x08, 0x06, 0x0a, // 4(Initiator Reply Time)
+            0x06, 0x03, 0x02, 0x0b, // 4(Responder Reply Time)
+            0x0a, 0x08, // 2(Initiator-Responder ToF)
+            0x04, // RX Timestamp Length
+            0x02, 0x03, 0x04, 0x05, // 4(RX Timestamp)
+            0x02, 0x00, 0x00, 0x00, // 4(Message Control: b1 set)
+            0x06, // TX Timestamp Length
+            0x02, 0x03, 0x04, 0x05, 0x06, 0x07, // 6(TX Timestamp)
+            0x01, // Active Ranging Rounds Length
+            0x33, // 1(Active Ranging Rounds)
+        ];
+
+        let measurements = ShortAddressDlTdoaRangingMeasurementV2::decode_full(&bytes, 2).unwrap();
+        assert_eq!(measurements.len(), 2);
+        let measurement_1 = &measurements[0].measurement;
+        let mac_address_1 = &measurements[0].mac_address;
+        assert_eq!(*mac_address_1, 0x010a);
+        assert_eq!(measurement_1.status, 0x00);
+        assert_eq!(measurement_1.message_type, 0x05);
+        assert_eq!(measurement_1.block_index, 0x0502);
+        assert_eq!(measurement_1.round_index, 0x07);
+        assert_eq!(measurement_1.nlos, 0x09);
+        assert_eq!(measurement_1.aoa_azimuth, 0x010a);
+        assert_eq!(measurement_1.aoa_azimuth_fom, 0x02);
+        assert_eq!(measurement_1.aoa_elevation, 0x0705);
+        assert_eq!(measurement_1.aoa_elevation_fom, 0x09);
+        assert_eq!(measurement_1.rssi, 0x0a);
+        assert_eq!(measurement_1.rx_timestamp, vec![0x01, 0x02, 0x03, 0x04, 0x05]);
+        assert_eq!(measurement_1.message_control, 0x0000000e);
+        assert_eq!(
+            measurement_1.tx_timestamp,
+            vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]
+        );
+        assert_eq!(measurement_1.ranging_rounds, vec![0x11, 0x22]);
+        assert_eq!(measurement_1.anchor_location, vec![0xaa, 0xbb, 0xcc]);
+        assert_eq!(measurement_1.supercluster_id, Some(0x55));
+
+        let measurement_2 = &measurements[1].measurement;
+        let mac_address_2 = &measurements[1].mac_address;
+        assert_eq!(*mac_address_2, 0x020b);
+        assert_eq!(measurement_2.status, 0x01);
+        assert_eq!(measurement_2.message_type, 0x05);
+        assert_eq!(measurement_2.block_index, 0x0306);
+        assert_eq!(measurement_2.round_index, 0x08);
+        assert_eq!(measurement_2.nlos, 0x01);
+        assert_eq!(measurement_2.aoa_azimuth, 0x020b);
+        assert_eq!(measurement_2.aoa_azimuth_fom, 0x03);
+        assert_eq!(measurement_2.aoa_elevation, 0x0806);
+        assert_eq!(measurement_2.aoa_elevation_fom, 0x0a);
+        assert_eq!(measurement_2.rssi, 0x0b);
+        assert_eq!(measurement_2.rx_timestamp, vec![0x02, 0x03, 0x04, 0x05]);
+        assert_eq!(measurement_2.message_control, 0x00000002);
+        assert_eq!(measurement_2.tx_timestamp, vec![0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
+        assert_eq!(measurement_2.ranging_rounds, vec![0x33]);
+        assert_eq!(measurement_2.anchor_location, vec![]);
+        assert_eq!(measurement_2.supercluster_id, None);
+    }
+
+    #[test]
+    fn test_short_dltdoa_ranging_measurement_v2_minimal() {
+        let bytes = [
+            // All Fields in Little Endian (LE)
+            // First measurement
+            0x26, 0x00, // 2(Measurement Size = 38)
+            0x0b, 0x02, // 2(Mac address)
+            0x00, 0x05, // Status, Message Type
+            0x01, 0x04, // 2(Block Index)
+            0x06, 0x08, // Round Index, NLoS
+            0x0b, 0x02, // 2(AoA Azimuth)
+            0x03, 0x06, 0x08, // AoA Azimuth FOM, 2(AoA Elevation)
+            0x0a, 0x0b, // AoA Elevation FOM, RSSI
+            0x02, 0x03, // 2(Anchor Cfo)
+            0x06, 0x08, // 2(Cfo)
+            0x0a, 0x06, 0x08, 0x0a, // 4(Initiator Reply Time)
+            0x0b, 0x02, 0x03, 0x06, // 4(Responder Reply Time)
+            0x08, 0x0a, // 2(Initiator-Responder ToF)
+            0x04, // RX Timestamp Length
+            0x02, 0x03, 0x04, 0x05, // 4(RX Timestamp)
+            0x08, 0x00, 0x00, 0x00, // 4(Message Control: b3 set, b1=0, b2=0)
+            0x00, // TX Timestamp Length (0)
+            // No Active Ranging Rounds length/bytes (b1=0)
+            // No Anchor Location length/bytes (b2=0)
+            0x77, // Supercluster ID (b3=1)
+        ];
+
+        let measurements = ShortAddressDlTdoaRangingMeasurementV2::decode_full(&bytes, 1).unwrap();
+        assert_eq!(measurements.len(), 1);
+        let measurement_1 = &measurements[0].measurement;
+        let mac_address_1 = &measurements[0].mac_address;
+        assert_eq!(*mac_address_1, 0x020b);
+        assert_eq!(measurement_1.rx_timestamp, vec![0x02, 0x03, 0x04, 0x05]);
+        assert_eq!(measurement_1.message_control, 0x00000008);
+        assert_eq!(measurement_1.tx_timestamp, vec![]);
+        assert_eq!(measurement_1.ranging_rounds, vec![]);
+
+        assert_eq!(measurement_1.anchor_location, vec![]);
+        assert_eq!(measurement_1.supercluster_id, Some(0x77));
+    }
+
+    #[test]
     fn test_write_controlee() {
         let short_address: [u8; 2] = [2, 3];
         let controlee: Controlee = Controlee { short_address, subsession_id: 3 };
@@ -1289,7 +1579,9 @@ mod tests {
         assert_eq!(measurement_1.tx_timestamp, 0x02010a0907050201);
         assert_eq!(measurement_1.rx_timestamp, 0x0705090705);
         assert_eq!(measurement_1.anchor_cfo, 0x0a09);
+
         assert_eq!(measurement_1.cfo, 0x0201);
+
         assert_eq!(measurement_1.initiator_reply_time, 0x05090705);
         assert_eq!(measurement_1.responder_reply_time, 0x010a0907);
         assert_eq!(measurement_1.initiator_responder_tof, 0x0502);
@@ -1319,7 +1611,9 @@ mod tests {
         assert_eq!(measurement_2.tx_timestamp, 0x02010a0907050201);
         assert_eq!(measurement_2.rx_timestamp, 0x0705090705);
         assert_eq!(measurement_2.anchor_cfo, 0x0a09);
+
         assert_eq!(measurement_2.cfo, 0x0201);
+
         assert_eq!(measurement_2.initiator_reply_time, 0x05090705);
         assert_eq!(measurement_2.responder_reply_time, 0x010a0907);
         assert_eq!(measurement_2.initiator_responder_tof, 0x0502);
@@ -1372,6 +1666,7 @@ mod tests {
         assert_eq!(measurement.rx_timestamp, 0x070509070502010a);
         assert_eq!(measurement.anchor_cfo, 0x0a09);
         assert_eq!(measurement.cfo, 0x0201);
+
         assert_eq!(measurement.initiator_reply_time, 0x05090705);
         assert_eq!(measurement.responder_reply_time, 0x010a0907);
         assert_eq!(measurement.initiator_responder_tof, 0x0502);

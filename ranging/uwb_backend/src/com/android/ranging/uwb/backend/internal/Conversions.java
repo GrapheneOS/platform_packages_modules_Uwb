@@ -31,6 +31,7 @@ import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 
 import java.lang.Math;
 import java.util.ArrayList;
@@ -114,9 +115,17 @@ final class Conversions {
             }
         }
 
-        // TODO: support DlTdoaMeasurement for both measurement v1 and v2
+        // Support DlTdoaMeasurement for both measurement v1 and v2
+        int measurementVersion = DlTdoaMeasurement.MEASUREMENT_VERSION_1;
+        if (supportDlTdoaMeasurement.getMeasurementVersion()
+                == DlTDoAMeasurement.MEASUREMENT_VERSION_2) {
+            measurementVersion = DlTdoaMeasurement.MEASUREMENT_VERSION_2;
+        }
+
+        int superclusterId = supportDlTdoaMeasurement.getSuperclusterId();
+
         return new DlTdoaMeasurement(
-                DlTdoaMeasurement.MEASUREMENT_VERSION_1,
+                measurementVersion,
                 supportDlTdoaMeasurement.getMessageType(),
                 supportDlTdoaMeasurement.getMessageControl(),
                 supportDlTdoaMeasurement.getBlockIndex(),
@@ -129,6 +138,8 @@ final class Conversions {
                 measurement.getRssiDbm(),
                 supportDlTdoaMeasurement.getTxTimestamp(),
                 supportDlTdoaMeasurement.getRxTimestamp(),
+                supportDlTdoaMeasurement.getTxTimestampV2(),
+                supportDlTdoaMeasurement.getRxTimestampV2(),
                 supportDlTdoaMeasurement.getAnchorCfo(),
                 supportDlTdoaMeasurement.getCfo(),
                 supportDlTdoaMeasurement.getInitiatorReplyTime(),
@@ -136,7 +147,7 @@ final class Conversions {
                 supportDlTdoaMeasurement.getInitiatorResponderTof(),
                 supportDlTdoaMeasurement.getAnchorLocation(),
                 supportDlTdoaMeasurement.getActiveRangingRounds(),
-                DlTdoaMeasurement.SUPERCLUSTER_ID_ABSENT);
+                superclusterId);
     }
 
     /** Convert system API's {@link android.uwb.RangingMeasurement} to {@link RangingPosition} */
