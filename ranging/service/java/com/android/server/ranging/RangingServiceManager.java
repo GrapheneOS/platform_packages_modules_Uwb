@@ -25,6 +25,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
+import android.ranging.DlTdoaMeasurement;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.MotionState;
@@ -340,6 +341,15 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         ) {
             try {
                 mRangingCallbacks.onResults(mSessionHandle, peer, data);
+            } catch (RemoteException e) {
+                Log.e(TAG, "onData callback failed: " + e);
+            }
+        }
+
+        public void onDlTdoaResults(@NonNull RangingDevice peer,
+                @NonNull DlTdoaMeasurement measurement) {
+            try {
+                mRangingCallbacks.onDlTdoaResults(mSessionHandle, peer, measurement);
             } catch (RemoteException e) {
                 Log.e(TAG, "onData callback failed: " + e);
             }
