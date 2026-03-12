@@ -320,4 +320,39 @@ public class UwbMakeBeforeBreakEngine implements RangingEngine {
         mAltFailure.onNextOccurrence(unused ->
                 mListener.stopTechnologies(Set.of(mAlt), InternalReason.SYSTEM_POLICY));
     }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getOkToStopAlt() {
+        return mOkToStopAlt;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getOkToStopUwb() {
+        return mOkToStopUwb;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getStartAlt() {
+        return mStartAlt;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getStartUwb() {
+        return mStartUwb;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getNextEvent() {
+        return mNextEvent;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getAltFailure() {
+        return mAltFailure;
+    }
+
+    @androidx.annotation.VisibleForTesting
+    RangeHeuristicEvent getUwbFailure() {
+        return mUwbFailure;
+    }
 }
