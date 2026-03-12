@@ -36,6 +36,8 @@ public class DlTDoAMeasurement {
     private final int mNLoS;
     private final long mTxTimestamp;
     private final long mRxTimestamp;
+    private final byte[] mTxTimestampV2;
+    private final byte[] mRxTimestampV2;
     private final float mAnchorCfo;
     private final float mCfo;
     private final long mInitiatorReplyTime;
@@ -43,6 +45,8 @@ public class DlTDoAMeasurement {
     private final int mInitiatorResponderTof;
     private final byte[] mAnchorLocation;
     private final byte[] mActiveRangingRounds;
+    private final int mSuperclusterId;
+    private final int mMeasurementVersion;
 
     public static final String KEY_BUNDLE_VERSION = "bundle_version";
     public static final String MESSAGE_TYPE = "message_type";
@@ -53,6 +57,8 @@ public class DlTDoAMeasurement {
     public static final String RSSI = "rssi";
     public static final String TX_TIMESTAMP = "tx_timestamp";
     public static final String RX_TIMESTAMP = "rx_timestamp";
+    public static final String TX_TIMESTAMP_V2 = "tx_timestamp_v2";
+    public static final String RX_TIMESTAMP_V2 = "rx_timestamp_v2";
     public static final String ANCHOR_CFO = "anchor_cfo";
     public static final String CFO = "cfo";
     public static final String INITIATOR_REPLY_TIME = "initiator_reply_time";
@@ -60,14 +66,23 @@ public class DlTDoAMeasurement {
     public static final String INITIATOR_RESPONDER_TOF = "initiator_responder_time";
     public static final String ANCHOR_LOCATION = "anchor_location";
     public static final String ACTIVE_RANGING_ROUNDS = "active_ranging_rounds";
+    public static final String SUPERCLUSTER_ID = "supercluster_id";
+    public static final String MEASUREMENT_VERSION = "measurement_version";
+
+    public static final int MEASUREMENT_VERSION_1 = 1;
+    public static final int MEASUREMENT_VERSION_2 = 2;
+
+    public static final int SUPERCLUSTER_ID_ABSENT = Integer.MAX_VALUE;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
     public DlTDoAMeasurement(int messageType, int messageControl, int blockIndex, int roundIndex,
-            int NLoS, long txTimestamp, long rxTimestamp, float anchorCfo, float cfo,
+            int NLoS, long txTimestamp, long rxTimestamp, byte[] txTimestampV2,
+            byte[] rxTimestampV2, float anchorCfo, float cfo,
             long initiatorReplyTime, long responderReplyTime, int initiatorResponderTof,
-            byte[] anchorLocation, byte[] activeRangingRounds) {
+            byte[] anchorLocation, byte[] activeRangingRounds, int superclusterId,
+            int measurementVersion) {
         mMessageType = messageType;
         mMessageControl = messageControl;
         mBlockIndex = blockIndex;
@@ -75,6 +90,8 @@ public class DlTDoAMeasurement {
         mNLoS = NLoS;
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
+        mTxTimestampV2 = txTimestampV2;
+        mRxTimestampV2 = rxTimestampV2;
         mAnchorCfo = anchorCfo;
         mCfo = cfo;
         mInitiatorReplyTime = initiatorReplyTime;
@@ -82,6 +99,8 @@ public class DlTDoAMeasurement {
         mInitiatorResponderTof = initiatorResponderTof;
         mAnchorLocation = anchorLocation;
         mActiveRangingRounds = activeRangingRounds;
+        mSuperclusterId = superclusterId;
+        mMeasurementVersion = measurementVersion;
     }
 
     protected int getBundleVersion() {
@@ -116,6 +135,14 @@ public class DlTDoAMeasurement {
         return mRxTimestamp;
     }
 
+    public byte[] getTxTimestampV2() {
+        return mTxTimestampV2;
+    }
+
+    public byte[] getRxTimestampV2() {
+        return mRxTimestampV2;
+    }
+
     public float getAnchorCfo() {
         return mAnchorCfo;
     }
@@ -142,6 +169,14 @@ public class DlTDoAMeasurement {
 
     public byte[] getActiveRangingRounds() {
         return mActiveRangingRounds;
+    }
+
+    public int getSuperclusterId() {
+        return mSuperclusterId;
+    }
+
+    public int getMeasurementVersion() {
+        return mMeasurementVersion;
     }
 
     @Nullable
@@ -182,6 +217,12 @@ public class DlTDoAMeasurement {
         bundle.putInt(NLOS, mNLoS);
         bundle.putLong(TX_TIMESTAMP, mTxTimestamp);
         bundle.putLong(RX_TIMESTAMP, mRxTimestamp);
+        if (mTxTimestampV2 != null) {
+            bundle.putIntArray(TX_TIMESTAMP_V2, byteArrayToIntArray(mTxTimestampV2));
+        }
+        if (mRxTimestampV2 != null) {
+            bundle.putIntArray(RX_TIMESTAMP_V2, byteArrayToIntArray(mRxTimestampV2));
+        }
         bundle.putDouble(ANCHOR_CFO, mAnchorCfo);
         bundle.putDouble(CFO, mCfo);
         bundle.putLong(INITIATOR_REPLY_TIME, mInitiatorReplyTime);
@@ -189,19 +230,17 @@ public class DlTDoAMeasurement {
         bundle.putInt(INITIATOR_RESPONDER_TOF, mInitiatorResponderTof);
         bundle.putIntArray(ANCHOR_LOCATION, byteArrayToIntArray(mAnchorLocation));
         bundle.putIntArray(ACTIVE_RANGING_ROUNDS, byteArrayToIntArray(mActiveRangingRounds));
+        bundle.putInt(SUPERCLUSTER_ID, mSuperclusterId);
+        bundle.putInt(MEASUREMENT_VERSION, mMeasurementVersion);
         return bundle;
     }
 
     public static DlTDoAMeasurement fromBundle(PersistableBundle bundle) {
-        switch (bundle.getInt(KEY_BUNDLE_VERSION)) {
-            case BUNDLE_VERSION_1:
-                return parseVersion1(bundle);
-            default:
-                throw new IllegalArgumentException("Invalid bundle version");
+        int bundleVersion = bundle.getInt(KEY_BUNDLE_VERSION);
+        if (bundleVersion != BUNDLE_VERSION_1) {
+            throw new IllegalArgumentException("Invalid bundle version");
         }
-    }
 
-    private static DlTDoAMeasurement parseVersion1(PersistableBundle bundle) {
         return new DlTDoAMeasurement.Builder()
                 .setMessageType(bundle.getInt(MESSAGE_TYPE))
                 .setMessageControl(bundle.getInt(MESSAGE_CONTROL))
@@ -210,6 +249,8 @@ public class DlTDoAMeasurement {
                 .setNLoS(bundle.getInt(NLOS))
                 .setTxTimestamp(bundle.getLong(TX_TIMESTAMP))
                 .setRxTimestamp(bundle.getLong(RX_TIMESTAMP))
+                .setTxTimestampV2(intArrayToByteArray(bundle.getIntArray(TX_TIMESTAMP_V2)))
+                .setRxTimestampV2(intArrayToByteArray(bundle.getIntArray(RX_TIMESTAMP_V2)))
                 .setAnchorCfo((float) bundle.getDouble(ANCHOR_CFO))
                 .setCfo((float) bundle.getDouble(CFO))
                 .setInitiatorReplyTime(bundle.getLong(INITIATOR_REPLY_TIME))
@@ -218,6 +259,8 @@ public class DlTDoAMeasurement {
                 .setAnchorLocation(intArrayToByteArray(bundle.getIntArray(ANCHOR_LOCATION)))
                 .setActiveRangingRounds(
                         intArrayToByteArray(bundle.getIntArray(ACTIVE_RANGING_ROUNDS)))
+                .setSuperclusterId(bundle.getInt(SUPERCLUSTER_ID, SUPERCLUSTER_ID_ABSENT))
+                .setMeasurementVersion(bundle.getInt(MEASUREMENT_VERSION, MEASUREMENT_VERSION_1))
                 .build();
     }
 
@@ -230,6 +273,8 @@ public class DlTDoAMeasurement {
         private int mNLoS;
         private long mTxTimestamp;
         private long mRxTimestamp;
+        private byte[] mTxTimestampV2;
+        private byte[] mRxTimestampV2;
         private float mAnchorCfo;
         private float mCfo;
         private long mInitiatorReplyTime;
@@ -237,6 +282,8 @@ public class DlTDoAMeasurement {
         private int mInitiatorResponderTof;
         private byte[] mAnchorLocation;
         private byte[] mActiveRangingRounds;
+        private int mSuperclusterId = SUPERCLUSTER_ID_ABSENT;
+        private int mMeasurementVersion = MEASUREMENT_VERSION_1;
 
         public DlTDoAMeasurement.Builder setMessageType(int messageType) {
             mMessageType = messageType;
@@ -270,6 +317,16 @@ public class DlTDoAMeasurement {
 
         public DlTDoAMeasurement.Builder setRxTimestamp(long rxTimestamp) {
             mRxTimestamp = rxTimestamp;
+            return this;
+        }
+
+        public DlTDoAMeasurement.Builder setTxTimestampV2(byte[] txTimestampV2) {
+            mTxTimestampV2 = txTimestampV2;
+            return this;
+        }
+
+        public DlTDoAMeasurement.Builder setRxTimestampV2(byte[] rxTimestampV2) {
+            mRxTimestampV2 = rxTimestampV2;
             return this;
         }
 
@@ -308,6 +365,16 @@ public class DlTDoAMeasurement {
             return this;
         }
 
+        public DlTDoAMeasurement.Builder setSuperclusterId(int superclusterId) {
+            mSuperclusterId = superclusterId;
+            return this;
+        }
+
+        public DlTDoAMeasurement.Builder setMeasurementVersion(int measurementVersion) {
+            mMeasurementVersion = measurementVersion;
+            return this;
+        }
+
         public DlTDoAMeasurement build() {
             return new DlTDoAMeasurement(
                     mMessageType,
@@ -317,13 +384,17 @@ public class DlTDoAMeasurement {
                     mNLoS,
                     mTxTimestamp,
                     mRxTimestamp,
+                    mTxTimestampV2,
+                    mRxTimestampV2,
                     mAnchorCfo,
                     mCfo,
                     mInitiatorReplyTime,
                     mResponderReplyTime,
                     mInitiatorResponderTof,
                     mAnchorLocation,
-                    mActiveRangingRounds);
+                    mActiveRangingRounds,
+                    mSuperclusterId,
+                    mMeasurementVersion);
         }
     }
 }

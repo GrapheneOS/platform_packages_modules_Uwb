@@ -28,6 +28,7 @@ use jni::sys::jvalue;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
 use std::collections::HashMap;
+
 use std::sync::Arc;
 use uwb_core::error::{Error as UwbError, Result as UwbResult};
 use uwb_core::params::{ControleeStatusList, UwbAddress};
@@ -40,17 +41,16 @@ use uwb_core::uci::{
 };
 use uwb_uci_packets::{
     radar_bytes_per_sample_value, ControleeDeviceRole, ExtendedAddressDlTdoaRangingMeasurement,
-    ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
-    LinkLayerMode, MacAddressIndicator, RangingMeasurementType, SessionState,
-    ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
+    ExtendedAddressDlTdoaRangingMeasurementV2, ExtendedAddressOwrAoaRangingMeasurement,
+    ExtendedAddressTwoWayRangingMeasurement, LinkLayerMode, MacAddressIndicator,
+    RangingMeasurementType, SessionState, ShortAddressDlTdoaRangingMeasurement,
+    ShortAddressDlTdoaRangingMeasurementV2, ShortAddressOwrAoaRangingMeasurement,
     ShortAddressTwoWayRangingMeasurement, StatusCode,
 };
 
 // Byte size of mac address length:
 const SHORT_MAC_ADDRESS_LEN: i32 = 2;
 const EXTENDED_MAC_ADDRESS_LEN: i32 = 8;
-const MAX_ANCHOR_LOCATION_LEN: i32 = 12;
-const MAX_RANGING_ROUNDS_LEN: i32 = 16;
 const MAX_RADAR_VENDOR_DATA_LEN: i32 = 256;
 
 // Maximum allowed number of Java Object to be allocated inside with_local_frame
@@ -188,6 +188,8 @@ struct DlTdoaRangingMeasurement {
     pub rssi: u8,
     pub tx_timestamp: u64,
     pub rx_timestamp: u64,
+    pub tx_timestamp_v2: Vec<u8>,
+    pub rx_timestamp_v2: Vec<u8>,
     pub anchor_cfo: u16,
     pub cfo: u16,
     pub initiator_reply_time: u32,
@@ -195,6 +197,7 @@ struct DlTdoaRangingMeasurement {
     pub initiator_responder_tof: u16,
     pub dt_anchor_location: Vec<u8>,
     pub ranging_rounds: Vec<u8>,
+    pub supercluster_id: i32,
 }
 
 impl From<ExtendedAddressDlTdoaRangingMeasurement> for DlTdoaRangingMeasurement {
@@ -214,6 +217,8 @@ impl From<ExtendedAddressDlTdoaRangingMeasurement> for DlTdoaRangingMeasurement 
             rssi: (measurement.measurement.rssi),
             tx_timestamp: (measurement.measurement.tx_timestamp),
             rx_timestamp: (measurement.measurement.rx_timestamp),
+            tx_timestamp_v2: Vec::new(),
+            rx_timestamp_v2: Vec::new(),
             anchor_cfo: (measurement.measurement.anchor_cfo),
             cfo: (measurement.measurement.cfo),
             initiator_reply_time: (measurement.measurement.initiator_reply_time),
@@ -221,6 +226,42 @@ impl From<ExtendedAddressDlTdoaRangingMeasurement> for DlTdoaRangingMeasurement 
             initiator_responder_tof: (measurement.measurement.initiator_responder_tof),
             dt_anchor_location: (measurement.measurement.dt_anchor_location),
             ranging_rounds: (measurement.measurement.ranging_rounds),
+            supercluster_id: i32::MAX,
+        }
+    }
+}
+
+impl From<ExtendedAddressDlTdoaRangingMeasurementV2> for DlTdoaRangingMeasurement {
+    fn from(measurement: ExtendedAddressDlTdoaRangingMeasurementV2) -> Self {
+        DlTdoaRangingMeasurement {
+            mac_address: MacAddress::Extended(measurement.mac_address),
+            status: (measurement.measurement.status),
+            message_type: (measurement.measurement.message_type),
+            message_control: (measurement.measurement.message_control as u16),
+            block_index: (measurement.measurement.block_index),
+            round_index: (measurement.measurement.round_index),
+            nlos: (measurement.measurement.nlos),
+            aoa_azimuth: (measurement.measurement.aoa_azimuth),
+            aoa_azimuth_fom: (measurement.measurement.aoa_azimuth_fom),
+            aoa_elevation: (measurement.measurement.aoa_elevation),
+            aoa_elevation_fom: (measurement.measurement.aoa_elevation_fom),
+            rssi: (measurement.measurement.rssi),
+            tx_timestamp: 0,
+            rx_timestamp: 0,
+            tx_timestamp_v2: (measurement.measurement.tx_timestamp.clone()),
+            rx_timestamp_v2: (measurement.measurement.rx_timestamp.clone()),
+            anchor_cfo: (measurement.measurement.anchor_cfo),
+            cfo: (measurement.measurement.cfo),
+            initiator_reply_time: (measurement.measurement.initiator_reply_time),
+            responder_reply_time: (measurement.measurement.responder_reply_time),
+            initiator_responder_tof: (measurement.measurement.initiator_responder_tof),
+            dt_anchor_location: (measurement.measurement.anchor_location.clone()),
+            ranging_rounds: (measurement.measurement.ranging_rounds.clone()),
+            supercluster_id: (measurement
+                .measurement
+                .supercluster_id
+                .map(i32::from)
+                .unwrap_or(i32::MAX)),
         }
     }
 }
@@ -242,6 +283,8 @@ impl From<ShortAddressDlTdoaRangingMeasurement> for DlTdoaRangingMeasurement {
             rssi: (measurement.measurement.rssi),
             tx_timestamp: (measurement.measurement.tx_timestamp),
             rx_timestamp: (measurement.measurement.rx_timestamp),
+            tx_timestamp_v2: Vec::new(),
+            rx_timestamp_v2: Vec::new(),
             anchor_cfo: (measurement.measurement.anchor_cfo),
             cfo: (measurement.measurement.cfo),
             initiator_reply_time: (measurement.measurement.initiator_reply_time),
@@ -249,6 +292,42 @@ impl From<ShortAddressDlTdoaRangingMeasurement> for DlTdoaRangingMeasurement {
             initiator_responder_tof: (measurement.measurement.initiator_responder_tof),
             dt_anchor_location: (measurement.measurement.dt_anchor_location),
             ranging_rounds: (measurement.measurement.ranging_rounds),
+            supercluster_id: i32::MAX,
+        }
+    }
+}
+
+impl From<ShortAddressDlTdoaRangingMeasurementV2> for DlTdoaRangingMeasurement {
+    fn from(measurement: ShortAddressDlTdoaRangingMeasurementV2) -> Self {
+        DlTdoaRangingMeasurement {
+            mac_address: MacAddress::Short(measurement.mac_address),
+            status: (measurement.measurement.status),
+            message_type: (measurement.measurement.message_type),
+            message_control: (measurement.measurement.message_control as u16),
+            block_index: (measurement.measurement.block_index),
+            round_index: (measurement.measurement.round_index),
+            nlos: (measurement.measurement.nlos),
+            aoa_azimuth: (measurement.measurement.aoa_azimuth),
+            aoa_azimuth_fom: (measurement.measurement.aoa_azimuth_fom),
+            aoa_elevation: (measurement.measurement.aoa_elevation),
+            aoa_elevation_fom: (measurement.measurement.aoa_elevation_fom),
+            rssi: (measurement.measurement.rssi),
+            tx_timestamp: 0,
+            rx_timestamp: 0,
+            tx_timestamp_v2: (measurement.measurement.tx_timestamp.clone()),
+            rx_timestamp_v2: (measurement.measurement.rx_timestamp.clone()),
+            anchor_cfo: (measurement.measurement.anchor_cfo),
+            cfo: (measurement.measurement.cfo),
+            initiator_reply_time: (measurement.measurement.initiator_reply_time),
+            responder_reply_time: (measurement.measurement.responder_reply_time),
+            initiator_responder_tof: (measurement.measurement.initiator_responder_tof),
+            dt_anchor_location: (measurement.measurement.anchor_location.clone()),
+            ranging_rounds: (measurement.measurement.ranging_rounds.clone()),
+            supercluster_id: (measurement
+                .measurement
+                .supercluster_id
+                .map(i32::from)
+                .unwrap_or(i32::MAX)),
         }
     }
 }
@@ -457,6 +536,233 @@ impl NotificationManagerAndroid {
         )
     }
 
+    fn on_session_dl_tdoa_v2_range_data_notification(
+        &mut self,
+        range_data: SessionRangeData,
+    ) -> Result<JObject, JNIError> {
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&range_data.raw_ranging_data)?;
+        let measurement_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            UWB_DL_TDOA_MEASUREMENT_CLASS,
+        )?;
+        let bytearray_len: i32 = match &range_data.ranging_measurements {
+            uwb_core::uci::RangingMeasurements::ShortAddressDltdoaV2(_) => SHORT_MAC_ADDRESS_LEN,
+            uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoaV2(_) => {
+                EXTENDED_MAC_ADDRESS_LEN
+            }
+            _ => {
+                return Err(JNIError::InvalidCtorReturn);
+            }
+        };
+        let address_jbytearray = self.env.new_byte_array(bytearray_len)?;
+        let anchor_location = self.env.new_byte_array(0)?;
+        let active_ranging_rounds = self.env.new_byte_array(0)?;
+
+        // Safety: address_jbytearray is safely instantiated above.
+        let address_jobject = unsafe { JObject::from_raw(address_jbytearray) };
+        // Safety: anchor_location is safely instantiated above.
+        let anchor_jobject = unsafe { JObject::from_raw(anchor_location) };
+        // Safety: active_ranging_rounds is safely instantiated above.
+        let active_ranging_rounds_jobject = unsafe { JObject::from_raw(active_ranging_rounds) };
+
+        let zero_initiated_measurement_jobject = self
+            .env
+            .new_object(
+                measurement_jclass,
+                "([BIIIIIIIIIIIJJIIJJI[B[BI)V",
+                &[
+                    JValue::Object(address_jobject),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Long(0),
+                    JValue::Long(0),
+                    JValue::Int(0),
+                    JValue::Int(0),
+                    JValue::Long(0),
+                    JValue::Long(0),
+                    JValue::Int(0),
+                    JValue::Object(anchor_jobject),
+                    JValue::Object(active_ranging_rounds_jobject),
+                    JValue::Int(i32::MAX),
+                ],
+            )
+            .map_err(|e| {
+                error!("UCI JNI: measurement object creation failed: {e:?}");
+                e
+            })?;
+        let measurement_count: i32 = match &range_data.ranging_measurements {
+            RangingMeasurements::ShortAddressDltdoaV2(v) => v.len(),
+            RangingMeasurements::ExtendedAddressDltdoaV2(v) => v.len(),
+            _ => {
+                return Err(JNIError::InvalidCtorReturn);
+            }
+        }
+        .try_into()
+        .map_err(|_| JNIError::InvalidCtorReturn)?;
+        let mac_indicator = match &range_data.ranging_measurements {
+            RangingMeasurements::ShortAddressDltdoaV2(_) => MacAddressIndicator::ShortAddress,
+            RangingMeasurements::ExtendedAddressDltdoaV2(_) => MacAddressIndicator::ExtendedAddress,
+            _ => {
+                return Err(JNIError::InvalidCtorReturn);
+            }
+        };
+
+        let measurements_jobjectarray = self.env.new_object_array(
+            measurement_count,
+            measurement_jclass,
+            zero_initiated_measurement_jobject,
+        )?;
+
+        for (i, measurement) in match range_data.ranging_measurements {
+            RangingMeasurements::ShortAddressDltdoaV2(v) => {
+                v.into_iter().map(DlTdoaRangingMeasurement::from).collect::<Vec<_>>()
+            }
+            RangingMeasurements::ExtendedAddressDltdoaV2(v) => {
+                v.into_iter().map(DlTdoaRangingMeasurement::from).collect::<Vec<_>>()
+            }
+            _ => Vec::new(),
+        }
+        .into_iter()
+        .enumerate()
+        {
+            // cast to i8 as java do not support unsigned:
+            let mac_address_i8 = measurement
+                .mac_address
+                .into_ne_bytes()
+                .iter()
+                .map(|b| b.to_owned() as i8)
+                .collect::<Vec<_>>();
+            let mac_address_jbytearray = self.env.new_byte_array(mac_address_i8.len() as i32)?;
+            self.env.set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)?;
+
+            let dt_anchor_location_jbytearray =
+                self.env.byte_array_from_slice(&measurement.dt_anchor_location)?;
+
+            let ranging_rounds_jbytearray =
+                self.env.byte_array_from_slice(&measurement.ranging_rounds)?;
+
+            let tx_timestamp_v2_jbytearray =
+                self.env.byte_array_from_slice(&measurement.tx_timestamp_v2)?;
+
+            let rx_timestamp_v2_jbytearray =
+                self.env.byte_array_from_slice(&measurement.rx_timestamp_v2)?;
+
+            // Safety: mac_address_jbytearray is safely instantiated above.
+            let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
+            let dt_anchor_location_jobject =
+            // Safety: dt_anchor_location_jbytearray is safely instantiated above.
+                unsafe { JObject::from_raw(dt_anchor_location_jbytearray) };
+            // Safety: ranging_rounds_jbytearray is safely instantiated above.
+            let ranging_rounds_jobject = unsafe { JObject::from_raw(ranging_rounds_jbytearray) };
+
+            // Safety: tx_timestamp_v2_jbytearray is safely instantiated above.
+            let tx_timestamp_v2_jobject = unsafe { JObject::from_raw(tx_timestamp_v2_jbytearray) };
+
+            // Safety: rx_timestamp_v2_jbytearray is safely instantiated above.
+            let rx_timestamp_v2_jobject = unsafe { JObject::from_raw(rx_timestamp_v2_jbytearray) };
+
+            let measurement_jobject = self
+                .env
+                .new_object(
+                    measurement_jclass,
+                    "([BIIIIIIIIIIIJJ[B[BIIJJI[B[BI)V",
+                    &[
+                        JValue::Object(mac_address_jobject),
+                        JValue::Int(measurement.status as i32),
+                        JValue::Int(measurement.message_type as i32),
+                        JValue::Int(measurement.message_control as i32),
+                        JValue::Int(measurement.block_index as i32),
+                        JValue::Int(measurement.round_index as i32),
+                        JValue::Int(measurement.nlos as i32),
+                        JValue::Int(measurement.aoa_azimuth as i32),
+                        JValue::Int(measurement.aoa_azimuth_fom as i32),
+                        JValue::Int(measurement.aoa_elevation as i32),
+                        JValue::Int(measurement.aoa_elevation_fom as i32),
+                        JValue::Int(measurement.rssi as i32),
+                        JValue::Long(measurement.tx_timestamp as i64),
+                        JValue::Long(measurement.rx_timestamp as i64),
+                        JValue::Object(tx_timestamp_v2_jobject),
+                        JValue::Object(rx_timestamp_v2_jobject),
+                        JValue::Int(measurement.anchor_cfo as i32),
+                        JValue::Int(measurement.cfo as i32),
+                        JValue::Long(measurement.initiator_reply_time as i64),
+                        JValue::Long(measurement.responder_reply_time as i64),
+                        JValue::Int(measurement.initiator_responder_tof as i32),
+                        JValue::Object(dt_anchor_location_jobject),
+                        JValue::Object(ranging_rounds_jobject),
+                        JValue::Int(measurement.supercluster_id),
+                    ],
+                )
+                .map_err(|e| {
+                    error!("UCI JNI: measurement object creation failed: {e:?}");
+                    e
+                })?;
+            self.env
+                .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
+                .map_err(|e| {
+                    error!("UCI JNI: measurement object copy failed: {e:?}");
+                    e
+                })?;
+        }
+        // Create UwbRangingData
+        let ranging_data_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            UWB_RANGING_DATA_CLASS,
+        )?;
+
+        let method_sig = "(JJIJIJII[L".to_owned() + UWB_DL_TDOA_MEASUREMENT_CLASS + ";[B)V";
+
+        // Safety: measurements_jobjectarray is safely instantiated above.
+        let measurements_jobject = unsafe { JObject::from_raw(measurements_jobjectarray) };
+        // Safety: raw_notification_jbytearray is safely instantiated above.
+        let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
+
+        let range_data_jobject = self
+            .env
+            .new_object(
+                ranging_data_jclass,
+                &method_sig,
+                &[
+                    JValue::Long(range_data.sequence_number as i64),
+                    // session_token below has already been mapped to session_id by uci layer.
+                    JValue::Long(range_data.session_token as i64),
+                    JValue::Int(range_data.rcr_indicator as i32),
+                    JValue::Long(range_data.current_ranging_interval_ms as i64),
+                    JValue::Int(range_data.ranging_measurement_type as i32),
+                    JValue::Long(range_data.hus_primary_session_id as i64),
+                    JValue::Int(mac_indicator as i32),
+                    JValue::Int(measurement_count),
+                    JValue::Object(measurements_jobject),
+                    JValue::Object(raw_notification_jobject),
+                ],
+            )
+            .map_err(|e| {
+                error!("UCI JNI: Ranging Data object creation failed: {e:?}");
+                e
+            })?;
+
+        let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
+        self.cached_jni_call(
+            "onRangeDataNotificationReceived",
+            &method_sig,
+            &[jvalue::from(JValue::Object(range_data_jobject))],
+        )
+    }
+
     // TODO(b/246678053): Re-factor usage of the RangingMeasurement enum below, to extract the
     // fields in a common/caller method (and preferably not handle TwoWay/OwrAoa in this method).
     fn on_session_dl_tdoa_range_data_notification(
@@ -472,10 +778,6 @@ impl NotificationManagerAndroid {
             UWB_DL_TDOA_MEASUREMENT_CLASS,
         )?;
         let bytearray_len: i32 = match &range_data.ranging_measurements {
-            uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => SHORT_MAC_ADDRESS_LEN,
-            uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
-                EXTENDED_MAC_ADDRESS_LEN
-            }
             uwb_core::uci::RangingMeasurements::ShortAddressDltdoa(_) => SHORT_MAC_ADDRESS_LEN,
             uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
                 EXTENDED_MAC_ADDRESS_LEN
@@ -485,8 +787,8 @@ impl NotificationManagerAndroid {
             }
         };
         let address_jbytearray = self.env.new_byte_array(bytearray_len)?;
-        let anchor_location = self.env.new_byte_array(MAX_ANCHOR_LOCATION_LEN)?;
-        let active_ranging_rounds = self.env.new_byte_array(MAX_RANGING_ROUNDS_LEN)?;
+        let anchor_location = self.env.new_byte_array(12)?;
+        let active_ranging_rounds = self.env.new_byte_array(16)?;
 
         // Safety: address_jbytearray is safely instantiated above.
         let address_jobject = unsafe { JObject::from_raw(address_jbytearray) };
@@ -529,8 +831,6 @@ impl NotificationManagerAndroid {
                 e
             })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
-            RangingMeasurements::ShortAddressTwoWay(v) => v.len(),
-            RangingMeasurements::ExtendedAddressTwoWay(v) => v.len(),
             RangingMeasurements::ShortAddressDltdoa(v) => v.len(),
             RangingMeasurements::ExtendedAddressDltdoa(v) => v.len(),
             _ => {
@@ -540,8 +840,6 @@ impl NotificationManagerAndroid {
         .try_into()
         .map_err(|_| JNIError::InvalidCtorReturn)?;
         let mac_indicator = match &range_data.ranging_measurements {
-            RangingMeasurements::ShortAddressTwoWay(_) => MacAddressIndicator::ShortAddress,
-            RangingMeasurements::ExtendedAddressTwoWay(_) => MacAddressIndicator::ExtendedAddress,
             RangingMeasurements::ShortAddressDltdoa(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedAddressDltdoa(_) => MacAddressIndicator::ExtendedAddress,
             _ => {
@@ -1420,6 +1718,12 @@ impl NotificationManager for NotificationManagerAndroid {
                         }
                         uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
                             self.on_session_dl_tdoa_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ShortAddressDltdoaV2(_) => {
+                            self.on_session_dl_tdoa_v2_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoaV2(_) => {
+                            self.on_session_dl_tdoa_v2_range_data_notification(range_data)
                         }
                     }
                 }

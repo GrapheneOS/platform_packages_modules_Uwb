@@ -154,7 +154,8 @@ public class UwbRangingData {
                     + ", RangingOwrAoaMeasure = " + mRangingOwrAoaMeasure.toString()
                     + ", RawNotificationData = " + Arrays.toString(mRawNtfData)
                     + '}';
-        } else if (mRangingMeasuresType == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
+        } else if (mRangingMeasuresType == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA
+                || mRangingMeasuresType == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2) {
             return "UwbRangingData { "
                     + " SeqCounter = " + mSeqCounter
                     + ", SessionId = " + mSessionId

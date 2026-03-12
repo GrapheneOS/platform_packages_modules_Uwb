@@ -19,6 +19,8 @@ package com.google.uwb.support;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import android.os.PersistableBundle;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
@@ -83,6 +85,78 @@ public class DlTDoATests {
         assertEquals(fromBundle.getInitiatorResponderTof(), initiatorResponderTof);
         assertArrayEquals(fromBundle.getAnchorLocation(), anchorLocation);
         assertArrayEquals(fromBundle.getActiveRangingRounds(), activeRangingRounds);
+        assertEquals(fromBundle.getSuperclusterId(), DlTDoAMeasurement.SUPERCLUSTER_ID_ABSENT);
+        assertEquals(fromBundle.getMeasurementVersion(), DlTDoAMeasurement.MEASUREMENT_VERSION_1);
+    }
+
+    @Test
+    public void dlTDoAMeasurementV2Test() {
+        int messageType = 0x02;
+        int messageControl = 0x513;
+        int blockIndex = 4;
+        int roundIndex = 6;
+        int nLoS = 40;
+        long txTimestamp = 40_000L;
+        long rxTimestamp = 50_000L;
+        float anchorCfo = 433.33f;
+        float cfo = 56.33f;
+        long initiatorReplyTime = 100;
+        long responderReplyTime = 200;
+        int initiatorResponderTof = 400;
+        byte[] anchorLocation = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        byte[] activeRangingRounds = new byte[]{0x01, 0x02};
+        int superclusterId = 5;
+
+        DlTDoAMeasurement dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
+                .setMessageType(messageType)
+                .setMessageControl(messageControl)
+                .setBlockIndex(blockIndex)
+                .setRoundIndex(roundIndex)
+                .setNLoS(nLoS)
+                .setTxTimestamp(txTimestamp)
+                .setRxTimestamp(rxTimestamp)
+                .setAnchorCfo(anchorCfo)
+                .setCfo(cfo)
+                .setInitiatorReplyTime(initiatorReplyTime)
+                .setResponderReplyTime(responderReplyTime)
+                .setInitiatorResponderTof(initiatorResponderTof)
+                .setAnchorLocation(anchorLocation)
+                .setActiveRangingRounds(activeRangingRounds)
+                .setSuperclusterId(superclusterId)
+                .setMeasurementVersion(DlTDoAMeasurement.MEASUREMENT_VERSION_2)
+                .build();
+
+        DlTDoAMeasurement fromBundle = DlTDoAMeasurement.fromBundle(dlTDoAMeasurement.toBundle());
+
+        assertEquals(fromBundle.getMessageType(), messageType);
+        assertEquals(fromBundle.getSuperclusterId(), superclusterId);
+        assertEquals(fromBundle.getMeasurementVersion(), DlTDoAMeasurement.MEASUREMENT_VERSION_2);
+    }
+
+    @Test
+    public void dlTDoAMeasurementV1CompatibilityTest() {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putInt(DlTDoAMeasurement.KEY_BUNDLE_VERSION, 1);
+        bundle.putInt(DlTDoAMeasurement.MESSAGE_TYPE, 0x02);
+        bundle.putInt(DlTDoAMeasurement.MESSAGE_CONTROL, 0);
+        bundle.putInt(DlTDoAMeasurement.BLOCK_INDEX, 0);
+        bundle.putInt(DlTDoAMeasurement.ROUND_INDEX, 0);
+        bundle.putInt(DlTDoAMeasurement.NLOS, 0);
+        bundle.putLong(DlTDoAMeasurement.TX_TIMESTAMP, 0L);
+        bundle.putLong(DlTDoAMeasurement.RX_TIMESTAMP, 0L);
+        bundle.putDouble(DlTDoAMeasurement.ANCHOR_CFO, 0.0);
+        bundle.putDouble(DlTDoAMeasurement.CFO, 0.0);
+        bundle.putLong(DlTDoAMeasurement.INITIATOR_REPLY_TIME, 0L);
+        bundle.putLong(DlTDoAMeasurement.RESPONDER_REPLY_TIME, 0L);
+        bundle.putInt(DlTDoAMeasurement.INITIATOR_RESPONDER_TOF, 0);
+        bundle.putIntArray(DlTDoAMeasurement.ANCHOR_LOCATION, new int[0]);
+        bundle.putIntArray(DlTDoAMeasurement.ACTIVE_RANGING_ROUNDS, new int[0]);
+        // SUPERCLUSTER_ID is missing
+
+        DlTDoAMeasurement fromBundle = DlTDoAMeasurement.fromBundle(bundle);
+
+        assertEquals(fromBundle.getSuperclusterId(), DlTDoAMeasurement.SUPERCLUSTER_ID_ABSENT);
+        assertEquals(fromBundle.getMeasurementVersion(), DlTDoAMeasurement.MEASUREMENT_VERSION_1);
     }
 
     @Test

@@ -195,6 +195,7 @@ public class UwbUciConstants {
     public static final byte RANGING_MEASUREMENT_TYPE_TWO_WAY = 0X01;
     public static final byte RANGING_MEASUREMENT_TYPE_DL_TDOA = 0x02;
     public static final byte RANGING_MEASUREMENT_TYPE_OWR_AOA = 0x03;
+    public static final byte RANGING_MEASUREMENT_TYPE_DL_TDOA_V2 = 0x06;
 
     public static final byte MAC_ADDRESSING_MODE_SHORT = 0x00;
     public static final byte MAC_ADDRESSING_MODE_EXTENDED = 0x01;

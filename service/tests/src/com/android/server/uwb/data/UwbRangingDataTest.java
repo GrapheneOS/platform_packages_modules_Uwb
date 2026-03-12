@@ -17,6 +17,7 @@
 package com.android.server.uwb.data;
 
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA;
+import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA_V2;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.util.UwbUtil.convertFloatToQFormat;
@@ -86,6 +87,8 @@ public class UwbRangingDataTest {
     private static final byte[] TEST_ANCHOR_LOCATION = {0x01, 0x02, 0x03, 0x04,
             0x05, 0x06, 0x07, 0x08, 0x09, 0x10};
     private static final byte[] TEST_ACTIVE_RANGING_ROUNDS = {0x02, 0x08};
+    private static final byte[] TEST_TX_TIMESTAMP_V2 = {0x01, 0x02, 0x03, 0x04};
+    private static final byte[] TEST_RX_TIMESTAMP_V2 = {0x05, 0x06, 0x07, 0x08};
     private static final byte[] TEST_RAW_NTF_DATA = {0x10, 0x01};
 
     private UwbRangingData mUwbRangingData;
@@ -184,7 +187,7 @@ public class UwbRangingDataTest {
                 TEST_AOA_ELEVATION_Q97_FORMAT, TEST_AOA_ELEVATION_FOM, TEST_RSSI, TEST_TIMESTAMP,
                 TEST_TIMESTAMP, TEST_ANCHOR_CFO, TEST_CFO, TEST_INTIATOR_REPLY_TIME,
                 TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
-                TEST_ACTIVE_RANGING_ROUNDS);
+                TEST_ACTIVE_RANGING_ROUNDS, 0);
 
         final int rangingMeasuresType = RANGING_MEASUREMENT_TYPE_DL_TDOA;
         mUwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
@@ -203,6 +206,49 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(TEST_RAW_NTF_DATA);
         assertThat(mUwbRangingData.getUwbDlTDoAMeasurements()[0].getRssi())
                 .isEqualTo(-(TEST_RSSI / 2));
+
+        final String testString = "UwbRangingData { "
+                + " SeqCounter = " + TEST_SEQ_COUNTER
+                + ", SessionId = " + TEST_SESSION_ID
+                + ", RcrIndication = " + TEST_RCR_INDICATION
+                + ", CurrRangingInterval = " + TEST_CURR_RANGING_INTERVAL
+                + ", RangingMeasuresType = " + rangingMeasuresType
+                + ", HusPrimarySessionId = " + TEST_HUS_PRIMARY_SESSION_ID
+                + ", MacAddressMode = " + TEST_MAC_ADDRESS_MODE
+                + ", NoOfRangingMeasures = " + noOfRangingMeasures
+                + ", RangingDlTDoAMeasure = " + Arrays.toString(uwbDlTDoAMeasurements)
+                + ", RawNotificationData = " + Arrays.toString(TEST_RAW_NTF_DATA)
+                + '}';
+
+        assertThat(mUwbRangingData.toString()).isEqualTo(testString);
+    }
+
+    @Test
+    public void testInitializeUwbRangingData_withUwbDlTDoAV2Measurement() throws Exception {
+        final int noOfRangingMeasures = 1;
+        final UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements =
+                new UwbDlTDoAMeasurement[noOfRangingMeasures];
+        uwbDlTDoAMeasurements[0] = new UwbDlTDoAMeasurement(TEST_MAC_ADDRESS, TEST_STATUS,
+                TEST_MESSAGE_TYPE, TEST_MESSAGE_CONTROL, TEST_BLOCK_INDEX, TEST_ROUND_INDEX,
+                TEST_LOS, TEST_AOA_AZIMUTH_Q97_FORMAT, TEST_AOA_AZIMUTH_FOM,
+                TEST_AOA_ELEVATION_Q97_FORMAT, TEST_AOA_ELEVATION_FOM, TEST_RSSI, TEST_TIMESTAMP,
+                TEST_TIMESTAMP, TEST_TX_TIMESTAMP_V2, TEST_RX_TIMESTAMP_V2,
+                TEST_ANCHOR_CFO, TEST_CFO, TEST_INTIATOR_REPLY_TIME,
+                TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
+                TEST_ACTIVE_RANGING_ROUNDS, 0);
+
+        final int rangingMeasuresType = RANGING_MEASUREMENT_TYPE_DL_TDOA_V2;
+        mUwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
+                TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, rangingMeasuresType,
+                TEST_HUS_PRIMARY_SESSION_ID, TEST_MAC_ADDRESS_MODE, noOfRangingMeasures,
+                uwbDlTDoAMeasurements, TEST_RAW_NTF_DATA);
+
+        assertThat(mUwbRangingData.getSequenceCounter()).isEqualTo(TEST_SEQ_COUNTER);
+        assertThat(mUwbRangingData.getRangingMeasuresType()).isEqualTo(rangingMeasuresType);
+        assertThat(mUwbRangingData.getUwbDlTDoAMeasurements()[0].getTxTimestampV2())
+                .isEqualTo(TEST_TX_TIMESTAMP_V2);
+        assertThat(mUwbRangingData.getUwbDlTDoAMeasurements()[0].getRxTimestampV2())
+                .isEqualTo(TEST_RX_TIMESTAMP_V2);
 
         final String testString = "UwbRangingData { "
                 + " SeqCounter = " + TEST_SEQ_COUNTER

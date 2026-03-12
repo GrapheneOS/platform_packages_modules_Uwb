@@ -121,6 +121,7 @@ public class ConfigParam {
     public static final int SECURE_RANGING_NEFA_LEVEL = 0x4A;
     public static final int SECURE_RANGING_CSW_LENGTH = 0x4B;
     public static final int APPLICATION_DATA_ENDPOINT = 0x4C;
+    public static final int DL_TDOA_MEASUREMENT_NTF_V2 = 0x4F;
 
     // Android specific params.
     public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;

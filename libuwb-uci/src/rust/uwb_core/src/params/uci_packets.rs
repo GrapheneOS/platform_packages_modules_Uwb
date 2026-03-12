@@ -27,7 +27,8 @@ pub use uwb_uci_packets::{
     ControleeStatusV2, Controlees, ControllerPhaseList, CreateLogicalLinkNtfStatusCode,
     CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
     DataTransferPhaseConfigUpdateStatusCode, DeviceConfigId, DeviceConfigStatus, DeviceConfigTlv,
-    DeviceState, ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
+    DeviceState, ExtendedAddressDlTdoaRangingMeasurement,
+    ExtendedAddressDlTdoaRangingMeasurementV2, ExtendedAddressOwrAoaRangingMeasurement,
     ExtendedAddressTwoWayRangingMeasurement, GroupId, LogicalLinkCloseStatus, MacAddressIndicator,
     MessageType, MulticastUpdateStatusCode, PowerStats, RadarConfigStatus, RadarConfigTlv,
     RadarConfigTlvType, RadarDataType, RangingMeasurementType, ReasonCode, ResetConfig,
@@ -36,8 +37,8 @@ pub use uwb_uci_packets::{
     SessionUpdateControllerMulticastListNtfV2Payload,
     SessionUpdateControllerMulticastListRspV1Payload,
     SessionUpdateControllerMulticastListRspV2Payload, ShortAddressDlTdoaRangingMeasurement,
-    ShortAddressOwrAoaRangingMeasurement, ShortAddressTwoWayRangingMeasurement, StatusCode,
-    UpdateMulticastListAction,
+    ShortAddressDlTdoaRangingMeasurementV2, ShortAddressOwrAoaRangingMeasurement,
+    ShortAddressTwoWayRangingMeasurement, StatusCode, UpdateMulticastListAction,
 };
 pub(crate) use uwb_uci_packets::{UciControlPacket, UciDataPacket, UciDataPacketHal};
 
