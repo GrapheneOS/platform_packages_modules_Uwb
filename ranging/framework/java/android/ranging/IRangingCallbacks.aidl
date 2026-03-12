@@ -16,6 +16,7 @@
 
 package android.ranging;
 
+import android.ranging.DlTdoaMeasurement;
 import android.ranging.MotionState;
 import android.ranging.RangingDevice;
 import android.ranging.RangingData;
@@ -29,6 +30,7 @@ oneway interface IRangingCallbacks {
     void onOpenFailed(in SessionHandle session, in int reason);
     void onStarted(in SessionHandle session, in RangingDevice peer, in int technology);
     void onResults(in SessionHandle session, in RangingDevice peer, in RangingData data);
+    void onDlTdoaResults(in SessionHandle session, in RangingDevice peer, in DlTdoaMeasurement measurement);
     void onStopped(in SessionHandle session, in RangingDevice peer, in int technology);
     void onClosed(in SessionHandle session, in int reason);
     void onMotionReceived(in SessionHandle session, in RangingDevice peer, in MotionState motion);

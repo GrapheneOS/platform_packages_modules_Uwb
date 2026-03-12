@@ -108,6 +108,16 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     }
 
     @Override
+    public void onDlTdoaResults(SessionHandle session, RangingDevice peer, DlTdoaMeasurement data) {
+        Log.v(TAG, "onResults - sessionHandle: " + session + " peer: " + peer.toString());
+        if (!mSessions.containsKey(session)) {
+            Log.e(TAG, "SessionHandle not found");
+            return;
+        }
+        mSessions.get(session).onDlTdoaResults(peer, data);
+    }
+
+    @Override
     public void onStopped(SessionHandle session, RangingDevice peer, int technology) {
         Log.v(TAG, "onStopped - sessionHandle: " + session + " technology: " + technology);
         if (!mSessions.containsKey(session)) {

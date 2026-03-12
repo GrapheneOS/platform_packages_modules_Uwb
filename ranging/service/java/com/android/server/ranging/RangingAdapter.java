@@ -113,8 +113,8 @@ public interface RangingAdapter {
          * @param anchor anchor whose result was measured.
          * @param measurement the DL-TDoA measurement.
          */
-        default void onDlTdoaRangingResult(@NonNull RangingDevice anchor,
-                @NonNull android.ranging.DlTdoaMeasurement measurement){};
+        void onDlTdoaRangingResult(@NonNull RangingDevice anchor,
+                @NonNull android.ranging.DlTdoaMeasurement measurement);
 
         /**
          * Notifies the caller that the ranging session was closed.
