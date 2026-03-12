@@ -175,7 +175,7 @@ public class RttAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.w(TAG, "Background ranging is not supported");
-            closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+            mCallbacks.onClosed(InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
         if (!(config instanceof RttConfig rttConfig)) {
@@ -185,7 +185,7 @@ public class RttAdapter implements RangingAdapter {
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(InternalReason.INTERNAL_ERROR);
             return;
         }
         mConfig = rttConfig;
