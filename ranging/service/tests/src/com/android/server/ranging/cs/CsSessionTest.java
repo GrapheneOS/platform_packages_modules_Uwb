@@ -64,7 +64,7 @@ import java.util.Map;
 @RunWith(JUnit4.class)
 @SmallTest
 public class CsSessionTest {
-    private static final String MOCK_IDENTITY_ADDRESS = "11:22:33:44:55";
+    private static final String MOCK_PSEUDO_ADDRESS = "11:22:33:44:55";
 
     @Mock
     private AlarmManager mMockAlarmManager;
@@ -108,7 +108,7 @@ public class CsSessionTest {
         when(mMockCsConfig.getRangingParams()).thenReturn(mMockRangingParams);
         when(mMockBluetoothAdapter.getDistanceMeasurementManager())
                 .thenReturn(mMockDistanceMeasurementManager);
-        when(mMockBluetoothDevice.getIdentityAddress()).thenReturn(MOCK_IDENTITY_ADDRESS);
+        when(mMockBluetoothDevice.getAddress()).thenReturn(MOCK_PSEUDO_ADDRESS);
         when(mMockDistanceMeasurementManager.startMeasurementSession(any(), any(), any()))
                 .thenReturn(mMockCancellationSignal);
 
@@ -219,7 +219,7 @@ public class CsSessionTest {
                 .startMeasurementSession(any(), any(), callbackCaptor.capture());
         callbackCaptor.getValue().onStarted(mMockDistanceMeasurementSession);
 
-        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_IDENTITY_ADDRESS);
+        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_PSEUDO_ADDRESS);
 
         // Session should NOT be stopped because mMockCsAdapter2 is still there
         verify(mMockDistanceMeasurementSession, never()).stopSession();
@@ -241,7 +241,7 @@ public class CsSessionTest {
                 .startMeasurementSession(any(), any(), callbackCaptor.capture());
         callbackCaptor.getValue().onStarted(mMockDistanceMeasurementSession);
 
-        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_IDENTITY_ADDRESS);
+        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_PSEUDO_ADDRESS);
 
         verify(mMockDistanceMeasurementSession).stopSession();
     }
@@ -257,7 +257,7 @@ public class CsSessionTest {
                 mLock);
 
         // Session hasn't called onStarted yet, so mSession is null
-        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_IDENTITY_ADDRESS);
+        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_PSEUDO_ADDRESS);
 
         verify(mMockCancellationSignal).cancel();
     }
@@ -410,7 +410,7 @@ public class CsSessionTest {
         // registerAdapter for Adapter1 might have set it.
         // registerAdapter for Adapter2 calls currentSession.cancelMeasurementsLimit().
 
-        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_IDENTITY_ADDRESS);
+        CsSession.deregisterAdapter(mMockCsAdapter1, MOCK_PSEUDO_ADDRESS);
 
         // Now Adapter2 is alone, it should set the limit.
         verify(mMockAlarmManager, times(2)).setExact(anyInt(), anyLong(), any(), any(), any());

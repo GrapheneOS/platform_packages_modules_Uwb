@@ -87,6 +87,18 @@ public class RangingUtils {
     }
 
     /**
+     * Convert a Bluetooth MAC address from string to anonymized string format.
+     *
+     * <p>e.g. "AC:37:43:BC:A9:28" -> "XX:XX:XX:XX:A9:28".
+     */
+    public static String toAnonymizedMacAddress(String address) {
+        if (address == null || address.length() != 17) {
+            return null;
+        }
+        return "XX:XX:XX:XX" + address.substring(11);
+    }
+
+    /**
      * Convert the hex string to byte array.
      */
     public static byte[] hexStringToByteArray(String hex) {

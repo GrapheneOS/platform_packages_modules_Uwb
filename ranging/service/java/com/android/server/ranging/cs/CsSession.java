@@ -66,7 +66,6 @@ class CsSession {
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice mPeerBluetoothDevice;
-    private String mPeerIdentityAddress;
     private CancellationSignal mStartCancellationSignal;
     private DistanceMeasurementSession mSession;
     private CsConfig mConfig;
@@ -81,10 +80,8 @@ class CsSession {
         Log.i(TAG, "Registering adapter: " + adapter.getId());
 
         synchronized (sCsSessions) {
-            String address = bluetoothDevice.getIdentityAddress() != null
-                    ? bluetoothDevice.getIdentityAddress()
-                    : bluetoothDevice.getAddress();
-            CsSession currentSession = sCsSessions.get(address);
+            String peerPseudoAddress = bluetoothDevice.getAddress();
+            CsSession currentSession = sCsSessions.get(peerPseudoAddress);
 
             if (currentSession != null) {
                 Log.i(TAG,
@@ -103,16 +100,16 @@ class CsSession {
                     csConfig,
                     lock);
             currentSession.mCsAdapters.add(adapter);
-            sCsSessions.put(address, currentSession);
+            sCsSessions.put(peerPseudoAddress, currentSession);
             currentSession.start();
         }
     }
 
-    static void deregisterAdapter(CsAdapter adapter, String peerIdentityAddress) {
+    static void deregisterAdapter(CsAdapter adapter, String peerPseudoAddress) {
         Log.i(TAG, "Deregistering adapter: " + adapter.getId());
 
         synchronized (sCsSessions) {
-            CsSession sessionToStop = sCsSessions.get(peerIdentityAddress);
+            CsSession sessionToStop = sCsSessions.get(peerPseudoAddress);
 
             if (sessionToStop == null
                     || (sessionToStop.mStartCancellationSignal == null
@@ -145,9 +142,6 @@ class CsSession {
             Object lock) {
         mBluetoothAdapter = bluetoothAdapter;
         mPeerBluetoothDevice = bluetoothDevice;
-        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress() != null
-                ? mPeerBluetoothDevice.getIdentityAddress()
-                : mPeerBluetoothDevice.getAddress();
         mAlarmManager = alarmManager;
         mConfig = config;
         mLock = lock;
@@ -201,7 +195,7 @@ class CsSession {
                 mSession.stopSession();
             }
 
-            sCsSessions.remove(mPeerIdentityAddress);
+            sCsSessions.remove(mPeerBluetoothDevice.getAddress());
 
             if (mConfig != null && mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
                 cancelMeasurementsLimit();
