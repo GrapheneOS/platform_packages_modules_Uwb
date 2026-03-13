@@ -16,9 +16,6 @@
 
 package com.android.server.ranging.session;
 
-import static android.ranging.RangingCapabilities.ENABLED;
-import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
-
 import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.Binder;
@@ -148,13 +145,6 @@ public class BaseRangingSession {
                 mInjector.getAnyNonPrivilegedAppInAttributionSource(mAttributionSource);
 
         for (TechnologyConfig config : Sets.difference(technologyConfigs, mAdapters.keySet())) {
-            if (mInjector.getCapabilitiesProvider()
-                    .getCapabilities()
-                    .getTechnologyAvailability()
-                    .getOrDefault(config.getTechnology().getValue(), NOT_SUPPORTED) != ENABLED) {
-                Log.e(TAG, "Cannot start ranging with tech " +  config.getTechnology());
-                continue;
-            }
             ImmutableSet<RangingDevice> peerDevices = config.getPeerDevices();
 
             peerDevices.forEach(device ->
