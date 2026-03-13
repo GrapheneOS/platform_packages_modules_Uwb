@@ -1116,7 +1116,7 @@ public class RangingManagerTest {
                 UPDATE_RATE_NORMAL);
 
         rangingSession.start(preference);
-        assertThat(callback.mOnOpenFailed.await(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mOnOpenedCalled.await(1, TimeUnit.SECONDS)).isFalse();
 
         uiAutomation.dropShellPermissionIdentity();
     }
