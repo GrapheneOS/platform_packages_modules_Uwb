@@ -133,7 +133,7 @@ public class BleRssiAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.w(TAG, "Background ranging is not supported");
-            closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+            mCallbacks.onClosed(InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
         if (!(config instanceof BleRssiConfig bleRssiConfig)) {
@@ -145,12 +145,12 @@ public class BleRssiAdapter implements RangingAdapter {
         BleRssiRangingParams bleRssiRangingParams = bleRssiConfig.getRangingParams();
         if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
             Log.e(TAG, "Failed to start ranging, Bluetooth is turned off!");
-            closeForReason(InternalReason.UNSUPPORTED);
+            mCallbacks.onClosed(InternalReason.UNSUPPORTED);
             return;
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(InternalReason.INTERNAL_ERROR);
             return;
         }
 

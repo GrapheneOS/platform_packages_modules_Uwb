@@ -126,12 +126,12 @@ public class CsAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.e(TAG, "Background ranging is not supported");
-            closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+            mCallbacks.onClosed(InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
         if (!(config instanceof CsConfig csConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(InternalReason.INTERNAL_ERROR);
             return;
         }
 
@@ -141,7 +141,7 @@ public class CsAdapter implements RangingAdapter {
 
         if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
             Log.e(TAG, "Failed to start ranging, Bluetooth is turned off!");
-            closeForReason(InternalReason.UNSUPPORTED);
+            mCallbacks.onClosed(InternalReason.UNSUPPORTED);
             return;
         }
         if (mConfig.getPeerBluetoothDevice() != null) {
