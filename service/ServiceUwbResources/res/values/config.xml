@@ -280,6 +280,9 @@
 
     <!-- Uncertainty in Bluetooth HAL's system time calculation in microseconds -->
     <integer name= "timesync_ble_time_uncertainty_us">1000</integer>
+    <!-- Whether Uncertainty in Bluetooth HAL's system time calculation in microseconds is
+    included for android specific timesync -->
+    <bool name= "timesync_ble_uncertainty_included">true</bool>
     <!-- ===== End of UWB stack overlay definitions ===== -->
 
     <!-- ===== Start of ranging stack overlay definitions ===== -->
