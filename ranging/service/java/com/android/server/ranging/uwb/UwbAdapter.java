@@ -215,12 +215,12 @@ public class UwbAdapter implements RangingAdapter {
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(InternalReason.INTERNAL_ERROR);
+            mCallbacks.onClosed(InternalReason.INTERNAL_ERROR);
             return;
         }
         if (!isConfigValid(config)) {
             Log.v(TAG, "Invalid session config passed to start");
-            closeForReason(InternalReason.UNSUPPORTED);
+            mCallbacks.onClosed(InternalReason.UNSUPPORTED);
             return;
         }
 
@@ -234,7 +234,7 @@ public class UwbAdapter implements RangingAdapter {
                     mNonPrivilegedAttributionSource.getPackageName())) {
                 if (!mIsBackgroundRangingSupported) {
                     Log.w(TAG, "Background ranging is not supported");
-                    closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
+                    mCallbacks.onClosed(InternalReason.BACKGROUND_RANGING_POLICY);
                     return;
                 }
                 mDataNotificationManager.updateConfigAppMovedToBackground();

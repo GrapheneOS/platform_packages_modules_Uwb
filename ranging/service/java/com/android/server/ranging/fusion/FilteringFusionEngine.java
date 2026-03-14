@@ -182,7 +182,9 @@ public class FilteringFusionEngine extends FusionEngine {
         if (data.hasRssi()) {
             filteredData.setRssi(data.getRssi());
         }
-
+        if (data.getRangingDataExtras() != null) {
+            filteredData.setRangingDataExtras(data.getRangingDataExtras());
+        }
         super.feed(filteredData.build());
     }
 

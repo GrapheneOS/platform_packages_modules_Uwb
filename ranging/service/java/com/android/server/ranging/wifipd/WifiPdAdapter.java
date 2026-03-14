@@ -122,7 +122,7 @@ public class WifiPdAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.w(TAG, "Background ranging is not supported");
-            closeForReason(RangingUtils.InternalReason.BACKGROUND_RANGING_POLICY);
+            mCallback.onClosed(RangingUtils.InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
 
@@ -134,7 +134,7 @@ public class WifiPdAdapter implements RangingAdapter {
 
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(INTERNAL_ERROR);
+            mCallback.onClosed(INTERNAL_ERROR);
             return;
         }
 
@@ -151,7 +151,7 @@ public class WifiPdAdapter implements RangingAdapter {
                     || wifiPdRangingParams.getDeviceIk() == null) {
                 Log.e(TAG,
                         " Password or DeviceIK cannot be null when using Authenticated PASN mode");
-                closeForReason(INTERNAL_ERROR);
+                mCallback.onClosed(INTERNAL_ERROR);
                 return;
             }
             pasnConfigBuilder

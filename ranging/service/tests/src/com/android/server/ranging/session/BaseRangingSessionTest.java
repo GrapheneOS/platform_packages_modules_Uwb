@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingCapabilities.ENABLED;
+
 import static com.android.server.ranging.RangingTechnology.CS;
 import static com.android.server.ranging.RangingTechnology.RTT;
 import static com.android.server.ranging.RangingTechnology.UWB;
@@ -168,6 +170,13 @@ public class BaseRangingSessionTest {
         );
         when(mMockInjector.getContext()).thenReturn(mMockContext);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
+
+        when(mMockInjector.getCapabilitiesProvider().getCapabilities().getTechnologyAvailability())
+                .thenReturn(Map.of(
+                        UWB.getValue(), ENABLED,
+                        RTT.getValue(), ENABLED,
+                        CS.getValue(), ENABLED
+                ));
 
         mSession = new BaseRangingSession(
                 mMockAttributionSource, mMockSessionHandle, mMockInjector,

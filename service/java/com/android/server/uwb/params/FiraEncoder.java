@@ -215,9 +215,6 @@ public class FiraEncoder extends TlvEncoder {
         }
         if (hasAoaBoundInRangeDataNtfConfig(params.getRangeDataNtfConfig())) {
             tlvBufferBuilder.putShortArray(ConfigParam.RANGE_DATA_NTF_AOA_BOUND, new short[]{
-                    // TODO (b/235355249): Verify this conversion. This is using AOA value
-                    // in UwbTwoWayMeasurement to external RangingMeasurement conversion as
-                    // reference.
                     (short) UwbUtil.twos_compliment(UwbUtil.convertFloatToQFormat(
                             UwbUtil.radianTodegree(
                                     params.getRangeDataNtfAoaAzimuthLower()), 9, 7), 16),
@@ -377,9 +374,6 @@ public class FiraEncoder extends TlvEncoder {
                         ? rangeDataAoaElevationUpper
                         : FiraParams.RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
                 tlvBuilder.putShortArray(ConfigParam.RANGE_DATA_NTF_AOA_BOUND, new short[]{
-                        // TODO (b/235355249): Verify this conversion. This is using AOA value
-                        // in UwbTwoWayMeasurement to external RangingMeasurement conversion as
-                        // reference.
                         (short) UwbUtil.twos_compliment(UwbUtil.convertFloatToQFormat(
                                 UwbUtil.radianTodegree(
                                         rangeDataAoaAzimuthLower.floatValue()), 9, 7), 16),
