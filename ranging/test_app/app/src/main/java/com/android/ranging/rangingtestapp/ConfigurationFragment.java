@@ -16,6 +16,16 @@
 
 package com.android.ranging.rangingtestapp;
 
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_160MHZ;
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_20MHZ;
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_320MHZ;
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_40MHZ;
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_80MHZ;
+import static android.net.wifi.ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ;
+import static android.net.wifi.ScanResult.PREAMBLE_EHT;
+import static android.net.wifi.ScanResult.PREAMBLE_HT;
+import static android.net.wifi.ScanResult.PREAMBLE_LEGACY;
+import static android.net.wifi.ScanResult.PREAMBLE_VHT;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
@@ -48,6 +58,7 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -78,6 +89,14 @@ public class ConfigurationFragment extends Fragment implements
     private TextView mTechFilterSelection;
     private TextView mWifiPdOwnMacAddress;
     private EditText mWifiPdPeerMacAddress;
+    private EditText mWifiPdDeviceIk;
+    private EditText mWifiPdPassword;
+    private ArrayAdapter<Integer> mWifiPdPreambleTypeAdapter;
+    private Spinner mWifiPdPreambleTypeSpinner;
+    private ArrayAdapter<Boolean> mWifiPdNtbSupportedAdapter;
+    private Spinner mWifiPdNtbSupportedSpinner;
+    private ArrayAdapter<Integer> mWifiPdChannelWidthAdapter;
+    private Spinner mWifiPdChannelWidthSpinner;
     private ArrayList<Integer> mSelectedTechs = new ArrayList<>();
     private Button mButtonSave;
     private Button mButtonReset;
@@ -133,6 +152,14 @@ public class ConfigurationFragment extends Fragment implements
         mWifiPdPasnModeSpinner = (Spinner) root.findViewById(R.id.wifi_pd_pasn_mode_spinner);
         mWifiPdOwnMacAddress = (TextView) root.findViewById(R.id.wifi_pd_own_mac_address_value);
         mWifiPdPeerMacAddress = (EditText) root.findViewById(R.id.wifi_pd_peer_mac_address_value);
+        mWifiPdDeviceIk = (EditText) root.findViewById(R.id.wifi_pd_device_ik_value);
+        mWifiPdPassword = (EditText) root.findViewById(R.id.wifi_pd_password_value);
+        mWifiPdPreambleTypeSpinner =
+                (Spinner) root.findViewById(R.id.wifi_pd_preamble_type_spinner);
+        mWifiPdNtbSupportedSpinner =
+                (Spinner) root.findViewById(R.id.wifi_pd_ntb_supported_spinner);
+        mWifiPdChannelWidthSpinner =
+                (Spinner) root.findViewById(R.id.wifi_pd_channel_width_spinner);
         mOobSecurityLevelSpinner = (Spinner) root.findViewById(R.id.oob_security_level_spinner);
         mOobModeSpinner = (Spinner) root.findViewById(R.id.oob_mode_spinner);
         mTechFilterSelection = (TextView) root.findViewById(R.id.oob_tech_filter_selection);
@@ -185,6 +212,20 @@ public class ConfigurationFragment extends Fragment implements
                 }
                 mWifiPdPeerMacAddress.setText(
                         mConfigurationParameters.get().wifiPd.peerMacAddress.toString());
+                mWifiPdDeviceIk.setText(HexFormat.of().formatHex(
+                        mConfigurationParameters.get().wifiPd.deviceIk));
+                mWifiPdPassword.setText(mConfigurationParameters.get().wifiPd.password);
+                mWifiPdPreambleTypeSpinner.setSelection(
+                        mWifiPdPreambleTypeAdapter.getPosition(
+                                mConfigurationParameters.get().wifiPd.preambleType));
+                mWifiPdNtbSupportedSpinner.setSelection(
+                        mWifiPdNtbSupportedAdapter.getPosition(
+                                mConfigurationParameters.get().wifiPd
+                                        .isResponder80211azNtbSupported));
+                mWifiPdChannelWidthSpinner.setSelection(
+                        mWifiPdChannelWidthSpinner.getSelectedItemPosition() == -1 ? 0 :
+                        mWifiPdChannelWidthAdapter.getPosition(
+                                mConfigurationParameters.get().wifiPd.channelWidth));
                 mOobSecurityLevelSpinner.setSelection(mOobSecurityLevelAdapter.getPosition(
                         mConfigurationParameters.get().oob.securityLevel));
                 mOobModeSpinner.setSelection(
@@ -272,6 +313,39 @@ public class ConfigurationFragment extends Fragment implements
                 android.R.layout.simple_spinner_dropdown_item);
         mWifiPdPasnModeSpinner.setAdapter(mWifiPdPasnModeAdapter);
 
+        mWifiPdPreambleTypeAdapter =
+                new ArrayAdapter<>(
+                        getContext(), android.R.layout.simple_spinner_item, List.of(
+                        PREAMBLE_LEGACY,
+                        PREAMBLE_HT,
+                        PREAMBLE_VHT,
+                        PREAMBLE_EHT
+                ));
+        mWifiPdPreambleTypeAdapter.setDropDownViewResource(
+                android.R.layout.simple_spinner_dropdown_item);
+        mWifiPdPreambleTypeSpinner.setAdapter(mWifiPdPreambleTypeAdapter);
+
+        mWifiPdNtbSupportedAdapter =
+                new ArrayAdapter<>(
+                        getContext(), android.R.layout.simple_spinner_item, List.of(true, false));
+        mWifiPdNtbSupportedAdapter.setDropDownViewResource(
+                android.R.layout.simple_spinner_dropdown_item);
+        mWifiPdNtbSupportedSpinner.setAdapter(mWifiPdNtbSupportedAdapter);
+
+        mWifiPdChannelWidthAdapter =
+                new ArrayAdapter<>(
+                        getContext(), android.R.layout.simple_spinner_item, List.of(
+                        CHANNEL_WIDTH_20MHZ,
+                        CHANNEL_WIDTH_40MHZ,
+                        CHANNEL_WIDTH_80MHZ,
+                        CHANNEL_WIDTH_160MHZ,
+                        CHANNEL_WIDTH_80MHZ_PLUS_MHZ,
+                        CHANNEL_WIDTH_320MHZ
+                ));
+        mWifiPdChannelWidthAdapter.setDropDownViewResource(
+                android.R.layout.simple_spinner_dropdown_item);
+        mWifiPdChannelWidthSpinner.setAdapter(mWifiPdChannelWidthAdapter);
+
         mOobSecurityLevelAdapter =
                 new ArrayAdapter<>(
                         getContext(), android.R.layout.simple_spinner_item, List.of(
@@ -316,6 +390,13 @@ public class ConfigurationFragment extends Fragment implements
                                     mWifiPdPasnModeSpinner.getSelectedItem().toString());
                     params.wifiPd.peerMacAddress =
                             MacAddress.fromString(mWifiPdPeerMacAddress.getText().toString());
+                    params.wifiPd.deviceIk = HexFormat.of().parseHex(
+                            mWifiPdDeviceIk.getText().toString());
+                    params.wifiPd.password = mWifiPdPassword.getText().toString();
+                    params.wifiPd.preambleType = (int) mWifiPdPreambleTypeSpinner.getSelectedItem();
+                    params.wifiPd.isResponder80211azNtbSupported =
+                            (boolean) mWifiPdNtbSupportedSpinner.getSelectedItem();
+                    params.wifiPd.channelWidth = (int) mWifiPdChannelWidthSpinner.getSelectedItem();
                     params.oob.securityLevel = (int) mOobSecurityLevelSpinner.getSelectedItem();
                     params.oob.mode =
                             RANGING_MODE_STRING_TO_INT.inverse().get(
