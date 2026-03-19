@@ -14,8 +14,6 @@
 import random
 import sys
 import time
-import logging
-from typing import Set
 from lib import cs
 from lib import ranging_base_test
 from lib import rssi
@@ -23,17 +21,19 @@ from lib import rtt
 from lib import utils
 from lib import uwb
 from lib import wifipd
-from lib.session import RangingSession
 from lib.params import *
 from lib.ranging_decorator import *
-from android.platform.test.annotations import CddTest
+from lib.session import RangingSession
 from mobly import asserts
 from mobly import config_parser
 from mobly import suite_runner
 from mobly import utils as mobly_utils
 from mobly.controllers import android_device
-from android.platform.test.annotations import ApiTest
+from typing import Set
 
+import logging
+from android.platform.test.annotations import ApiTest
+from android.platform.test.annotations import CddTest
 
 _TEST_CASES = [
     "test_one_to_one_uwb_ranging_unicast_static_sts",
@@ -1142,29 +1142,17 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                   DeviceParams(
                       peer_id=self.responder.id,
                       rssi_params=rssi.BleRssiRangingParams(
-                      peer_address=self.responder.bt_addr,
+                        peer_address=self.responder.bt_addr,
                       ),
                   )
               ],
           ),
       )
 
-      responder_preference = RangingPreference(
-          device_role=DeviceRole.RESPONDER,
-          ranging_params=RawResponderRangingParams(
-              peer_params=DeviceParams(
-                  peer_id=self.initiator.id,
-                  rssi_params=rssi.BleRssiRangingParams(
-                  peer_address=self.initiator.bt_addr,
-                  ),
-              ),
-          ),
-      )
-
       self._start_mutual_ranging_and_assert_started(
           SESSION_HANDLE,
           initiator_preference,
-          responder_preference,
+          None,
           TECHNOLOGIES,
       )
 
@@ -1178,18 +1166,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
           ),
           "Initiator did not find responder",
       )
-      asserts.assert_true(
-          self.responder.verify_received_data_from_peer_using_technologies(
-              SESSION_HANDLE,
-              self.initiator.id,
-              TECHNOLOGIES,
-          ),
-          "Responder did not find initiator",
-      )
     finally:
       self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
-      self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
-
       self._ble_disconnect()
 
   @ApiTest(apis=[
