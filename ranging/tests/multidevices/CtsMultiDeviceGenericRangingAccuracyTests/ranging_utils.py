@@ -46,6 +46,19 @@ def skip_if_technology_not_supported(
     )
 
 
+def is_wear_device(ad: android_device.AndroidDevice) -> bool:
+  """Returns True if the device is a WearOS device."""
+  return "watch" in ad.adb.getprop("ro.build.characteristics")
+
+
+def skip_if_any_device_is_wear(
+    devices: list[android_device.AndroidDevice],
+) -> None:
+  """Skips the test if any device is a WearOS device."""
+  for device in devices:
+    asserts.skip_if(is_wear_device(device), f"{device} is a WearOS device")
+
+
 def log_ble_cs_distance_within_tolerance(
     real_distance_in_meters: int,
     measured_distance_data: list[float],
