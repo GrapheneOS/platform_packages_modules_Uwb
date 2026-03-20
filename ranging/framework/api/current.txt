@@ -1,6 +1,5 @@
 // Signature format: 6.0
 // - style=java
-// - flagged-api-inheritance=none
 // - strip-java-lang-prefix=legacy
 // - type-argument-spacing=legacy
 package android.ranging {
@@ -18,7 +17,7 @@ package android.ranging {
     field public static final int NOTIFICATION_CONFIG_PROXIMITY_LEVEL = 2; // 0x2
   }
 
-  public static final class DataNotificationConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class DataNotificationConfig.Builder {
     ctor public DataNotificationConfig.Builder();
     method @NonNull public android.ranging.DataNotificationConfig build();
     method @NonNull public android.ranging.DataNotificationConfig.Builder setNotificationConfigType(int);
@@ -178,7 +177,7 @@ package android.ranging {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingDevice> CREATOR;
   }
 
-  public static final class RangingDevice.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class RangingDevice.Builder {
     ctor public RangingDevice.Builder();
     method @NonNull public android.ranging.RangingDevice build();
     method @NonNull public android.ranging.RangingDevice.Builder setDlTdoaUwbAddress(@NonNull android.ranging.uwb.UwbAddress);
@@ -197,7 +196,7 @@ package android.ranging {
     field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public static final int WIFI_STA_RTT = 4; // 0x4
   }
 
-  public static interface RangingManager.RangingCapabilitiesCallback {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static interface RangingManager.RangingCapabilitiesCallback {
     method public void onRangingCapabilities(@NonNull android.ranging.RangingCapabilities);
   }
 
@@ -224,7 +223,7 @@ package android.ranging {
     field public static final int DEVICE_ROLE_RESPONDER = 0; // 0x0
   }
 
-  public static final class RangingPreference.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class RangingPreference.Builder {
     ctor public RangingPreference.Builder(int, @NonNull android.ranging.RangingConfig);
     method @NonNull public android.ranging.RangingPreference build();
     method @NonNull public android.ranging.RangingPreference.Builder setSessionConfig(@NonNull android.ranging.SessionConfig);
@@ -239,7 +238,7 @@ package android.ranging {
     method @RequiresPermission(android.Manifest.permission.RANGING) public void stop();
   }
 
-  public static interface RangingSession.Callback {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static interface RangingSession.Callback {
     method public void onClosed(int);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public default void onDlTdoaResults(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.DlTdoaMeasurement);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public default void onMotionReceived(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.MotionState);
@@ -263,7 +262,7 @@ package android.ranging {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.SensorFusionParams> CREATOR;
   }
 
-  public static final class SensorFusionParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class SensorFusionParams.Builder {
     ctor public SensorFusionParams.Builder();
     method @NonNull public android.ranging.SensorFusionParams build();
     method @NonNull public android.ranging.SensorFusionParams.Builder setSensorFusionEnabled(boolean);
@@ -282,7 +281,7 @@ package android.ranging {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.SessionConfig> CREATOR;
   }
 
-  public static final class SessionConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class SessionConfig.Builder {
     ctor public SessionConfig.Builder();
     method @NonNull public android.ranging.SessionConfig build();
     method @NonNull public android.ranging.SessionConfig.Builder setAngleOfArrivalNeeded(boolean);
@@ -335,7 +334,7 @@ package android.ranging.ble.cs {
     field public static final int SIGHT_TYPE_UNKNOWN = 0; // 0x0
   }
 
-  public static final class BleCsRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_cs_enabled") public static final class BleCsRangingParams.Builder {
     ctor public BleCsRangingParams.Builder(@NonNull String);
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams build();
     method @NonNull public android.ranging.ble.cs.BleCsRangingParams.Builder setLocationType(int);
@@ -356,7 +355,7 @@ package android.ranging.ble.rssi {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.ble.rssi.BleRssiRangingParams> CREATOR;
   }
 
-  public static final class BleRssiRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class BleRssiRangingParams.Builder {
     ctor public BleRssiRangingParams.Builder(@NonNull String);
     method @NonNull public android.ranging.ble.rssi.BleRssiRangingParams build();
     method @NonNull public android.ranging.ble.rssi.BleRssiRangingParams.Builder setRangingUpdateRate(int);
@@ -375,7 +374,7 @@ package android.ranging.oob {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.oob.DeviceHandle> CREATOR;
   }
 
-  public static final class DeviceHandle.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class DeviceHandle.Builder {
     ctor public DeviceHandle.Builder(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.oob.TransportHandle);
     method @NonNull public android.ranging.oob.DeviceHandle build();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.ranging.oob.DeviceHandle.Builder setBluetoothDevice(@NonNull android.bluetooth.BluetoothDevice);
@@ -400,7 +399,7 @@ package android.ranging.oob {
     field public static final int SECURITY_LEVEL_SECURE = 1; // 0x1
   }
 
-  public static final class OobInitiatorRangingConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class OobInitiatorRangingConfig.Builder {
     ctor public OobInitiatorRangingConfig.Builder();
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder addDeviceHandle(@NonNull android.ranging.oob.DeviceHandle);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder addDeviceHandles(@NonNull java.util.List<android.ranging.oob.DeviceHandle>);
@@ -419,7 +418,7 @@ package android.ranging.oob {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.oob.OobResponderRangingConfig> CREATOR;
   }
 
-  public static final class OobResponderRangingConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class OobResponderRangingConfig.Builder {
     ctor public OobResponderRangingConfig.Builder(@NonNull android.ranging.oob.DeviceHandle);
     method @NonNull public android.ranging.oob.OobResponderRangingConfig build();
   }
@@ -429,7 +428,7 @@ package android.ranging.oob {
     method public void sendData(@NonNull byte[]);
   }
 
-  public static interface TransportHandle.ReceiveCallback {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static interface TransportHandle.ReceiveCallback {
     method public void onClose();
     method public void onDisconnect();
     method public void onReceiveData(@NonNull byte[]);
@@ -448,7 +447,7 @@ package android.ranging.raw {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.raw.RawDtTagRangingConfig> CREATOR;
   }
 
-  public static final class RawDtTagRangingConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class RawDtTagRangingConfig.Builder {
     ctor public RawDtTagRangingConfig.Builder(@NonNull android.ranging.raw.RawRangingDevice);
     method @NonNull public android.ranging.raw.RawDtTagRangingConfig build();
   }
@@ -460,7 +459,7 @@ package android.ranging.raw {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.raw.RawInitiatorRangingConfig> CREATOR;
   }
 
-  public static final class RawInitiatorRangingConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class RawInitiatorRangingConfig.Builder {
     ctor public RawInitiatorRangingConfig.Builder();
     method @NonNull public android.ranging.raw.RawInitiatorRangingConfig.Builder addRawRangingDevice(@NonNull android.ranging.raw.RawRangingDevice);
     method @NonNull public android.ranging.raw.RawInitiatorRangingConfig.Builder addRawRangingDevices(@NonNull java.util.List<android.ranging.raw.RawRangingDevice>);
@@ -485,7 +484,7 @@ package android.ranging.raw {
     field public static final int UPDATE_RATE_NORMAL = 1; // 0x1
   }
 
-  public static final class RawRangingDevice.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class RawRangingDevice.Builder {
     ctor public RawRangingDevice.Builder();
     method @NonNull public android.ranging.raw.RawRangingDevice build();
     method @NonNull public android.ranging.raw.RawRangingDevice.Builder setBleRssiRangingParams(@NonNull android.ranging.ble.rssi.BleRssiRangingParams);
@@ -505,7 +504,7 @@ package android.ranging.raw {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.raw.RawResponderRangingConfig> CREATOR;
   }
 
-  public static final class RawResponderRangingConfig.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class RawResponderRangingConfig.Builder {
     ctor public RawResponderRangingConfig.Builder();
     method @NonNull public android.ranging.raw.RawResponderRangingConfig build();
     method @NonNull public android.ranging.raw.RawResponderRangingConfig.Builder setRawRangingDevice(@NonNull android.ranging.raw.RawRangingDevice);
@@ -534,7 +533,7 @@ package android.ranging.uwb {
     field public static final int MEASUREMENT_VERSION_UNKNOWN = 2147483647; // 0x7fffffff
   }
 
-  public static final class DlTdoaRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class DlTdoaRangingParams.Builder {
     ctor public DlTdoaRangingParams.Builder(int);
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams build();
     method @NonNull public android.ranging.uwb.DlTdoaRangingParams.Builder setComplexChannel(@NonNull android.ranging.uwb.UwbComplexChannel);
@@ -586,7 +585,7 @@ package android.ranging.uwb {
     field public static final int UWB_PREAMBLE_CODE_INDEX_9 = 9; // 0x9
   }
 
-  public static final class UwbComplexChannel.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class UwbComplexChannel.Builder {
     ctor public UwbComplexChannel.Builder();
     method @NonNull public android.ranging.uwb.UwbComplexChannel build();
     method @NonNull public android.ranging.uwb.UwbComplexChannel.Builder setChannel(int);
@@ -638,7 +637,7 @@ package android.ranging.uwb {
     field public static final int SUB_SESSION_UNDEFINED = -1; // 0xffffffff
   }
 
-  public static final class UwbRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public static final class UwbRangingParams.Builder {
     ctor public UwbRangingParams.Builder(int, int, @NonNull android.ranging.uwb.UwbAddress, @NonNull android.ranging.uwb.UwbAddress);
     method @NonNull public android.ranging.uwb.UwbRangingParams build();
     method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setComplexChannel(@NonNull android.ranging.uwb.UwbComplexChannel);
@@ -696,7 +695,7 @@ package android.ranging.wifi.pd {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.pd.WifiPdRangingParams> CREATOR;
   }
 
-  public static final class WifiPdRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final class WifiPdRangingParams.Builder {
     ctor public WifiPdRangingParams.Builder(@NonNull android.net.MacAddress);
     method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams build();
     method @NonNull public android.ranging.wifi.pd.WifiPdRangingParams.Builder setChannelWidth(int);
@@ -730,7 +729,7 @@ package android.ranging.wifi.rtt {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.rtt.RttRangingParams> CREATOR;
   }
 
-  public static final class RttRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_rtt_enabled") public static final class RttRangingParams.Builder {
     ctor public RttRangingParams.Builder(@NonNull String);
     method @NonNull public android.ranging.wifi.rtt.RttRangingParams build();
     method @NonNull public android.ranging.wifi.rtt.RttRangingParams.Builder setMatchFilter(@NonNull byte[]);
@@ -748,7 +747,7 @@ package android.ranging.wifi.rtt {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.wifi.rtt.RttStationRangingParams> CREATOR;
   }
 
-  public static final class RttStationRangingParams.Builder {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public static final class RttStationRangingParams.Builder {
     ctor public RttStationRangingParams.Builder(@NonNull String);
     method @NonNull public android.ranging.wifi.rtt.RttStationRangingParams build();
     method @NonNull public android.ranging.wifi.rtt.RttStationRangingParams.Builder setChannelWidth(int);

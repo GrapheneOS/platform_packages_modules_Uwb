@@ -1,6 +1,5 @@
 // Signature format: 6.0
 // - style=java
-// - flagged-api-inheritance=none
 // - strip-java-lang-prefix=legacy
 package android.uwb {
 
@@ -78,7 +77,7 @@ package android.uwb {
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionParams> CREATOR;
   }
 
-  public static final class LogicalLinkConnectionParams.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkConnectionParams.Builder {
     ctor public LogicalLinkConnectionParams.Builder(int, int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams build();
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setDestinationPort(int);
@@ -104,7 +103,7 @@ package android.uwb {
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionRequest> CREATOR;
   }
 
-  public static final class LogicalLinkConnectionRequest.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkConnectionRequest.Builder {
     ctor public LogicalLinkConnectionRequest.Builder(int, int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeLength(@IntRange(from=0) int);
@@ -151,7 +150,7 @@ package android.uwb {
     field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_8192_BYTES = 11; // 0xb
   }
 
-  public static final class LogicalLinkCreationParams.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkCreationParams.Builder {
     ctor public LogicalLinkCreationParams.Builder(int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkCreationParams build();
     method @NonNull public android.uwb.LogicalLinkCreationParams.Builder setLogicalLinkClassLength(int);
