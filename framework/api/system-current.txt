@@ -1,4 +1,7 @@
-// Signature format: 2.0
+// Signature format: 6.0
+// - style=java
+// - flagged-api-inheritance=none
+// - strip-java-lang-prefix=legacy
 package android.uwb {
 
   public final class AngleMeasurement implements android.os.Parcelable {
