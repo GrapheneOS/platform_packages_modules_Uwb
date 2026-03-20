@@ -1,6 +1,5 @@
 // Signature format: 6.0
 // - style=java
-// - strip-java-lang-prefix=legacy
 // - type-argument-spacing=legacy
 package android.ranging {
 
@@ -27,7 +26,7 @@ package android.ranging {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public final class DlTdoaMeasurement implements android.os.Parcelable {
     method public int describeContents();
-    method @NonNull public java.util.List<java.lang.Integer> getActiveRangingRoundIndexes();
+    method @NonNull public java.util.List<Integer> getActiveRangingRoundIndexes();
     method @FloatRange(from=-32.0, to=32.0, fromInclusive=false, toInclusive=false) public float getAnchorCfo();
     method @Nullable public android.ranging.DlTdoaMeasurement.AnchorLocation getAnchorLocation();
     method @FloatRange(from=-180.0, to=180.0) public float getAoaAzimuth();
@@ -97,7 +96,7 @@ package android.ranging {
     method public int describeContents();
     method @FloatRange(from=-512.0, to=512.0, fromInclusive=false, toInclusive=false) public double getAnchorFloorNumber();
     method @FloatRange(from=-2048.0, to=2048.0, fromInclusive=false, toInclusive=false) public double getAnchorHeightAboveFloor();
-    method @Nullable public android.util.Range<java.lang.Double> getAnchorHeightAboveFloorRange();
+    method @Nullable public android.util.Range<Double> getAnchorHeightAboveFloorRange();
     method @IntRange(from=0, to=24) public int getAnchorHeightAboveFloorUncertainty();
     method public int getExpectedToMove();
     method public boolean isAnchorFloorNumberOutOfRange();
@@ -125,7 +124,7 @@ package android.ranging {
     method public int describeContents();
     method @Nullable public android.ranging.ble.cs.BleCsRangingCapabilities getCsCapabilities();
     method @Nullable public android.ranging.wifi.rtt.RttRangingCapabilities getRttRangingCapabilities();
-    method @NonNull public java.util.Map<java.lang.Integer,java.lang.Integer> getTechnologyAvailability();
+    method @NonNull public java.util.Map<Integer,Integer> getTechnologyAvailability();
     method @Nullable public android.ranging.uwb.UwbRangingCapabilities getUwbCapabilities();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.wifi.pd.WifiPdRangingCapabilities getWifiPdRangingCapabilities();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -229,7 +228,7 @@ package android.ranging {
     method @NonNull public android.ranging.RangingPreference.Builder setSessionConfig(@NonNull android.ranging.SessionConfig);
   }
 
-  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingSession implements java.lang.AutoCloseable {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingSession implements AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.RANGING) public void addDeviceToRangingSession(@NonNull android.ranging.RangingConfig);
     method @RequiresPermission(android.Manifest.permission.RANGING) public void close();
     method @RequiresPermission(android.Manifest.permission.RANGING) public void reconfigureRangingInterval(@IntRange(from=0, to=255) int);
@@ -310,7 +309,7 @@ package android.ranging.ble.cs {
 
   @FlaggedApi("com.android.ranging.flags.ranging_cs_enabled") public final class BleCsRangingCapabilities implements android.os.Parcelable {
     method public int describeContents();
-    method @NonNull public java.util.Set<java.lang.Integer> getSupportedSecurityLevels();
+    method @NonNull public java.util.Set<Integer> getSupportedSecurityLevels();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.ble.cs.BleCsRangingCapabilities> CREATOR;
     field public static final int CS_SECURITY_LEVEL_FOUR = 4; // 0x4
@@ -386,7 +385,7 @@ package android.ranging.oob {
     method @NonNull public java.time.Duration getFastestRangingInterval();
     method @NonNull public android.util.Range<java.time.Duration> getRangingIntervalRange();
     method public int getRangingMode();
-    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.Set<java.lang.Integer> getRangingTechnologyFilter();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.Set<Integer> getRangingTechnologyFilter();
     method public int getSecurityLevel();
     method @NonNull public java.time.Duration getSlowestRangingInterval();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -406,7 +405,7 @@ package android.ranging.oob {
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig build();
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setFastestRangingInterval(@NonNull java.time.Duration);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setRangingMode(int);
-    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setRangingTechnologyFilter(@NonNull java.util.Set<java.lang.Integer>);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setRangingTechnologyFilter(@NonNull java.util.Set<Integer>);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setSecurityLevel(int);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setSlowestRangingInterval(@NonNull java.time.Duration);
   }
@@ -423,7 +422,7 @@ package android.ranging.oob {
     method @NonNull public android.ranging.oob.OobResponderRangingConfig build();
   }
 
-  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public interface TransportHandle extends java.lang.AutoCloseable {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public interface TransportHandle extends AutoCloseable {
     method public void registerReceiveCallback(@NonNull java.util.concurrent.Executor, @NonNull android.ranging.oob.TransportHandle.ReceiveCallback);
     method public void sendData(@NonNull byte[]);
   }
@@ -472,7 +471,7 @@ package android.ranging.raw {
     method @Nullable public android.ranging.ble.cs.BleCsRangingParams getCsRangingParams();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @Nullable public android.ranging.uwb.DlTdoaRangingParams getDlTdoaRangingParams();
     method @NonNull public android.ranging.RangingDevice getRangingDevice();
-    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.Map<java.lang.Integer,java.time.Duration> getRangingIntervalValues();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.Map<Integer,java.time.Duration> getRangingIntervalValues();
     method @Nullable public android.ranging.wifi.rtt.RttRangingParams getRttRangingParams();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @Nullable public android.ranging.wifi.rtt.RttStationRangingParams getRttStationRangingParams();
     method @Nullable public android.ranging.uwb.UwbRangingParams getUwbRangingParams();
@@ -595,13 +594,13 @@ package android.ranging.uwb {
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class UwbRangingCapabilities implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public java.time.Duration getMinimumRangingInterval();
-    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public java.util.List<java.lang.Integer> getSupportedAntennaModes();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedChannels();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedConfigIds();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedNotificationConfigurations();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedPreambleIndexes();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedRangingUpdateRates();
-    method @NonNull public java.util.List<java.lang.Integer> getSupportedSlotDurations();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public java.util.List<Integer> getSupportedAntennaModes();
+    method @NonNull public java.util.List<Integer> getSupportedChannels();
+    method @NonNull public java.util.List<Integer> getSupportedConfigIds();
+    method @NonNull public java.util.List<Integer> getSupportedNotificationConfigurations();
+    method @NonNull public java.util.List<Integer> getSupportedPreambleIndexes();
+    method @NonNull public java.util.List<Integer> getSupportedRangingUpdateRates();
+    method @NonNull public java.util.List<Integer> getSupportedSlotDurations();
     method public boolean isAzimuthalAngleSupported();
     method public boolean isBackgroundRangingSupported();
     method public boolean isDistanceMeasurementSupported();
@@ -669,8 +668,8 @@ package android.ranging.wifi.pd {
     method public int getMaxChannelWidth();
     method public int getMaxPreamble();
     method @NonNull public android.net.MacAddress getProximityDetectionMacAddress();
-    method @IntRange(from=2400, to=7125) @NonNull public java.util.Set<java.lang.Integer> getSupportedDiscoveryChannelFrequenciesMhz();
-    method @NonNull public java.util.Set<java.lang.Integer> getSupportedPasnModes();
+    method @IntRange(from=2400, to=7125) @NonNull public java.util.Set<Integer> getSupportedDiscoveryChannelFrequenciesMhz();
+    method @NonNull public java.util.Set<Integer> getSupportedPasnModes();
     method public int getTechnology();
     method public boolean is80211azNtbSupported();
     method public boolean is80211mcSupported();
