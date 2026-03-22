@@ -316,7 +316,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                 try {
                     mRangingCallbacks.onStarted(mSessionHandle, peer, technology.getValue());
                 } catch (RemoteException e) {
-                    Log.e(TAG, "onTechnologyStarted callback failed: " + e);
+                    Log.e(TAG, "onStarted callback failed: " + e);
                 }
             });
         }
@@ -331,7 +331,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                 try {
                     mRangingCallbacks.onStopped(mSessionHandle, peer, technology.getValue());
                 } catch (RemoteException e) {
-                    Log.e(TAG, "onTechnologyStopped callback failed: " + e);
+                    Log.e(TAG, "onStopped callback failed: " + e);
                 }
             });
         }
@@ -342,7 +342,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             try {
                 mRangingCallbacks.onResults(mSessionHandle, peer, data);
             } catch (RemoteException e) {
-                Log.e(TAG, "onData callback failed: " + e);
+                Log.e(TAG, "onResults callback failed: " + e);
             }
         }
 
@@ -351,7 +351,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             try {
                 mRangingCallbacks.onDlTdoaResults(mSessionHandle, peer, measurement);
             } catch (RemoteException e) {
-                Log.e(TAG, "onData callback failed: " + e);
+                Log.e(TAG, "onDlTdoaResults callback failed: " + e);
             }
         }
 

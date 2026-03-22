@@ -109,7 +109,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onDlTdoaResults(SessionHandle session, RangingDevice peer, DlTdoaMeasurement data) {
-        Log.v(TAG, "onResults - sessionHandle: " + session + " peer: " + peer.toString());
+        Log.v(TAG, "onDlTdoaResults - sessionHandle: " + session + " peer: " + peer.toString());
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -183,7 +183,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
      * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
      */
     public void deviceOobDisconnected(OobHandle oobHandle) {
-        Log.v(TAG, "deviceOobReconnected - " + oobHandle);
+        Log.v(TAG, "deviceOobDisconnected - " + oobHandle);
         try {
             mRangingAdapter.deviceOobDisconnected(oobHandle);
         } catch (RemoteException e) {
