@@ -27,12 +27,14 @@ import android.ranging.uwb.UwbRangingParams.SlotDuration;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.util.Set;
 
 /**
  * Class to represent UWB Downlink TDoA ranging parameters.
@@ -77,6 +79,7 @@ public final class DlTdoaRangingParams implements Parcelable {
 
     // UWB Configuration Sub-Element
     private static final int FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG = 0x05;
+    private static final int FIRA_SUB_ELEMENT_TYPE_WIFI_TIME_SYNC = 0x0B;
     private static final int FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH = 2;
 
     // UWB Configuration ID for Untracked Navigation Profile
@@ -151,9 +154,11 @@ public final class DlTdoaRangingParams implements Parcelable {
     /**
      * Creates a {@link DlTdoaRangingParams} from a FiRa compliant configuration packet.
      *
-     * @param config The byte array containing the FiRa configuration packet.
-     * @param rangingRoundIndexes The active ranging round indexes. If null, use the default
-     * value of {@link DlTdoaRangingParams.Builder}.
+     * @param config The byte array containing the FiRa Specific OOB Vendor Specific Element (VSE)
+     * for BLE or WiFi.
+     * @param rangingRoundIndexes The active ranging round indexes. If {@code null}, the indexes
+     * may be extracted from the WiFi Time Sync sub-element in {@code config} if present; otherwise,
+     * the default value from {@link DlTdoaRangingParams.Builder} is used.
      * @return A {@link DlTdoaRangingParams} instance.
      * @throws IllegalArgumentException if the configuration packet is malformed or missing
      * mandatory fields.
@@ -162,7 +167,7 @@ public final class DlTdoaRangingParams implements Parcelable {
      */
     @NonNull
     public static DlTdoaRangingParams createFromFiraConfigPacket(
-            @NonNull byte[] config, @Nullable byte [] rangingRoundIndexes) {
+            @NonNull byte[] config, @Nullable byte[] rangingRoundIndexes) {
         Objects.requireNonNull(config);
 
         int subElementHeaderOffset = 0;
@@ -192,39 +197,6 @@ public final class DlTdoaRangingParams implements Parcelable {
             throw new IllegalArgumentException("Unsupported or malformed OOB VSE.");
         }
 
-        // Validate sub-element type
-        if (((config[subElementHeaderOffset] & 0xF0) >> 4) != FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG) {
-            throw new IllegalArgumentException("Unsupported FiRa Sub-Element type.");
-        }
-
-        // Validate sub-element length
-        int subElementLength = config[subElementHeaderOffset] & 0x0F;
-        int subElementDataOffset = subElementHeaderOffset + 1;
-        if (subElementLength == 0x0F) {
-            // parse extra bytes for length extension
-            int lengthExtensionOffset = subElementDataOffset;
-            int lengthExtension = config[lengthExtensionOffset++] & 0xFF;
-            while (lengthExtension == 0xFF && lengthExtensionOffset < totalLength) {
-                subElementLength += lengthExtension;
-                lengthExtension = config[lengthExtensionOffset++] & 0xFF;
-            }
-            subElementLength += lengthExtension;
-            // update offset for sub-element data
-            subElementDataOffset = lengthExtensionOffset;
-        }
-        if ((subElementDataOffset + subElementLength) > totalLength) {
-            throw new IllegalArgumentException(
-                    "Not enough bytes for UWB Configuration Sub-Element content.");
-        }
-        if (subElementLength < FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH) {
-            throw new IllegalArgumentException("Invalid UWB Configuration Sub-Element length.");
-        }
-
-        // Validate UWB configuration data header
-        if ((config[subElementDataOffset] & 0xFF) != FIRA_UWB_UNTRACKED_NAVIGATION_PROFILE_ID) {
-            throw new IllegalArgumentException("Invalid UWB Configuration Sub-Element header.");
-        }
-
         // mandatory fields
         Integer sessionId = null;
 
@@ -237,88 +209,176 @@ public final class DlTdoaRangingParams implements Parcelable {
         Short slotsPerRangingRound = null;
         byte[] vendorId = null;
         byte[] staticStsIv = null;
+        Set<Byte> extractedRangingRoundIndexes = new LinkedHashSet<>();
 
-        int offset = subElementDataOffset + FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH;
-        while (offset + 1 < totalLength) {
-            int tag = config[offset++] & 0xFF;
-            int length = config[offset++] & 0xFF;
+        int subElementOffset = subElementHeaderOffset;
+        while (subElementOffset < totalLength) {
+            int header = config[subElementOffset] & 0xFF;
+            int type = (header & 0xF0) >> 4;
+            int length = header & 0x0F;
+            int subElementDataOffset = subElementOffset + 1;
 
-            if (offset + length > totalLength) {
+            if (length == 0x0F) {
+                // parse extra bytes for length extension
+                int lengthExtensionOffset = subElementDataOffset;
+                if (lengthExtensionOffset >= totalLength) {
+                    throw new IllegalArgumentException("Invalid sub-element length extension.");
+                }
+                int lengthExtension = config[lengthExtensionOffset++] & 0xFF;
+                while (lengthExtension == 0xFF && lengthExtensionOffset < totalLength) {
+                    length += lengthExtension;
+                    lengthExtension = config[lengthExtensionOffset++] & 0xFF;
+                }
+                length += lengthExtension;
+                // update offset for sub-element data
+                subElementDataOffset = lengthExtensionOffset;
+            }
+
+            if ((subElementDataOffset + length) > totalLength) {
                 throw new IllegalArgumentException(
-                        "Not enough bytes for UWB Configuration Parameter List content.");
+                        "Not enough bytes for Sub-Element content.");
             }
 
-            // Helper to read Little Endian values
-            ByteBuffer buffer = ByteBuffer.wrap(config, offset, length).order(
-                    ByteOrder.LITTLE_ENDIAN);
+            if (type == FIRA_SUB_ELEMENT_TYPE_UWB_CONFIG) {
+                if (length < FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH) {
+                    throw new IllegalArgumentException(
+                            "Invalid UWB Configuration Sub-Element length.");
+                }
 
-            switch (tag) {
-                case TAG_CHANNEL_NUMBER -> {
-                    if (length != 1) {
-                        throw new IllegalArgumentException("Invalid length for CHANNEL_NUMBER.");
-                    }
-                    channelNumber = (short) (buffer.get() & 0xFF);
+                // Validate UWB configuration data header
+                if ((config[subElementDataOffset] & 0xFF)
+                        != FIRA_UWB_UNTRACKED_NAVIGATION_PROFILE_ID) {
+                    throw new IllegalArgumentException(
+                            "Invalid UWB Configuration Sub-Element header.");
                 }
-                case TAG_DEVICE_MAC_ADDRESS -> {
-                    if (length != UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
-                            && length != UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH) {
+
+                int offset = subElementDataOffset + FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH;
+                int subElementEnd = subElementDataOffset + length;
+                while (offset + 1 < subElementEnd) {
+                    int tag = config[offset++] & 0xFF;
+                    int tagLength = config[offset++] & 0xFF;
+
+                    if (offset + tagLength > subElementEnd) {
                         throw new IllegalArgumentException(
-                                "Invalid length for DEVICE_MAC_ADDRESS.");
+                                "Not enough bytes for UWB Configuration Parameter List content.");
                     }
-                    deviceMacAddress = new byte[length];
-                    buffer.get(deviceMacAddress);
-                }
-                case TAG_SLOT_DURATION -> {
-                    if (length != 2) {
-                        throw new IllegalArgumentException("Invalid length for SLOT_DURATION.");
+
+                    // Helper to read Little Endian values
+                    ByteBuffer buffer = ByteBuffer.wrap(config, offset, tagLength).order(
+                            ByteOrder.LITTLE_ENDIAN);
+
+                    switch (tag) {
+                        case TAG_CHANNEL_NUMBER -> {
+                            if (tagLength != 1) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for CHANNEL_NUMBER.");
+                            }
+                            channelNumber = (short) (buffer.get() & 0xFF);
+                        }
+                        case TAG_DEVICE_MAC_ADDRESS -> {
+                            if (tagLength != UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
+                                    && tagLength != UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for DEVICE_MAC_ADDRESS.");
+                            }
+                            deviceMacAddress = new byte[tagLength];
+                            buffer.get(deviceMacAddress);
+                        }
+                        case TAG_SLOT_DURATION -> {
+                            if (tagLength != 2) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for SLOT_DURATION.");
+                            }
+                            slotDuration = buffer.getShort() & 0xFFFF; // Reads 2 bytes as LE
+                        }
+                        case TAG_RANGING_DURATION -> {
+                            if (tagLength != 4) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for RANGING_DURATION.");
+                            }
+                            rangingDuration = buffer.getInt() & 0xFFFFFFFFL; // Reads 4 bytes as LE
+                        }
+                        case TAG_PREAMBLE_CODE_INDEX -> {
+                            if (tagLength != 1) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for PREAMBLE_CODE_INDEX.");
+                            }
+                            preambleCodeIndex = (short) (buffer.get() & 0xFF);
+                        }
+                        case TAG_SLOTS_PER_RR -> {
+                            if (tagLength != 1) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for SLOTS_PER_RR.");
+                            }
+                            slotsPerRangingRound = (short) (buffer.get() & 0xFF);
+                        }
+                        case TAG_VENDOR_ID -> {
+                            if (tagLength != 2) {
+                                throw new IllegalArgumentException("Invalid length for VENDOR_ID.");
+                            }
+                            vendorId = new byte[tagLength];
+                            buffer.get(vendorId);
+                        }
+                        case TAG_STATIC_STS_IV -> {
+                            if (tagLength != 6) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for STATIC_STS_IV.");
+                            }
+                            staticStsIv = new byte[tagLength];
+                            buffer.get(staticStsIv);
+                        }
+                        case TAG_SESSION_ID -> {
+                            if (tagLength != 4) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for SESSION_ID.");
+                            }
+                            sessionId = buffer.getInt(); // Reads 4 bytes as LE
+                        }
+                        default -> {
+                            // Skip unknown tags
+                        }
                     }
-                    slotDuration = buffer.getShort() & 0xFFFF; // Reads 2 bytes as LE
+                    // Move offset past the value
+                    offset += tagLength;
                 }
-                case TAG_RANGING_DURATION -> {
-                    if (length != 4) {
-                        throw new IllegalArgumentException("Invalid length for RANGING_DURATION.");
+            } else if (type == FIRA_SUB_ELEMENT_TYPE_WIFI_TIME_SYNC) {
+                if (length >= 2) {
+                    int pos = subElementDataOffset;
+                    pos++; // Skip Profile ID
+                    int modeAndControl = config[pos++] & 0xFF;
+                    int addressMode = (modeAndControl & 0xF0) >> 4;
+                    int infoControl = modeAndControl & 0x0F;
+
+                    int addrLen = (addressMode == 0x0) ? 2 : 8;
+                    if (pos + addrLen <= subElementDataOffset + length) {
+                        pos += addrLen; // Skip DT-Anchor Address
+
+                        if ((infoControl & 0x01) != 0) { // b0 = 1
+                            if (pos + 4 + 2 + 1 <= subElementDataOffset + length) {
+                                pos += 4; // Skip Time Offset
+                                pos += 2; // Skip Time Offset Uncertainty
+                                extractedRangingRoundIndexes.add(config[pos++]);
+                            }
+                        }
+
+                        if ((infoControl & 0x02) != 0) { // b1 = 1
+                            if (pos + 1 <= subElementDataOffset + length) {
+                                int count = config[pos++] & 0xFF;
+                                for (int i = 0; i < count; i++) {
+                                    if (pos + addrLen + 1 <= subElementDataOffset + length) {
+                                        pos += addrLen; // Skip Address
+                                        extractedRangingRoundIndexes.add(config[pos++]);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    rangingDuration = buffer.getInt() & 0xFFFFFFFFL; // Reads 4 bytes as LE
-                }
-                case TAG_PREAMBLE_CODE_INDEX -> {
-                    if (length != 1) {
-                        throw new IllegalArgumentException(
-                                "Invalid length for PREAMBLE_CODE_INDEX.");
-                    }
-                    preambleCodeIndex = (short) (buffer.get() & 0xFF);
-                }
-                case TAG_SLOTS_PER_RR -> {
-                    if (length != 1) {
-                        throw new IllegalArgumentException("Invalid length for SLOTS_PER_RR.");
-                    }
-                    slotsPerRangingRound = (short) (buffer.get() & 0xFF);
-                }
-                case TAG_VENDOR_ID -> {
-                    if (length != 2) {
-                        throw new IllegalArgumentException("Invalid length for VENDOR_ID.");
-                    }
-                    vendorId = new byte[length];
-                    buffer.get(vendorId);
-                }
-                case TAG_STATIC_STS_IV -> {
-                    if (length != 6) {
-                        throw new IllegalArgumentException("Invalid length for STATIC_STS_IV.");
-                    }
-                    staticStsIv = new byte[length];
-                    buffer.get(staticStsIv);
-                }
-                case TAG_SESSION_ID -> {
-                    if (length != 4) {
-                        throw new IllegalArgumentException("Invalid length for SESSION_ID.");
-                    }
-                    sessionId = buffer.getInt(); // Reads 4 bytes as LE
-                }
-                default -> {
-                    // Skip unknown tags
                 }
             }
-            // Move offset past the value
-            offset += length;
+
+            subElementOffset = subElementDataOffset + length;
         }
 
         if (sessionId == null) {
@@ -362,8 +422,19 @@ public final class DlTdoaRangingParams implements Parcelable {
             builder.setSessionKeyInfo(sessionKeyInfo);
         }
 
+        byte[] finalRangingRoundIndexes = null;
         if (rangingRoundIndexes != null) {
-            builder.setRangingRoundIndexes(rangingRoundIndexes);
+            finalRangingRoundIndexes = rangingRoundIndexes;
+        } else if (!extractedRangingRoundIndexes.isEmpty()) {
+            finalRangingRoundIndexes = new byte[extractedRangingRoundIndexes.size()];
+            int i = 0;
+            for (Byte b : extractedRangingRoundIndexes) {
+                finalRangingRoundIndexes[i++] = b;
+            }
+        }
+
+        if (finalRangingRoundIndexes != null) {
+            builder.setRangingRoundIndexes(finalRangingRoundIndexes);
         }
 
         return builder.build();
