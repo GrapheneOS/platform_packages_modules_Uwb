@@ -54,6 +54,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
@@ -208,7 +209,7 @@ public class WifiPdConfigSelectorTest {
                 .build();
 
         byte[] bytes = config.toBytes();
-        Log.e("Authenticated config", " " + config.toString());
+        Log.d("Authenticated config", " " + config.toString());
         WifiPdAuthenticatedConfiguration parsedConfig = WifiPdAuthenticatedConfiguration.fromBytes(
                 bytes);
 
@@ -225,6 +226,7 @@ public class WifiPdConfigSelectorTest {
 
     @Test
     public void wifiPdUnauthenticatedConfiguration_serializationTest() throws Exception {
+        byte[] rawConfigBytes = new byte[] {5, 15, 1, 0, 1, 2, 3, 4, 5, -12, 1, 3, 1, 11, 0};
         WifiPdUnauthenticatedConfiguration config = new WifiPdUnauthenticatedConfiguration.Builder()
                 .setFeature((byte) WifiPdConstants.IEEE_802_11MC)
                 .setPeerAddress(MAC_ADDRESS.toByteArray())
@@ -236,10 +238,22 @@ public class WifiPdConfigSelectorTest {
                 .build();
 
         byte[] bytes = config.toBytes();
-        Log.e("Unauthenticated config: ", " " + config.toString());
+        Log.d("Unauthenticated config: ", " " + config.toString()
+                + " bytes " + Arrays.toString(bytes));
         WifiPdUnauthenticatedConfiguration parsedConfig =
                 WifiPdUnauthenticatedConfiguration.fromBytes(bytes);
 
+        assertThat(parsedConfig).isNotNull();
+        assertThat(parsedConfig.getFeature()).isEqualTo(config.getFeature());
+        assertThat(parsedConfig.getPeerAddress()).isEqualTo(config.getPeerAddress());
+        assertThat(parsedConfig.getRangingInterval()).isEqualTo(config.getRangingInterval());
+        assertThat(parsedConfig.getPreamble()).isEqualTo(config.getPreamble());
+        assertThat(parsedConfig.getChannelWidth()).isEqualTo(config.getChannelWidth());
+        assertThat(parsedConfig.getChannel()).isEqualTo(config.getChannel());
+
+
+        parsedConfig = WifiPdUnauthenticatedConfiguration.fromBytes(rawConfigBytes);
+        Log.d("Parsed raw Unauthenticated config: ", " " + config.toString());
         assertThat(parsedConfig).isNotNull();
         assertThat(parsedConfig.getFeature()).isEqualTo(config.getFeature());
         assertThat(parsedConfig.getPeerAddress()).isEqualTo(config.getPeerAddress());
