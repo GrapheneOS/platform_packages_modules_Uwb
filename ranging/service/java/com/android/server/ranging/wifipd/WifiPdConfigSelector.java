@@ -53,8 +53,9 @@ import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.DiscoveryChannels;
 import com.android.server.ranging.oob.packets.PreambleType;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
+import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
-import com.android.server.ranging.oob.packets.WifiPdConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
 import com.android.server.ranging.session.ConfigurationManager;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelector;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
@@ -167,10 +168,14 @@ public class WifiPdConfigSelector extends ConfigSelector {
         mSupportedChannels.retainAll(new HashSet<>(
                 getDiscoveryChannelMhz(
                         pdCapabilities.getChannels())));
-        mMaxCompatiblePreamble = Math.min(mMaxCompatiblePreamble,
-                pdCapabilities.getMaxPreamble().toByte());
-        mMaxCompatibleChannelWidth = Math.min(mMaxCompatibleChannelWidth,
-                pdCapabilities.getMaxChannelWidth().toByte());
+        if (pdCapabilities.getMaxPreamble() != null) {
+            mMaxCompatiblePreamble = Math.min(mMaxCompatiblePreamble,
+                    pdCapabilities.getMaxPreamble().toByte());
+        }
+        if (pdCapabilities.getMaxChannelWidth() != null) {
+            mMaxCompatibleChannelWidth = Math.min(mMaxCompatibleChannelWidth,
+                    pdCapabilities.getMaxChannelWidth().toByte());
+        }
 
         if (mSupports80211az && (mMinRangingInterval11az.toMillis()
                 < (pdCapabilities.getMinInterval11az()))) {
@@ -281,32 +286,40 @@ public class WifiPdConfigSelector extends ConfigSelector {
 
         @NonNull
         private Configuration getPeerConfig() {
-            WifiPdConfiguration.Builder builder = new WifiPdConfiguration.Builder()
-                    .setPasnMode(mSelectedParams.getPasnMode() == AUTHENTICATED_PASN_MODE
-                            ? com.android.server.ranging.oob.packets.PasnMode.AuthenticatedMode
-                            : com.android.server.ranging.oob.packets.PasnMode.UnauthenticatedMode)
-                    .setFeature((byte) (mSupports80211az ? IEEE_802_11AZ : IEEE_802_11MC))
-                    .setPeerAddress(mLocalMacAddress.toByteArray())
-                    .setRangingInterval(
-                            (short) WifiPdConstants.getIntervalInMs(
-                                    mSelectedParams.getRangingUpdateRate()))
-                    .setPreamble(
-                            PreambleType.fromByte((byte) mSelectedParams.getPreambleType()))
-                    .setChannelWidth(WifiBandwidth.fromByte(
-                            (byte) mSelectedParams.getChannelWidth()))
-                    .setChannel(
-                            (byte) convertFrequencyToChannel(
-                                    mSelectedParams.getDiscoveryChannelFrequencyMhz()));
-
             if (mSelectedParams.getPasnMode() == AUTHENTICATED_PASN_MODE) {
-                builder.setPassword(
+                return new WifiPdAuthenticatedConfiguration.Builder()
+                        .setFeature((byte) (mSupports80211az ? IEEE_802_11AZ : IEEE_802_11MC))
+                        .setPeerAddress(mLocalMacAddress.toByteArray())
+                        .setRangingInterval(
+                                (short) WifiPdConstants.getIntervalInMs(
+                                        mSelectedParams.getRangingUpdateRate()))
+                        .setPreamble(
+                                PreambleType.fromByte((byte) mSelectedParams.getPreambleType()))
+                        .setChannelWidth(WifiBandwidth.fromByte(
+                                (byte) mSelectedParams.getChannelWidth()))
+                        .setChannel(
+                                (byte) convertFrequencyToChannel(
+                                        mSelectedParams.getDiscoveryChannelFrequencyMhz()))
+                        .setPassword(
                                 mSelectedParams.getPassword().getBytes(StandardCharsets.UTF_8))
-                        .setDeviceIk(mSelectedParams.getDeviceIk());
+                        .setDeviceIk(mSelectedParams.getDeviceIk())
+                        .build();
             } else {
-                builder.setPassword(new byte[0])
-                        .setDeviceIk(new byte[0]);
+                return new WifiPdUnauthenticatedConfiguration.Builder()
+                        .setFeature((byte) (mSupports80211az ? IEEE_802_11AZ : IEEE_802_11MC))
+                        .setPeerAddress(mLocalMacAddress.toByteArray())
+                        .setRangingInterval(
+                                (short) WifiPdConstants.getIntervalInMs(
+                                        mSelectedParams.getRangingUpdateRate()))
+                        .setPreamble(
+                                PreambleType.fromByte((byte) mSelectedParams.getPreambleType()))
+                        .setChannelWidth(WifiBandwidth.fromByte(
+                                (byte) mSelectedParams.getChannelWidth()))
+                        .setChannel(
+                                (byte) convertFrequencyToChannel(
+                                        mSelectedParams.getDiscoveryChannelFrequencyMhz()))
+                        .build();
             }
-            return builder.build();
         }
     }
 

@@ -35,11 +35,10 @@ import com.android.server.ranging.oob.packets.Capabilities;
 import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.oob.packets.DeviceType;
 import com.android.server.ranging.oob.packets.DiscoveryChannels;
-import com.android.server.ranging.oob.packets.PasnMode;
 import com.android.server.ranging.oob.packets.PreambleType;
-import com.android.server.ranging.oob.packets.WifiBandwidth;
+import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
-import com.android.server.ranging.oob.packets.WifiPdConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
 import com.android.server.ranging.session.ConfigurationManager.ConfigSelectionException;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 
@@ -103,6 +102,7 @@ public class WifiPdConfigSelectorTest {
         WifiPdRangingCapabilities localCapabilities = new WifiPdRangingCapabilities.Builder()
                 .setSupportedDiscoveryChannelFrequenciesMhz(Collections.singleton(2412))
                 .setProximityDetectionMacAddress(MAC_ADDRESS)
+                .setMaxChannelWidth(2)
                 .build();
         when(mOobInitiatorRangingConfig.getRangingIntervalRange()).thenReturn(
                 new Range<>(Duration.ofMillis(200), Duration.ofMillis(1000)));
@@ -113,7 +113,7 @@ public class WifiPdConfigSelectorTest {
         Capabilities peerCapabilities = new WifiPdCapabilities.Builder()
                 .setChannels(new DiscoveryChannels.Builder().setChannel11(true).build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
-                .setMaxChannelWidth(WifiBandwidth.Mhz80)
+                .setMaxChannelWidth(com.android.server.ranging.oob.packets.WifiBandwidth.Mhz80)
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
                 peerCapabilities, DEVICETYPE_PHONE);
@@ -127,6 +127,7 @@ public class WifiPdConfigSelectorTest {
         WifiPdRangingCapabilities localCapabilities = new WifiPdRangingCapabilities.Builder()
                 .setSupportedDiscoveryChannelFrequenciesMhz(Collections.singleton(2412))
                 .setProximityDetectionMacAddress(MAC_ADDRESS)
+                .setMaxChannelWidth(2)
                 .build();
         when(mOobInitiatorRangingConfig.getRangingIntervalRange()).thenReturn(
                 new Range<>(Duration.ofMillis(100), Duration.ofMillis(100)));
@@ -137,7 +138,7 @@ public class WifiPdConfigSelectorTest {
         Capabilities peerCapabilities = new WifiPdCapabilities.Builder()
                 .setChannels(new DiscoveryChannels.Builder().setChannel1(true).build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
-                .setMaxChannelWidth(WifiBandwidth.Mhz80)
+                .setMaxChannelWidth(com.android.server.ranging.oob.packets.WifiBandwidth.Mhz80)
                 .setMinInterval11mc((short) 200)
                 .build();
         mWifiPdConfigSelector.addPeerCapabilities(new RangingDevice.Builder().build(),
@@ -153,6 +154,7 @@ public class WifiPdConfigSelectorTest {
                 .set80211azNtbSupported(true)
                 .setProximityDetectionMacAddress(MAC_ADDRESS)
                 .set80211azNtbMinRangingIntervalMillis(100)
+                .setMaxChannelWidth(2)
                 .setSupportedPasnModes(
                         ImmutableSet.of(WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE))
                 .build();
@@ -166,7 +168,7 @@ public class WifiPdConfigSelectorTest {
                 .setChannels(new DiscoveryChannels.Builder().setChannel1(true).setChannel36(true)
                         .build())
                 .setMaxPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
-                .setMaxChannelWidth(WifiBandwidth.Mhz80)
+                .setMaxChannelWidth(com.android.server.ranging.oob.packets.WifiBandwidth.Mhz80)
                 .setFeature11az(true)
                 .setAuthenticatedPasnSupport(true)
                 .build();
@@ -184,20 +186,17 @@ public class WifiPdConfigSelectorTest {
                 .isEqualTo(WifiPdRangingCapabilities.AUTHENTICATED_PASN_MODE);
 
         Configuration remoteConfig = mWifiPdConfigSelector.selectRemoteConfig(peer);
-        assertThat(remoteConfig).isInstanceOf(WifiPdConfiguration.class);
-        assertThat(((WifiPdConfiguration) remoteConfig).getPasnMode())
-                .isEqualTo(PasnMode.AuthenticatedMode);
-        assertThat(((WifiPdConfiguration) remoteConfig).getFeature())
-                .isEqualTo((byte) WifiPdConstants.IEEE_802_11AZ);
-        assertThat(((WifiPdConfiguration) remoteConfig).getChannel()).isEqualTo((byte) 36);
+        assertThat(remoteConfig).isInstanceOf(WifiPdAuthenticatedConfiguration.class);
+        assertThat(((WifiPdAuthenticatedConfiguration) remoteConfig).getFeature())
+                .isEqualTo(WifiPdConstants.IEEE_802_11AZ);
+        assertThat(((WifiPdAuthenticatedConfiguration) remoteConfig).getChannel()).isEqualTo(36);
     }
 
     @Test
     public void wifiPdAuthenticatedConfiguration_serializationTest() throws Exception {
         byte[] deviceIk = new byte[]{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
-        WifiPdConfiguration config = new WifiPdConfiguration.Builder()
-                .setPasnMode(PasnMode.AuthenticatedMode)
+        WifiPdAuthenticatedConfiguration config = new WifiPdAuthenticatedConfiguration.Builder()
                 .setFeature((byte) WifiPdConstants.IEEE_802_11AZ)
                 .setPeerAddress(MAC_ADDRESS.toByteArray())
                 .setRangingInterval((short) 200)
@@ -210,11 +209,10 @@ public class WifiPdConfigSelectorTest {
 
         byte[] bytes = config.toBytes();
         Log.e("Authenticated config", " " + config.toString());
-        WifiPdConfiguration parsedConfig = WifiPdConfiguration.fromBytes(
+        WifiPdAuthenticatedConfiguration parsedConfig = WifiPdAuthenticatedConfiguration.fromBytes(
                 bytes);
 
         assertThat(parsedConfig).isNotNull();
-        assertThat(parsedConfig.getPasnMode()).isEqualTo(config.getPasnMode());
         assertThat(parsedConfig.getFeature()).isEqualTo(config.getFeature());
         assertThat(parsedConfig.getPeerAddress()).isEqualTo(config.getPeerAddress());
         assertThat(parsedConfig.getRangingInterval()).isEqualTo(config.getRangingInterval());
@@ -227,25 +225,22 @@ public class WifiPdConfigSelectorTest {
 
     @Test
     public void wifiPdUnauthenticatedConfiguration_serializationTest() throws Exception {
-        WifiPdConfiguration config = new WifiPdConfiguration.Builder()
-                .setPasnMode(PasnMode.UnauthenticatedMode)
+        WifiPdUnauthenticatedConfiguration config = new WifiPdUnauthenticatedConfiguration.Builder()
                 .setFeature((byte) WifiPdConstants.IEEE_802_11MC)
                 .setPeerAddress(MAC_ADDRESS.toByteArray())
                 .setRangingInterval((short) 500)
                 .setPreamble(PreambleType.fromByte((byte) PREAMBLE_HE))
                 .setChannelWidth(com.android.server.ranging.oob.packets.WifiBandwidth.Mhz40)
                 .setChannel((byte) 11)
-                .setDeviceIk(new byte[0])
-                .setPassword(new byte[0])
+                .setEmpty(new byte[0])
                 .build();
 
         byte[] bytes = config.toBytes();
         Log.e("Unauthenticated config: ", " " + config.toString());
-        WifiPdConfiguration parsedConfig =
-                WifiPdConfiguration.fromBytes(bytes);
+        WifiPdUnauthenticatedConfiguration parsedConfig =
+                WifiPdUnauthenticatedConfiguration.fromBytes(bytes);
 
         assertThat(parsedConfig).isNotNull();
-        assertThat(parsedConfig.getPasnMode()).isEqualTo(config.getPasnMode());
         assertThat(parsedConfig.getFeature()).isEqualTo(config.getFeature());
         assertThat(parsedConfig.getPeerAddress()).isEqualTo(config.getPeerAddress());
         assertThat(parsedConfig.getRangingInterval()).isEqualTo(config.getRangingInterval());

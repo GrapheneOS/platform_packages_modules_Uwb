@@ -78,8 +78,9 @@ import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.oob.packets.WifiBandwidth;
 import com.android.server.ranging.oob.packets.WifiNanRttCapabilities;
 import com.android.server.ranging.oob.packets.WifiNanRttConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdAuthenticatedConfiguration;
 import com.android.server.ranging.oob.packets.WifiPdCapabilities;
-import com.android.server.ranging.oob.packets.WifiPdConfiguration;
+import com.android.server.ranging.oob.packets.WifiPdUnauthenticatedConfiguration;
 import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.session.ConfigurationManager.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
@@ -290,7 +291,22 @@ public class OobResponderProtocol {
                                 .build(),
                         new SessionConfig.Builder().build(),
                         handle.getRangingDevice()));
-                case WifiPdConfiguration wifiPd -> configsBuilder.add(
+                case WifiPdUnauthenticatedConfiguration wifiPd -> configsBuilder.add(
+                        new WifiPdConfig(
+                                RangingPreference.DEVICE_ROLE_RESPONDER,
+                                new WifiPdRangingParams.Builder(
+                                        MacAddress.fromBytes(wifiPd.getPeerAddress()))
+                                        .setRangingUpdateRate(WifiPdConstants.getUpdateRateFromMs(
+                                                wifiPd.getRangingInterval()))
+                                        .setPreambleType(wifiPd.getPreamble().toByte())
+                                        .setChannelWidth(wifiPd.getChannelWidth().toByte())
+                                        .setDiscoveryChannelFrequencyMhz(
+                                                WifiPdConfigSelector.convertChannelToFrequency(
+                                                        wifiPd.getChannel()))
+                                        .build(),
+                                new SessionConfig.Builder().build(),
+                                handle.getRangingDevice()));
+                case WifiPdAuthenticatedConfiguration wifiPd -> configsBuilder.add(
                         new WifiPdConfig(
                                 RangingPreference.DEVICE_ROLE_RESPONDER,
                                 new WifiPdRangingParams.Builder(
