@@ -18,6 +18,8 @@ package android.ranging.uwb;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -143,5 +145,88 @@ public class DlTdoaRangingParamsTest {
                 .isEqualTo(UwbAddress.fromBytes(new byte[] {0x11, 0x22}));
         assertThat(params.getRangingRoundIndexes())
                 .isEqualTo(new byte[] {(byte) 0x07, (byte) 0x08});
+    }
+
+    @Test
+    public void testCreateFromFiraConfigPacket_onlyUwbConfig_defaultMeasurementVersion() {
+        byte[] config = {
+            // WiFi Specific Header
+            (byte) 0xDD, (byte) 0x0C, (byte) 0x5A, (byte) 0x18, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x58,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+        };
+
+        DlTdoaRangingParams params = DlTdoaRangingParams.createFromFiraConfigPacket(config, null);
+
+        assertThat(params).isNotNull();
+        assertThat(params.getMeasurementVersion()).isEqualTo(
+                DlTdoaRangingParams.MEASUREMENT_VERSION_1);
+    }
+
+    @Test
+    public void testCreateFromFiraConfigPacket_onlyUwbConfig_measurementVersion1() {
+        byte[] config = {
+            // WiFi Specific Header
+            (byte) 0xDD, (byte) 0x0F, (byte) 0x5A, (byte) 0x18, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x5B,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+            // Tag-Length-Value for DL_TDOA_MEASUREMENT_NTF_V2
+            (byte) 0x4F, (byte) 0x01, (byte) 0x00,
+        };
+
+        DlTdoaRangingParams params = DlTdoaRangingParams.createFromFiraConfigPacket(config, null);
+
+        assertThat(params).isNotNull();
+        assertThat(params.getMeasurementVersion()).isEqualTo(
+                DlTdoaRangingParams.MEASUREMENT_VERSION_1);
+    }
+
+    @Test
+    public void testCreateFromFiraConfigPacket_onlyUwbConfig_measurementVersion2() {
+        byte[] config = {
+            // WiFi Specific Header
+            (byte) 0xDD, (byte) 0x0F, (byte) 0x5A, (byte) 0x18, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x5B,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+            // Tag-Length-Value for DL_TDOA_MEASUREMENT_NTF_V2
+            (byte) 0x4F, (byte) 0x01, (byte) 0x01,
+        };
+
+        DlTdoaRangingParams params = DlTdoaRangingParams.createFromFiraConfigPacket(config, null);
+
+        assertThat(params).isNotNull();
+        assertThat(params.getMeasurementVersion()).isEqualTo(
+                DlTdoaRangingParams.MEASUREMENT_VERSION_2);
+    }
+
+    @Test
+    public void testCreateFromFiraConfigPacket_onlyUwbConfig_unsupportedMeasurementVersion() {
+        byte[] config = {
+            // WiFi Specific Header
+            (byte) 0xDD, (byte) 0x0F, (byte) 0x5A, (byte) 0x18, (byte) 0xFF,
+            // FiRa Specific Sub-Element Type and Length (with Extension)
+            (byte) 0x5B,
+            // UWB Configuration Sub-Element Profile ID and UWB Config ID
+            (byte) 0x02, (byte) 0x00,
+            // Tag-Length-Value for SESSION_ID
+            (byte) 0x9F, (byte) 0x04, (byte) 0x67, (byte) 0x45, (byte) 0x23, (byte) 0x01,
+            // Tag-Length-Value for DL_TDOA_MEASUREMENT_NTF_V2
+            (byte) 0x4F, (byte) 0x01, (byte) 0x02,
+        };
+
+        assertThrows(IllegalArgumentException.class,
+                () -> DlTdoaRangingParams.createFromFiraConfigPacket(config, null));
     }
 }
