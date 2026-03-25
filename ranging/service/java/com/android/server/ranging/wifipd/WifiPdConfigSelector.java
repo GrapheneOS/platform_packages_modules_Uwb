@@ -318,6 +318,7 @@ public class WifiPdConfigSelector extends ConfigSelector {
                         .setChannel(
                                 (byte) convertFrequencyToChannel(
                                         mSelectedParams.getDiscoveryChannelFrequencyMhz()))
+                        .setEmpty(new byte[0])
                         .build();
             }
         }

@@ -94,6 +94,7 @@ public final class DlTdoaRangingParams implements Parcelable {
     private static final int TAG_SLOTS_PER_RR = 0x1B;
     private static final int TAG_VENDOR_ID = 0x27;
     private static final int TAG_STATIC_STS_IV = 0x28;
+    private static final int TAG_DL_TDOA_MEASUREMENT_NTF_V2 = 0x4F;
     private static final int TAG_SESSION_ID = 0x9F;
 
     // As per FiRa/UCI, Slot Duration is typically in RSTU (Ranging Slot Time Units),
@@ -210,6 +211,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         byte[] vendorId = null;
         byte[] staticStsIv = null;
         Set<Byte> extractedRangingRoundIndexes = new LinkedHashSet<>();
+        Integer measurementVersion = null;
 
         int subElementOffset = subElementHeaderOffset;
         while (subElementOffset < totalLength) {
@@ -327,6 +329,19 @@ public final class DlTdoaRangingParams implements Parcelable {
                             staticStsIv = new byte[tagLength];
                             buffer.get(staticStsIv);
                         }
+                        case TAG_DL_TDOA_MEASUREMENT_NTF_V2 -> {
+                            if (tagLength != 1) {
+                                throw new IllegalArgumentException(
+                                        "Invalid length for DL_TDOA_MEASUREMENT_NTF_V2.");
+                            }
+                            int version = buffer.get() & 0xFF;
+                            measurementVersion = switch (version) {
+                                case 0x00 -> MEASUREMENT_VERSION_1;
+                                case 0x01 -> MEASUREMENT_VERSION_2;
+                                default -> throw new IllegalArgumentException(
+                                        "Invalid measurement version.");
+                            };
+                        }
                         case TAG_SESSION_ID -> {
                             if (tagLength != 4) {
                                 throw new IllegalArgumentException(
@@ -435,6 +450,10 @@ public final class DlTdoaRangingParams implements Parcelable {
 
         if (finalRangingRoundIndexes != null) {
             builder.setRangingRoundIndexes(finalRangingRoundIndexes);
+        }
+
+        if (measurementVersion != null) {
+            builder.setMeasurementVersion(measurementVersion);
         }
 
         return builder.build();

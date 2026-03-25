@@ -67,6 +67,7 @@ import android.net.MacAddress;
 import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.rtt.WifiRttManager;
+import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.ranging.DataNotificationConfig;
@@ -109,6 +110,7 @@ import android.uwb.UwbManager;
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
@@ -1401,6 +1403,7 @@ public class RangingManagerTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     @CddTest(requirements = {" 7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testWifiPdInitiatorSession() throws InterruptedException {
@@ -1409,6 +1412,7 @@ public class RangingManagerTest {
 
     @Test
     @CddTest(requirements = {" 7.4.2.10/C-1-1,C-1-2,C-1-3,C-1-4"})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_26_q_2")
     public void testWifiPdResponderSession() throws InterruptedException {
         testWifiPdSessionInternal(DEVICE_ROLE_RESPONDER);

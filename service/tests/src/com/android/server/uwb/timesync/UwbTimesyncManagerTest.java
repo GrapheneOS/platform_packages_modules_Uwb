@@ -31,10 +31,13 @@ import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.hardware.bluetooth.lmp_event.IBluetoothLmpEvent;
 import android.hardware.bluetooth.lmp_event.IBluetoothLmpEventCallback;
 import android.hardware.bluetooth.lmp_event.Timestamp;
+import android.os.Build;
 import android.os.ServiceManager;
 import android.uwb.UwbManager;
 import android.uwb.timesync.ITimesyncCallbackListener;
 import android.uwb.timesync.TimesyncEvent;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.server.uwb.DeviceConfigFacade;
@@ -104,6 +107,7 @@ public class UwbTimesyncManagerTest {
         mSession.finishMocking();
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testRegisterEventCallback() throws Exception {
         String address = "00:11:22:33:44:55";
@@ -115,6 +119,7 @@ public class UwbTimesyncManagerTest {
                 any(byte[].class), any(byte[].class));
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testUnregisterEventCallback() throws Exception {
         String addressStr = "00:11:22:33:44:55";
@@ -126,6 +131,7 @@ public class UwbTimesyncManagerTest {
         verify(mHal).unregisterLmpEvents(eq((byte) 0), any(byte[].class));
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testOnEventGenerated_ComboChip() throws Exception {
         String addressStr = "00:11:22:33:44:55";
@@ -162,6 +168,7 @@ public class UwbTimesyncManagerTest {
         assertThat(event.getEventCounter()).isEqualTo(123);
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testOnEventGenerated_AndroidSpecific() throws Exception {
         String addressStr = "00:11:22:33:44:55";
@@ -213,6 +220,7 @@ public class UwbTimesyncManagerTest {
         assertThat(event.getUwbTimestampUs()).isEqualTo(8);
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testOnEventGenerated_Default() throws Exception {
         String addressStr = "00:11:22:33:44:55";
@@ -261,6 +269,7 @@ public class UwbTimesyncManagerTest {
         assertThat(event.getUwbTimestampUs()).isEqualTo(1500);
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
     public void testOnRegistered() throws Exception {
         String addressStr = "00:11:22:33:44:55";
