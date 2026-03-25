@@ -474,21 +474,16 @@ fn parse_rf_test_config_tlv_vec(
     no_of_params: i32,
     mut byte_array: &[u8],
 ) -> Result<Vec<RfTestConfigTlv>> {
-    let mut parsed_tlvs_len = 0;
-    let received_tlvs_len = byte_array.len();
     let mut tlvs = Vec::<RfTestConfigTlv>::new();
     for _ in 0..no_of_params {
-        // The tlv consists of the type of payload in 1 byte, the length of payload as u8
-        // in 1 byte, and the payload.
-        const TLV_HEADER_SIZE: usize = 2;
-        let tlv = RfTestConfigTlv::decode_full(byte_array).map_err(|_| Error::BadParameters)?;
-        byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
-        parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
+        let (tlv, remainder) =
+            RfTestConfigTlv::decode(byte_array).map_err(|_| Error::BadParameters)?;
+        byte_array = remainder;
         tlvs.push(tlv);
     }
-    if parsed_tlvs_len != received_tlvs_len {
+    if !byte_array.is_empty() {
         return Err(Error::BadParameters);
-    };
+    }
     Ok(tlvs)
 }
 
@@ -2038,6 +2033,7 @@ mod tests {
     use super::*;
 
     use tokio::runtime::Builder;
+    use uwb_core::params::RfTestConfigTlvType;
     use uwb_core::uci::mock_uci_manager::MockUciManager;
     use uwb_core::uci::uci_manager_sync::{
         NotificationManager, NotificationManagerBuilder, UciManagerSync,
@@ -2202,5 +2198,19 @@ mod tests {
         let phase_list =
             parse_hybrid_controlee_config_phase_list(1, &raw_controlee_config_phase_list).unwrap();
         assert_eq!(vec![ControleePhaseList { session_token: 1 }], phase_list);
+    }
+
+    #[test]
+    fn test_parse_rf_test_config_tlv_vec() {
+        let rf_test_config_tlv_vec: Vec<u8> = vec![
+            0x00, 0x01, 0x0a, // NUM_PACKETS (0x00), length 1, value 10
+            0x01, 0x01, 0x05, // T_GAP (0x01), length 1, value 5
+        ];
+        let tlvs = parse_rf_test_config_tlv_vec(2, &rf_test_config_tlv_vec).unwrap();
+        assert_eq!(tlvs.len(), 2);
+        assert_eq!(tlvs[0].cfg_id, RfTestConfigTlvType::NumPackets);
+        assert_eq!(tlvs[0].v, vec![0x0a]);
+        assert_eq!(tlvs[1].cfg_id, RfTestConfigTlvType::TGap);
+        assert_eq!(tlvs[1].v, vec![0x05]);
     }
 }
