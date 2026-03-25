@@ -1,4 +1,5 @@
-// Signature format: 2.0
+// Signature format: 6.0
+// - style=java
 package android.uwb {
 
   public final class AngleMeasurement implements android.os.Parcelable {
@@ -75,7 +76,7 @@ package android.uwb {
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionParams> CREATOR;
   }
 
-  public static final class LogicalLinkConnectionParams.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkConnectionParams.Builder {
     ctor public LogicalLinkConnectionParams.Builder(int, int);
     method @NonNull public android.uwb.LogicalLinkConnectionParams build();
     method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setDestinationPort(int);
@@ -101,7 +102,7 @@ package android.uwb {
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionRequest> CREATOR;
   }
 
-  public static final class LogicalLinkConnectionRequest.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkConnectionRequest.Builder {
     ctor public LogicalLinkConnectionRequest.Builder(int, int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @NonNull public android.uwb.LogicalLinkConnectionRequest.Builder setMaxSduSizeLength(@IntRange(from=0) int);
@@ -148,7 +149,7 @@ package android.uwb {
     field @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") public static final int SDU_SIZE_8192_BYTES = 11; // 0xb
   }
 
-  public static final class LogicalLinkCreationParams.Builder {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final class LogicalLinkCreationParams.Builder {
     ctor public LogicalLinkCreationParams.Builder(int, @NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.LogicalLinkCreationParams build();
     method @NonNull public android.uwb.LogicalLinkCreationParams.Builder setLogicalLinkClassLength(int);
@@ -219,7 +220,7 @@ package android.uwb {
     method @NonNull public android.uwb.RangingReport build();
   }
 
-  public final class RangingSession implements java.lang.AutoCloseable {
+  public final class RangingSession implements AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void closeLogicalLink(int);
@@ -356,7 +357,7 @@ package android.uwb {
     method public void provisionProfileAdfByScript(@NonNull android.os.PersistableBundle, @NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.AdfProvisionStateCallback);
     method @FlaggedApi("com.android.uwb.flags.query_timestamp_micros") @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public long queryUwbsTimestampMicros();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerAdapterStateCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.AdapterStateCallback);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerChannelUsageCallback(@NonNull java.util.concurrent.Executor, @NonNull java.util.function.Consumer<java.util.Set<java.lang.Integer>>);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerChannelUsageCallback(@NonNull java.util.concurrent.Executor, @NonNull java.util.function.Consumer<java.util.Set<Integer>>);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerTimesyncCallback(@NonNull java.util.concurrent.Executor, @NonNull String, int, @NonNull android.uwb.UwbManager.TimesyncCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbOemExtensionCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbVendorUciCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbVendorUciCallback);
@@ -367,7 +368,7 @@ package android.uwb {
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int sendVendorUciMessage(int, @IntRange(from=0, to=15) int, int, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setUwbEnabled(boolean);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterAdapterStateCallback(@NonNull android.uwb.UwbManager.AdapterStateCallback);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterChannelUsageCallback(@NonNull java.util.function.Consumer<java.util.Set<java.lang.Integer>>);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterChannelUsageCallback(@NonNull java.util.function.Consumer<java.util.Set<Integer>>);
     method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_26_q_2") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterTimesyncCallback(@NonNull android.uwb.UwbManager.TimesyncCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterUwbOemExtensionCallback(@NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method public void unregisterUwbVendorUciCallback(@NonNull android.uwb.UwbManager.UwbVendorUciCallback);
