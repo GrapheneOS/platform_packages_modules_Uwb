@@ -399,6 +399,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingData#getRssi',
     'android.ranging.RangingData#hasRssi',
     'android.ranging.RangingData#getTimestampMillis',
+    'android.ranging.RangingData#getRangingDataExtras',
+    'android.ranging.RangingDataExtras#getUwbSpecificData',
+    'android.ranging.uwb.UwbSpecificData#getNonLineOfSight',
     'android.ranging.RangingMeasurement#getMeasurement',
     'android.ranging.RangingMeasurement#getConfidence',
     'android.ranging.RangingSession.Callback#onOpened()',
@@ -943,6 +946,16 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   @ApiTest(apis=[
           'android.net.wifi.rtt.WifiRttManager#cancelRanging(android.os.WorkSource)',
+          'android.ranging.RangingData#getDistanceStandardDeviationMeters',
+          'android.ranging.RangingData#hasDistanceStandardDeviation',
+          'android.ranging.RangingData#getRangingDataExtras',
+          'android.ranging.RangingDataExtras#getWifiRttSpecificData',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getDistanceStandardDeviationMeters',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getLci',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getMeasurementBandwidth',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getMeasurementChannelFrequencyMHz',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getNumAttemptedMeasurements',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getNumSuccessfulMeasurements',
   ])
   @CddTest(requirements = ['7.3.13/C-1-1,C-1-2'])
   def test_one_to_one_wifi_rtt_ranging(self):
@@ -1173,6 +1186,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   @ApiTest(apis=[
       'android.bluetooth.le.DistanceMeasurementSession#stopSession',
       'android.bluetooth.le.DistanceMeasurementParams#getMaxDurationSeconds',
+      'android.ranging.RangingDataExtras#getBleSpecificData',
+      'android.ranging.BleSpecificData#getDelaySpreadMeters',
+      'android.ranging.BleSpecificData#getRemoteTxPowerDbm',
   ])
   @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
   def test_one_to_one_ble_cs_ranging(self):

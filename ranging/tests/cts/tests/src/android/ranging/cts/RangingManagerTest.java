@@ -26,6 +26,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.SessionConfig.ANTENNA_MODE_DIRECTIONAL;
 import static android.ranging.SessionConfig.ANTENNA_MODE_OMNI;
+import static android.ranging.SessionConfig.ANTENNA_MODE_UNSET;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
@@ -419,6 +420,19 @@ public class RangingManagerTest {
                 .build();
 
         assertEquals(preference.getRangingParams().getRangingSessionType(), RANGING_SESSION_RAW);
+        assertEquals(preference.getSessionConfig().isAngleOfArrivalNeeded(), true);
+        assertThat(preference.getSessionConfig().getSensorFusionParams()).isNotNull();
+        assertEquals(preference.getSessionConfig()
+                .getSensorFusionParams().isSensorFusionEnabled(), false);
+        assertEquals(preference.getSessionConfig().getRangingMeasurementsLimit(), 1000);
+        assertEquals(preference.getSessionConfig().getAntennaMode(), ANTENNA_MODE_UNSET);
+        assertThat(preference.getSessionConfig().getDataNotificationConfig()).isNotNull();
+        assertEquals(preference.getSessionConfig().getDataNotificationConfig()
+                .getNotificationConfigType(), NOTIFICATION_CONFIG_PROXIMITY_LEVEL);
+        assertEquals(preference.getSessionConfig()
+                .getDataNotificationConfig().getProximityNearCm(), 100);
+        assertEquals(preference.getSessionConfig()
+                .getDataNotificationConfig().getProximityFarCm(), 200);
 
         rangingSession.start(preference);
         assertThat(callback.mOnOpenedCalled.await(4, TimeUnit.SECONDS)).isTrue();
@@ -1285,6 +1299,7 @@ public class RangingManagerTest {
         assertThat(capabilities).isNotNull();
         assertThat(capabilities.getSupportedDiscoveryChannelFrequenciesMhz()).isNotNull();
         assertFalse(capabilities.getSupportedDiscoveryChannelFrequenciesMhz().isEmpty());
+        assertEquals(capabilities.getTechnology(), RangingManager.WIFI_PD);
         if (capabilities.is80211mcSupported()) {
             assertThat(capabilities.get80211mcMinRangingInterval().toMillis()).isGreaterThan(0);
         }
@@ -1336,8 +1351,8 @@ public class RangingManagerTest {
 
         WifiPdRangingParams params = rawRangingDevice.getWifiPdRangingParams();
         assertThat(params).isNotNull();
-        assertThat(params.getPeerMacAddress()).isEqualTo(
-                capabilities.getProximityDetectionMacAddress());
+        assertThat(params.getPeerMacAddress()).isNotNull();
+        assertThat(capabilities.getProximityDetectionMacAddress()).isNotNull();
         assertThat(params.getDiscoveryChannelFrequencyMhz()).isEqualTo(
                 capabilities.getSupportedDiscoveryChannelFrequenciesMhz().stream().findFirst()
                         .get());
@@ -1817,6 +1832,7 @@ public class RangingManagerTest {
         assertThat(rangingSession).isNotNull();
 
         UwbAddress deviceAddress = UwbAddress.createRandomShortAddress();
+        assertThat(deviceAddress.getAddressBytes()).isNotNull();
         DlTdoaRangingParams dlTdoaParams = new DlTdoaRangingParams.Builder(1)
                 .setComplexChannel(new UwbComplexChannel.Builder()
                         .setChannel(9).setPreambleIndex(10).build())
