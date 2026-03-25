@@ -335,7 +335,7 @@ def log_ble_rssi_precision_within_tolerance(
 
   return {
       "reference_device": reference_device_name,
-      "rssi_range95_percentile": spread_95th,
+      "rssi_range_95_percentile": spread_95th,
   }
 
 
