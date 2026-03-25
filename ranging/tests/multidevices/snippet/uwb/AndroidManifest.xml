@@ -17,7 +17,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.google.snippet.ranging">
 
-    <application>
+    <application  android:label="CtsRangingSnippetApp">
         <!-- Add any classes that implement the Snippet interface as meta-data, whose
              value is a comma-separated string, each section being the package path
              of a snippet class -->
