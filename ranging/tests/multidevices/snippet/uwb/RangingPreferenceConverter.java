@@ -17,6 +17,8 @@
 package com.google.snippet.ranging;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.RangingPreference.DEVICE_ROLE_DT_TAG;
 import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
 import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
 
@@ -33,9 +35,11 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.raw.RawDtTagRangingConfig;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
+import android.ranging.uwb.DlTdoaRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
@@ -92,18 +96,20 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     private RangingConfig getRangingParams(
             JSONObject j, @RangingPreference.DeviceRole int role
     ) throws JSONException {
-        RangingConfig params;
+        RangingConfig params = null;
 
         if (j.getInt("session_type") == RangingConfig.RANGING_SESSION_RAW) {
             if (role == DEVICE_ROLE_INITIATOR) {
                 params = getRawInitiatorRangingConfig(j);
-            } else {
+            } else if (role == DEVICE_ROLE_RESPONDER) {
                 params = getRawResponderRangingConfig(j);
+            } else if (role == DEVICE_ROLE_DT_TAG) {
+                params = getRawDtTagRangingConfig(j);
             }
         } else {
             if (role == DEVICE_ROLE_INITIATOR) {
                 params = getOobInitiatorRangingConfig(j);
-            } else {
+            } else if (role == DEVICE_ROLE_RESPONDER) {
                 params = getOobResponderRangingConfig(j);
             }
         }
@@ -201,6 +207,12 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
                 .build();
     }
 
+    private RawDtTagRangingConfig getRawDtTagRangingConfig(JSONObject j) throws JSONException {
+        return new RawDtTagRangingConfig.Builder(
+                    getRawRangingDevice(j.getJSONObject("peer_params")))
+                .build();
+    }
+
     private RawRangingDevice getRawRangingDevice(JSONObject j) throws JSONException {
         RawRangingDevice.Builder builder = new RawRangingDevice.Builder();
         builder.setRangingDevice(
@@ -223,6 +235,9 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         }
         if (!j.isNull("wifi_pd_params")) {
             builder.setWifiPdRangingParams(getWifiPdParams(j.getJSONObject("wifi_pd_params")));
+        }
+        if (!j.isNull("dltdoa_params")) {
+            builder.setDlTdoaRangingParams(getDlTdoaParams(j.getJSONObject("dltdoa_params")));
         }
         return builder.build();
     }
@@ -286,6 +301,23 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         return new BleCsRangingParams.Builder(j.getString("peer_address"))
                 .setRangingUpdateRate(j.getInt("ranging_update_rate"))
                 .setSecurityLevel(j.getInt("security_level"))
+                .build();
+    }
+
+    private DlTdoaRangingParams getDlTdoaParams(JSONObject j) throws JSONException {
+        return new DlTdoaRangingParams.Builder(j.getInt("session_id"))
+                .setDeviceAddress(UwbAddress.fromBytes(toBytes(j.getJSONArray("device_address"))))
+                .setSessionKeyInfo(toBytes(j.getJSONArray("session_key_info")))
+                .setComplexChannel(
+                        new UwbComplexChannel.Builder()
+                                .setChannel(j.getInt("channel_number"))
+                                .setPreambleIndex(j.getInt("preamble_code_index"))
+                                .build())
+                .setRangingIntervalMillis(j.getInt("ranging_interval_ms"))
+                .setSlotDuration(j.getInt("slot_duration"))
+                .setSlotsPerRangingRound(j.getInt("slot_per_ranging_round"))
+                .setRangingRoundIndexes(toBytes(j.getJSONArray("ranging_round_indexes")))
+                .setMeasurementVersion(j.getInt("measurement_version"))
                 .build();
     }
 
