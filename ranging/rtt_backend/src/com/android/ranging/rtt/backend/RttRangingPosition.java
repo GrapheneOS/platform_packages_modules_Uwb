@@ -16,6 +16,7 @@
 
 package com.android.ranging.rtt.backend;
 
+import android.annotation.SuppressLint;
 import android.net.wifi.rtt.RangingResult;
 import android.util.Log;
 
@@ -38,10 +39,17 @@ public class RttRangingPosition {
     private int mMeasurementBandwidth;
     private int mMeasurementChannelFrequencyMHz;
     private byte[] mLci;
+    private long mNtbMinMeasurementTime;
+    private long mNtbMaxMeasurementTime;
+    private int mI2rTxLtfRepetitions;
+    private int mR2iTxLtfRepetitions;
+    private int mNumTxSpatialStreams;
+    private int mNumRxSpatialStreams;
 
     /**
      * Create Ranging Position for RTT from RangingResult
      */
+    @SuppressLint("NewApi")
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
         mDistanceMeters = rangingResult.getDistanceMm() / 1000.0;
         mDistanceStdDevMeters = rangingResult.getDistanceStdDevMm() / 1000.0;
@@ -54,6 +62,12 @@ public class RttRangingPosition {
         mMeasurementBandwidth = rangingResult.getMeasurementBandwidth();
         mMeasurementChannelFrequencyMHz = rangingResult.getMeasurementChannelFrequencyMHz();
         mLci = rangingResult.getLci();
+        mNtbMinMeasurementTime = rangingResult.getMinTimeBetweenNtbMeasurementsMicros();
+        mNtbMaxMeasurementTime = rangingResult.getMaxTimeBetweenNtbMeasurementsMicros();
+        mI2rTxLtfRepetitions = rangingResult.get80211azInitiatorTxLtfRepetitionsCount();
+        mR2iTxLtfRepetitions = rangingResult.get80211azResponderTxLtfRepetitionsCount();
+        mNumTxSpatialStreams = rangingResult.get80211azNumberOfTxSpatialStreams();
+        mNumRxSpatialStreams = rangingResult.get80211azNumberOfRxSpatialStreams();
     }
 
     /**
@@ -143,5 +157,29 @@ public class RttRangingPosition {
 
     public byte[] getLci() {
         return mLci;
+    }
+
+    public long getNtbMinMeasurementTime() {
+        return mNtbMinMeasurementTime;
+    }
+
+    public long getNtbMaxMeasurementTime() {
+        return mNtbMaxMeasurementTime;
+    }
+
+    public int getI2rTxLtfRepetitions() {
+        return mI2rTxLtfRepetitions;
+    }
+
+    public int getR2iTxLtfRepetitions() {
+        return mR2iTxLtfRepetitions;
+    }
+
+    public int getNumTxSpatialStreams() {
+        return mNumTxSpatialStreams;
+    }
+
+    public int getNumRxSpatialStreams() {
+        return mNumRxSpatialStreams;
     }
 }

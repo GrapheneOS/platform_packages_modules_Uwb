@@ -177,6 +177,7 @@ public class RangingSnippet implements Snippet {
                     + " Timestamp: " + data.getTimestampMillis()
                     + " hasRssi: " + data.hasRssi()
                     + " getRssi: " + (data.hasRssi() ? data.getRssi() : "null")
+                    + " RangingDataExtras: " + data.getRangingDataExtras()
                     + " }");
             RangingMeasurement distance = data.getDistance();
             SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());

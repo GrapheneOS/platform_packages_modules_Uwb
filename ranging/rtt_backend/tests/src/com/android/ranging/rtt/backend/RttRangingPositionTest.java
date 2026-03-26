@@ -53,6 +53,17 @@ public class RttRangingPositionTest {
         when(mMockRangingResult.getDistanceMm()).thenReturn(10000);
         when(mMockRangingResult.getRangingTimestampMillis()).thenReturn(50_000L);
         when(mMockRangingResult.getRssi()).thenReturn(50);
+        when(mMockRangingResult.getNumSuccessfulMeasurements()).thenReturn(5);
+        when(mMockRangingResult.getNumAttemptedMeasurements()).thenReturn(10);
+        when(mMockRangingResult.getMeasurementBandwidth()).thenReturn(1);
+        when(mMockRangingResult.getMeasurementChannelFrequencyMHz()).thenReturn(2412);
+        when(mMockRangingResult.getLci()).thenReturn(new byte[]{1, 2});
+        when(mMockRangingResult.getMinTimeBetweenNtbMeasurementsMicros()).thenReturn(100L);
+        when(mMockRangingResult.getMaxTimeBetweenNtbMeasurementsMicros()).thenReturn(200L);
+        when(mMockRangingResult.get80211azInitiatorTxLtfRepetitionsCount()).thenReturn(2);
+        when(mMockRangingResult.get80211azResponderTxLtfRepetitionsCount()).thenReturn(3);
+        when(mMockRangingResult.get80211azNumberOfTxSpatialStreams()).thenReturn(4);
+        when(mMockRangingResult.get80211azNumberOfRxSpatialStreams()).thenReturn(5);
 
         mRttRangingPosition = new RttRangingPosition(mMockRangingResult);
 
@@ -61,5 +72,16 @@ public class RttRangingPositionTest {
         assertEquals(mRttRangingPosition.getRangingTimestampMillis(), 50_000L);
         assertThat(mRttRangingPosition.getAzimuth()).isNull();
         assertThat(mRttRangingPosition.getElevation()).isNull();
+        assertEquals(mRttRangingPosition.getNumSuccessfulMeasurements(), 5);
+        assertEquals(mRttRangingPosition.getNumAttemptedMeasurements(), 10);
+        assertEquals(mRttRangingPosition.getMeasurementBandwidth(), 1);
+        assertEquals(mRttRangingPosition.getMeasurementChannelFrequencyMHz(), 2412);
+        assertThat(mRttRangingPosition.getLci()).isEqualTo(new byte[]{1, 2});
+        assertEquals(mRttRangingPosition.getNtbMinMeasurementTime(), 100L);
+        assertEquals(mRttRangingPosition.getNtbMaxMeasurementTime(), 200L);
+        assertEquals(mRttRangingPosition.getI2rTxLtfRepetitions(), 2);
+        assertEquals(mRttRangingPosition.getR2iTxLtfRepetitions(), 3);
+        assertEquals(mRttRangingPosition.getNumTxSpatialStreams(), 4);
+        assertEquals(mRttRangingPosition.getNumRxSpatialStreams(), 5);
     }
 }
