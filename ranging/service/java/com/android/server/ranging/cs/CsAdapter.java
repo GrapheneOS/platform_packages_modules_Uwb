@@ -36,6 +36,7 @@ import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.common.DataNotificationManager;
+import com.android.server.ranging.common.RangingUtils;
 import com.android.server.ranging.common.StateMachine;
 import com.android.server.ranging.session.ConfigurationManager;
 
@@ -56,8 +57,7 @@ public class CsAdapter implements RangingAdapter {
 
     /** Invariant: non-null while a ranging session is active */
     private final AlarmManager mAlarmManager;
-    private BluetoothDevice mPeerBluetoothDevice;
-    private String mPeerIdentityAddress;
+    private BluetoothDevice mPeerPseudoBluetoothDevice;
     private DataNotificationManager mDataNotificationManager;
     private AttributionSource mNonPrivilegedAttributionSource;
     private Callback mCallbacks;
@@ -144,18 +144,20 @@ public class CsAdapter implements RangingAdapter {
             mCallbacks.onClosed(InternalReason.UNSUPPORTED);
             return;
         }
-        if (mConfig.getPeerBluetoothDevice() != null) {
-            mPeerBluetoothDevice = mConfig.getPeerBluetoothDevice();
-            Log.v(TAG,
-                    "BluetoothDevice is provided. Using it instead of the address.");
-        } else {
-            mPeerBluetoothDevice =
-                    mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
-            Log.v(TAG, "BluetoothDevice not provided, using provided BLE address");
+
+        mPeerPseudoBluetoothDevice =
+                mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
+        if (mPeerPseudoBluetoothDevice == null) {
+            Log.e(TAG, "Failed to get peer bluetooth device");
+            mCallbacks.onClosed(InternalReason.INTERNAL_ERROR);
+            return;
         }
-        mPeerIdentityAddress = mPeerBluetoothDevice.getIdentityAddress() != null
-                ? mPeerBluetoothDevice.getIdentityAddress()
-                : mPeerBluetoothDevice.getAddress();
+        Log.v(TAG, "Peer bluetooth pseudo address: "
+                + RangingUtils.toAnonymizedMacAddress(mPeerPseudoBluetoothDevice.getAddress()));
+        Log.v(TAG, "Peer bluetooth identity address: "
+                + RangingUtils.toAnonymizedMacAddress(
+                        mPeerPseudoBluetoothDevice.getIdentityAddress()));
+
         mDataNotificationManager = new DataNotificationManager(
                 mConfig.getSessionConfig().getDataNotificationConfig(),
                 mConfig.getSessionConfig().getDataNotificationConfig());
@@ -166,7 +168,7 @@ public class CsAdapter implements RangingAdapter {
             CsSession.registerAdapter(
                     this,
                     mBluetoothAdapter,
-                    mPeerBluetoothDevice,
+                    mPeerPseudoBluetoothDevice,
                     mAlarmManager,
                     mConfig,
                     mLock);
@@ -175,7 +177,7 @@ public class CsAdapter implements RangingAdapter {
             if (mStateMachine.transition(State.STOPPED, State.STARTED)) {
                 mCallbacks.onStarted(ImmutableSet.of(mRangingDevice));
             } else {
-                CsSession.deregisterAdapter(this, mPeerIdentityAddress);
+                CsSession.deregisterAdapter(this, mPeerPseudoBluetoothDevice.getAddress());
                 closeForReason(InternalReason.INTERNAL_ERROR);
             }
         }
@@ -211,7 +213,7 @@ public class CsAdapter implements RangingAdapter {
     @Override
     public void stop() {
         Log.i(TAG, "Stop called for CsAdapter : " + mId);
-        CsSession.deregisterAdapter(this, mPeerIdentityAddress);
+        CsSession.deregisterAdapter(this, mPeerPseudoBluetoothDevice.getAddress());
         closeForReason(InternalReason.LOCAL_REQUEST);
     }
 
@@ -233,8 +235,7 @@ public class CsAdapter implements RangingAdapter {
 
     private void clear() {
         mRangingDevice = null;
-        mPeerBluetoothDevice = null;
-        mPeerIdentityAddress = null;
+        mPeerPseudoBluetoothDevice = null;
         mDataNotificationManager = null;
         mNonPrivilegedAttributionSource = null;
         mCallbacks = null;

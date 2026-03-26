@@ -20,10 +20,14 @@ import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
 
 import static com.android.server.ranging.common.RangingUtils.macAddressToString;
+import static com.android.server.ranging.common.RangingUtils.macAddressToBytes;
 import static com.android.server.ranging.oob.OobUtils.fromOobMotion;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.ranging.MotionState;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingConfig;
@@ -42,6 +46,7 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
+import com.android.server.ranging.common.RangingUtils;
 import com.android.server.ranging.common.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.engine.RangingEngine;
@@ -393,6 +398,13 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
                 capabilities.byTechnology());
         if (filteredCapabilities.containsKey(Technology.BleCs)) {
 
+            BluetoothManager bluetoothManager = (BluetoothManager) mInjector.getContext()
+                    .getSystemService(Context.BLUETOOTH_SERVICE);
+            BluetoothAdapter bluetoothAdapter = bluetoothManager != null
+                    ? bluetoothManager.getAdapter() : null;
+            ImmutableSet<BluetoothDevice> bondedDevices = bluetoothAdapter != null
+                    ? ImmutableSet.copyOf(bluetoothAdapter.getBondedDevices()) : ImmutableSet.of();
+
             BluetoothDevice peerBluetoothDevice = null;
             if (RangingInjector.isFlagEnabled("rangingStackUpdates26Q2")) {
                 peerBluetoothDevice = mConfig.getDeviceHandles().stream().filter(dh -> {
@@ -405,15 +417,56 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             BleCsCapabilities bleCsCapabilities = (BleCsCapabilities) filteredCapabilities.get(
                     Technology.BleCs);
 
-            if (!mInjector.isRemoteDeviceBluetoothBonded(
-                    macAddressToString(bleCsCapabilities.getAddress()))
-                    && !mInjector.isRemoteDeviceBluetoothBonded(peerBluetoothDevice)) {
+            boolean usingUserProvidedAddress = false;
+            String userProvidedAddress = peerBluetoothDevice != null
+                    ? peerBluetoothDevice.getAddress() : null;
+            String peripheralProvidedAddress = macAddressToString(bleCsCapabilities.getAddress());
+            BluetoothDevice matchedBluetoothDevice = null;
+            for (BluetoothDevice device : bondedDevices) {
+                String address = device.getAddress();
+                String identityAddress = device.getIdentityAddress();
+                // Prioritize using user provided address
+                if (address.equals(userProvidedAddress)
+                        || (identityAddress != null
+                                && identityAddress.equals(userProvidedAddress))) {
+                    matchedBluetoothDevice = device;
+                    break;
+                }
+                if (matchedBluetoothDevice == null) {
+                    if (address.equals(peripheralProvidedAddress)
+                            || (identityAddress != null
+                                    && identityAddress.equals(peripheralProvidedAddress))) {
+                        matchedBluetoothDevice = device;
+                    }
+                }
+            }
+
+            if (matchedBluetoothDevice == null) {
                 Log.v(TAG, "Skipping " + Technology.BleCs
                         + " because no Bluetooth bond exists with peer " + peer);
                 filteredCapabilities.remove(Technology.BleCs);
+            } else {
+                if (usingUserProvidedAddress) {
+                    Log.v(TAG, "Bonded device matched using user provided address for "
+                            + Technology.BleCs);
+                } else {
+                    Log.v(TAG, "Bonded device matched using peripheral provided address for "
+                            + Technology.BleCs);
+                }
+                Log.v(TAG, "Pseudo address: "
+                        + RangingUtils.toAnonymizedMacAddress(matchedBluetoothDevice.getAddress()));
+                Log.v(TAG, "Identity address: "
+                        + RangingUtils.toAnonymizedMacAddress(
+                                matchedBluetoothDevice.getIdentityAddress()));
+                bleCsCapabilities =
+                        new BleCsCapabilities.Builder()
+                            .setSecurityLevels(bleCsCapabilities.getSecurityLevels())
+                            .setAddress(macAddressToBytes(matchedBluetoothDevice.getAddress()))
+                            .build();
+                filteredCapabilities.put(Technology.BleCs, bleCsCapabilities);
+                // If BleCs is present, remove BleRssi
+                filteredCapabilities.remove(Technology.BleRssi);
             }
-            // If BleCs is present, remove BleRssi
-            filteredCapabilities.remove(Technology.BleRssi);
         }
         return new PeerCapabilities(capabilities.info(), filteredCapabilities);
     }

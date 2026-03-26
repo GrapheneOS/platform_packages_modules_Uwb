@@ -14,6 +14,7 @@
 import random
 import sys
 import time
+import uuid
 from lib import cs
 from lib import ranging_base_test
 from lib import rssi
@@ -45,7 +46,8 @@ _TEST_CASES = [
     "test_one_to_one_ble_rssi_ranging",
     "test_one_to_one_ble_cs_ranging",
     "test_one_to_one_uwb_ranging_with_oob",
-    "test_one_to_one_ble_cs_ranging_with_oob",
+    "test_one_to_one_ble_cs_ranging_with_oob_from_user",
+    "test_one_to_one_ble_cs_ranging_with_oob_from_peripheral",
     "test_uwb_ranging_measurement_limit",
     "test_ble_rssi_ranging_measurement_limit",
     "test_ble_cs_ranging_measurement_limit",
@@ -59,8 +61,8 @@ _TEST_CASES = [
     "test_on_motion_received",
     "test_one_to_one_wifi_pd_ranging",
     "test_one_to_one_wifi_pd_ranging_with_oob",
+    "test_dltdoa_start_stop",
 ]
-
 
 SERVICE_UUID = "0000fffb-0000-1000-8000-00805f9b34fc"
 
@@ -249,6 +251,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       check_responders: bool = True,
       initiator_notif: bool = True,
       responder_notif: bool = True,
+      bt_address_source: cs.PeerBtAddressSource = cs.PeerBtAddressSource.FROM_USER,
   ):
     """Common logic for OOB ranging tests."""
     asserts.skip_if(
@@ -274,30 +277,38 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             not self.initiator.ad.bluetooth.isRemoteDeviceBonded(),
             f"Responder is not bonded. Please bond manually.",
         )
-      initiator_bt_addr = self.initiator.bt_addr
-      responder_bt_addr = self.responder.bt_addr
+      # Defaults to use bluetooth address provided by user (DeviceHandle) for oob test
+      # Provide bt_address_source = PeerBtAddressSource.FROM_PERIPHERAL in argument for peripheral
+      if bt_address_source == cs.PeerBtAddressSource.FROM_USER:
+        initiator_bt_addr = self.initiator.bt_addr
+        responder_bt_addr = self.responder.bt_addr
     elif technology == RangingTechnology.WIFI_RTT:
       self._reset_wifi_state()
     elif technology == RangingTechnology.WIFI_PD:
       self._enable_wifi()
 
+    oob_initiator_param_args = {
+      "peer_ids": [self.responder.id],
+      "ranging_mode": ranging_mode,
+      "ranging_technology_filter": [technology],
+    }
+    oob_responder_param_args = {
+      "peer_id": self.initiator.id,
+    }
+
+    if bt_address_source == cs.PeerBtAddressSource.FROM_USER:
+      oob_initiator_param_args["peer_bluetooth_addresses"] = [responder_bt_addr]
+      oob_responder_param_args["peer_bluetooth_address"] = initiator_bt_addr
+
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
-        ranging_params=OobInitiatorRangingParams(
-            peer_ids=[self.responder.id],
-            peer_bluetooth_addresses=[responder_bt_addr],
-            ranging_mode=ranging_mode,
-            ranging_technology_filter=[technology],
-        ),
+        ranging_params=OobInitiatorRangingParams(**oob_initiator_param_args),
         enable_range_data_notifications=initiator_notif,
     )
 
     responder_preference = RangingPreference(
         device_role=DeviceRole.RESPONDER,
-        ranging_params=OobResponderRangingParams(
-            peer_id=self.initiator.id,
-            peer_bluetooth_address=initiator_bt_addr,
-        ),
+        ranging_params=OobResponderRangingParams(**oob_responder_param_args),
         enable_range_data_notifications=responder_notif,
     )
 
@@ -399,6 +410,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingData#getRssi',
     'android.ranging.RangingData#hasRssi',
     'android.ranging.RangingData#getTimestampMillis',
+    'android.ranging.RangingData#getRangingDataExtras',
+    'android.ranging.RangingDataExtras#getUwbSpecificData',
+    'android.ranging.uwb.UwbSpecificData#getNonLineOfSight',
     'android.ranging.RangingMeasurement#getMeasurement',
     'android.ranging.RangingMeasurement#getConfidence',
     'android.ranging.RangingSession.Callback#onOpened()',
@@ -943,6 +957,16 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   @ApiTest(apis=[
           'android.net.wifi.rtt.WifiRttManager#cancelRanging(android.os.WorkSource)',
+          'android.ranging.RangingData#getDistanceStandardDeviationMeters',
+          'android.ranging.RangingData#hasDistanceStandardDeviation',
+          'android.ranging.RangingData#getRangingDataExtras',
+          'android.ranging.RangingDataExtras#getWifiRttSpecificData',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getDistanceStandardDeviationMeters',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getLci',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getMeasurementBandwidth',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getMeasurementChannelFrequencyMHz',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getNumAttemptedMeasurements',
+          'android.ranging.wifi.rtt.WifiRttSpecificData#getNumSuccessfulMeasurements',
   ])
   @CddTest(requirements = ['7.3.13/C-1-1,C-1-2'])
   def test_one_to_one_wifi_rtt_ranging(self):
@@ -1173,6 +1197,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   @ApiTest(apis=[
       'android.bluetooth.le.DistanceMeasurementSession#stopSession',
       'android.bluetooth.le.DistanceMeasurementParams#getMaxDurationSeconds',
+      'android.ranging.RangingDataExtras#getBleSpecificData',
+      'android.ranging.BleSpecificData#getDelaySpreadMeters',
+      'android.ranging.BleSpecificData#getRemoteTxPowerDbm',
   ])
   @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
   def test_one_to_one_ble_cs_ranging(self):
@@ -1256,7 +1283,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     )
 
   @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
-  def test_one_to_one_ble_cs_ranging_with_oob(self):
+  def test_one_to_one_ble_cs_ranging_with_oob_from_user(self):
     """Verifies BLE CS ranging with OOB."""
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE CS test on emulator")
@@ -1267,6 +1294,23 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         technology=RangingTechnology.BLE_CS,
         ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED,
         check_responders=False,
+    )
+
+  @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
+  def test_one_to_one_ble_cs_ranging_with_oob_from_peripheral(self):
+    """Verifies BLE CS ranging with OOB."""
+    asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
+                    "Skipping OOB CS test on user build because BLE address is masked")
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE CS test on emulator")
+    asserts.skip_if(self._is_watch(self.initiator.ad, self.responder.ad),
+                          "Skipping the test on wearables")
+
+    self._test_one_to_one_ranging_with_oob(
+        technology=RangingTechnology.BLE_CS,
+        ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED,
+        check_responders=False,
+        bt_address_source=cs.PeerBtAddressSource.FROM_PERIPHERAL,
     )
 
   @CddTest(requirements = ['7.3.13/C-11-1,C-11-2'])
@@ -1527,6 +1571,75 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
+  @ApiTest(apis=[
+    'android.ranging.DlTdoaMeasurement#getMeasurementVersion',
+    'android.ranging.DlTdoaMeasurement#getMessageType',
+    'android.ranging.DlTdoaMeasurement#getMessageControl',
+    'android.ranging.DlTdoaMeasurement#isTxTimestampInCommonTimeBase',
+    'android.ranging.DlTdoaMeasurement#getBlockIndex',
+    'android.ranging.DlTdoaMeasurement#getRoundIndex',
+    'android.ranging.DlTdoaMeasurement#getNlos',
+    'android.ranging.DlTdoaMeasurement#getAoaAzimuth',
+    'android.ranging.DlTdoaMeasurement#getAoaAzimuthFom',
+    'android.ranging.DlTdoaMeasurement#getAoaElevation',
+    'android.ranging.DlTdoaMeasurement#getAoaElevationFom',
+    'android.ranging.DlTdoaMeasurement#getRssi',
+    'android.ranging.DlTdoaMeasurement#getTxTimestamp',
+    'android.ranging.DlTdoaMeasurement#getRxTimestamp',
+    'android.ranging.DlTdoaMeasurement#getAnchorCfo',
+    'android.ranging.DlTdoaMeasurement#getCfo',
+    'android.ranging.DlTdoaMeasurement#getInitiatorReplyTime',
+    'android.ranging.DlTdoaMeasurement#getResponderReplyTime',
+    'android.ranging.DlTdoaMeasurement#getInitiatorResponderTof',
+    'android.ranging.DlTdoaMeasurement#getAnchorLocation',
+    'android.ranging.DlTdoaMeasurement#getActiveRangingRoundIndexes',
+    'android.ranging.DlTdoaMeasurement#hasSuperclusterId',
+    'android.ranging.DlTdoaMeasurement#getSuperclusterId',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getLatitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getLongitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getAltitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#writeToParcel',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getX',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getY',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getZ',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorFloorNumber',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#isAnchorFloorNumberOutOfRange',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getExpectedToMove',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloor',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#isAnchorHeightAboveFloorOutOfRange',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloorUncertainty',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloorRange',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getCoordinateType',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getRawBytes',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getWgs84Location(',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getRelativeLocation',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getZElementExtension',
+  ])
+  @CddTest(requirements = ['7.3.13/C-1-1,C-1-2'])
+  def test_dltdoa_start_stop(self):
+    """Verifies UWB DL-TDoA start and stop."""
+
+    tags = [self.initiator, self.responder]
+
+    SESSION_HANDLE = str(uuid.uuid4())
+
+    tag_preference = RangingPreference(
+        device_role=DeviceRole.DT_TAG,
+        ranging_params=RawDtTagRangingParams(
+            peer_params=DeviceParams(
+                dltdoa_params=DlTdoaRangingParams(),
+            )
+        ),
+        enable_range_data_notifications=True,
+    )
+
+    for tag in tags:
+      tag.start_ranging_and_assert_opened(SESSION_HANDLE, tag_preference)
+
+    for tag in tags:
+      tag.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
 
 if __name__ == "__main__":
   if "--" in sys.argv:

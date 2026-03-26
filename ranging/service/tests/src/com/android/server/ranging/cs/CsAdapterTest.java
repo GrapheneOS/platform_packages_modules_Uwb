@@ -59,8 +59,7 @@ import org.mockito.quality.Strictness;
 @RunWith(JUnit4.class)
 @SmallTest
 public class CsAdapterTest {
-    private static final String MOCK_PEER_ADDRESS = "11:22:33:44:55:66";
-    private static final String MOCK_IDENTITY_ADDRESS = "11:22:33:44:55:66";
+    private static final String MOCK_PSEUDO_ADDRESS = "11:22:33:44:55:66";
 
     @Mock
     private Context mMockContext;
@@ -122,14 +121,13 @@ public class CsAdapterTest {
 
         when(mMockBluetoothAdapter.getState()).thenReturn(BluetoothAdapter.STATE_ON);
         when(mMockBluetoothAdapter.getRemoteDevice(anyString())).thenReturn(mMockBluetoothDevice);
-        when(mMockBluetoothDevice.getIdentityAddress()).thenReturn(MOCK_IDENTITY_ADDRESS);
 
         when(mMockCsConfig.getRangingParams()).thenReturn(mMockRangingParams);
         when(mMockCsConfig.getPeerDevices()).thenReturn(ImmutableSet.of(mMockRangingDevice));
         when(mMockCsConfig.getSessionConfig()).thenReturn(mMockSessionConfig);
         when(mMockCsConfig.getPeerBluetoothDevice()).thenReturn(mMockBluetoothDevice);
-
-        when(mMockRangingParams.getPeerBluetoothAddress()).thenReturn(MOCK_PEER_ADDRESS);
+        when(mMockBluetoothDevice.getAddress()).thenReturn(MOCK_PSEUDO_ADDRESS);
+        when(mMockRangingParams.getPeerBluetoothAddress()).thenReturn(MOCK_PSEUDO_ADDRESS);
         when(mMockSessionConfig.getDataNotificationConfig())
                 .thenReturn(mDataNotificationConfig);
 
@@ -198,7 +196,7 @@ public class CsAdapterTest {
         mCsAdapter.stop();
 
         assertThat(mCsAdapter.getStateMachineState()).isEqualTo(CsAdapter.State.STOPPED);
-        verify(() -> CsSession.deregisterAdapter(eq(mCsAdapter), eq(MOCK_IDENTITY_ADDRESS)));
+        verify(() -> CsSession.deregisterAdapter(eq(mCsAdapter), eq(MOCK_PSEUDO_ADDRESS)));
         verify(mMockCallback).onClosed(InternalReason.LOCAL_REQUEST);
     }
 

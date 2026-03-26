@@ -13,6 +13,10 @@ class SecurityLevel(IntEnum):
   LEVEL_1 = 1
   LEVEL_4 = 4
 
+class PeerBtAddressSource(IntEnum):
+  FROM_USER = 0
+  FROM_PERIPHERAL = 1
+
 @dataclasses.dataclass(kw_only=True)
 class CsRangingParams:
   """Class for CS ranging parameters."""
