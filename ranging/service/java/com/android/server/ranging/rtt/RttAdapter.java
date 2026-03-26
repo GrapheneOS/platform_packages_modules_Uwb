@@ -300,6 +300,12 @@ public class RttAdapter implements RangingAdapter {
                                     position.getMeasurementChannelFrequencyMHz())
                             .setLci(position.getLci())
                             .setDistanceStandardDeviationMeters(position.getDistanceStdDevMeters())
+                            .setNtbMinMeasurementTimeMicros(position.getNtbMinMeasurementTime())
+                            .setNtbMaxMeasurementTimeMicros(position.getNtbMaxMeasurementTime())
+                            .setI2rTxLtfRepetitions(position.getI2rTxLtfRepetitions())
+                            .setR2iTxLtfRepetitions(position.getR2iTxLtfRepetitions())
+                            .setNumTxSpatialStreams(position.getNumTxSpatialStreams())
+                            .setNumRxSpatialStreams(position.getNumRxSpatialStreams())
                             .build())
                     .build());
             synchronized (mLock) {
