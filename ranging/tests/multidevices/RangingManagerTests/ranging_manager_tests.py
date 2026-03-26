@@ -14,6 +14,7 @@
 import random
 import sys
 import time
+import uuid
 from lib import cs
 from lib import ranging_base_test
 from lib import rssi
@@ -59,6 +60,7 @@ _TEST_CASES = [
     "test_on_motion_received",
     "test_one_to_one_wifi_pd_ranging",
     "test_one_to_one_wifi_pd_ranging_with_oob",
+    "test_dltdoa_start_stop",
 ]
 
 
@@ -1527,6 +1529,75 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
+  @ApiTest(apis=[
+    'android.ranging.DlTdoaMeasurement#getMeasurementVersion',
+    'android.ranging.DlTdoaMeasurement#getMessageType',
+    'android.ranging.DlTdoaMeasurement#getMessageControl',
+    'android.ranging.DlTdoaMeasurement#isTxTimestampInCommonTimeBase',
+    'android.ranging.DlTdoaMeasurement#getBlockIndex',
+    'android.ranging.DlTdoaMeasurement#getRoundIndex',
+    'android.ranging.DlTdoaMeasurement#getNlos',
+    'android.ranging.DlTdoaMeasurement#getAoaAzimuth',
+    'android.ranging.DlTdoaMeasurement#getAoaAzimuthFom',
+    'android.ranging.DlTdoaMeasurement#getAoaElevation',
+    'android.ranging.DlTdoaMeasurement#getAoaElevationFom',
+    'android.ranging.DlTdoaMeasurement#getRssi',
+    'android.ranging.DlTdoaMeasurement#getTxTimestamp',
+    'android.ranging.DlTdoaMeasurement#getRxTimestamp',
+    'android.ranging.DlTdoaMeasurement#getAnchorCfo',
+    'android.ranging.DlTdoaMeasurement#getCfo',
+    'android.ranging.DlTdoaMeasurement#getInitiatorReplyTime',
+    'android.ranging.DlTdoaMeasurement#getResponderReplyTime',
+    'android.ranging.DlTdoaMeasurement#getInitiatorResponderTof',
+    'android.ranging.DlTdoaMeasurement#getAnchorLocation',
+    'android.ranging.DlTdoaMeasurement#getActiveRangingRoundIndexes',
+    'android.ranging.DlTdoaMeasurement#hasSuperclusterId',
+    'android.ranging.DlTdoaMeasurement#getSuperclusterId',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getLatitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getLongitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#getAltitude',
+    'android.ranging.DlTdoaMeasurement.Wgs84Location#writeToParcel',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getX',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getY',
+    'android.ranging.DlTdoaMeasurement.RelativeLocation#getZ',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorFloorNumber',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#isAnchorFloorNumberOutOfRange',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getExpectedToMove',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloor',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#isAnchorHeightAboveFloorOutOfRange',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloorUncertainty',
+    'android.ranging.DlTdoaMeasurement.ZElementExtension#getAnchorHeightAboveFloorRange',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getCoordinateType',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getRawBytes',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getWgs84Location(',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getRelativeLocation',
+    'android.ranging.DlTdoaMeasurement.AnchorLocation#getZElementExtension',
+  ])
+  @CddTest(requirements = ['7.3.13/C-1-1,C-1-2'])
+  def test_dltdoa_start_stop(self):
+    """Verifies UWB DL-TDoA start and stop."""
+
+    tags = [self.initiator, self.responder]
+
+    SESSION_HANDLE = str(uuid.uuid4())
+
+    tag_preference = RangingPreference(
+        device_role=DeviceRole.DT_TAG,
+        ranging_params=RawDtTagRangingParams(
+            peer_params=DeviceParams(
+                dltdoa_params=DlTdoaRangingParams(),
+            )
+        ),
+        enable_range_data_notifications=True,
+    )
+
+    for tag in tags:
+      tag.start_ranging_and_assert_opened(SESSION_HANDLE, tag_preference)
+
+    for tag in tags:
+      tag.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
 
 if __name__ == "__main__":
   if "--" in sys.argv:

@@ -3,8 +3,10 @@ import dataclasses
 import enum
 from types import MappingProxyType
 from typing import Tuple, List
+import uuid
 
 from lib.cs import CsRangingParams
+from lib.dltdoa import DlTdoaRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
 from lib.rssi import BleRssiRangingParams
@@ -30,6 +32,7 @@ SCAN_SETTINGS = MappingProxyType({"ScanMode": "SCAN_MODE_LOW_LATENCY", "Legacy":
 class DeviceRole(enum.IntEnum):
   RESPONDER = 0
   INITIATOR = 1
+  DT_TAG = 2
 
 @enum.unique
 class MotionState(enum.IntEnum):
@@ -70,12 +73,13 @@ class RangingMode(enum.IntEnum):
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class DeviceParams:
-  peer_id: str
+  peer_id: str = str(uuid.uuid4())
   uwb_params: UwbRangingParams | None = None
   cs_params: CsRangingParams | None = None
   rtt_params: RttRangingParams | None = None
   rssi_params: BleRssiRangingParams | None = None
   wifi_pd_params: WifiPdRangingParams | None = None
+  dltdoa_params: DlTdoaRangingParams | None = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -113,6 +117,12 @@ class RawInitiatorRangingParams(RangingParams):
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class RawResponderRangingParams(RangingParams):
+  session_type: RangingSessionType = RangingSessionType.RAW
+  peer_params: DeviceParams
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class RawDtTagRangingParams(RangingParams):
   session_type: RangingSessionType = RangingSessionType.RAW
   peer_params: DeviceParams
 

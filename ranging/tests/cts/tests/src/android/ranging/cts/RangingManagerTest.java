@@ -1834,6 +1834,7 @@ public class RangingManagerTest {
                 .setRangingDevice(rangingDevice)
                 .setDlTdoaRangingParams(dlTdoaParams)
                 .build();
+        assertThat(rawTagDevice.getDlTdoaRangingParams()).isEqualTo(dlTdoaParams);
 
         RawDtTagRangingConfig dtTagConfig = new RawDtTagRangingConfig.Builder(rawTagDevice)
                 .build();
@@ -2114,5 +2115,18 @@ public class RangingManagerTest {
         UwbRangingCapabilities uwbCapabilities = rangingCapabilities.getUwbCapabilities();
         assertThat(uwbCapabilities).isNotNull();
         assumeTrue(uwbCapabilities.isDlTdoaSupported());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
+    public void testRangingDevice_getters() throws Exception {
+        RangingDevice rangingDevice = new RangingDevice.Builder()
+                .setUuid(UUID.fromString("12345678-1234-1234-1234-123456789012"))
+                .setDlTdoaUwbAddress(UwbAddress.fromBytes(new byte[] {(byte) 0x01, (byte) 0x02}))
+                .build();
+        assertThat(rangingDevice.getUuid()).isEqualTo(
+                UUID.fromString("12345678-1234-1234-1234-123456789012"));
+        assertThat(rangingDevice.getDlTdoaUwbAddress()).isEqualTo(
+                UwbAddress.fromBytes(new byte[] {(byte) 0x01, (byte) 0x02}));
     }
 }
