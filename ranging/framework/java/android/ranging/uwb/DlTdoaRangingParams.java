@@ -27,6 +27,7 @@ import android.ranging.uwb.UwbRangingParams.SlotDuration;
 
 import com.android.ranging.flags.Flags;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
@@ -95,6 +96,7 @@ public final class DlTdoaRangingParams implements Parcelable {
     private static final int TAG_VENDOR_ID = 0x27;
     private static final int TAG_STATIC_STS_IV = 0x28;
     private static final int TAG_DL_TDOA_MEASUREMENT_NTF_V2 = 0x4F;
+    private static final int TAG_INITIATOR_DT_ANCHOR_ROUND_INDEX = 0x52;
     private static final int TAG_SESSION_ID = 0x9F;
 
     // As per FiRa/UCI, Slot Duration is typically in RSTU (Ranging Slot Time Units),
@@ -171,31 +173,72 @@ public final class DlTdoaRangingParams implements Parcelable {
             @NonNull byte[] config, @Nullable byte[] rangingRoundIndexes) {
         Objects.requireNonNull(config);
 
-        int subElementHeaderOffset = 0;
-        int totalLength = 0;
-
-        // Validate technology specific header
+        ByteArrayOutputStream payloadStream = new ByteArrayOutputStream();
+        int adOffset = 0;
+        // Determine technology based on first packet
+        boolean isBle = false;
+        boolean isWifi = false;
         if (config.length >= FIRA_OOB_BLE_VSE_MINIMUM_TOTAL_LENGTH
-                && config.length >= (config[0] & 0xFF) + 1
-                && (config[1] & 0xFF) == FIRA_OOB_BLE_DATA_TYPE_UUID_16BITS
-                && (((config[2] & 0xFF) == FIRA_OOB_BLE_CP_UUID_0
-                        && (config[3] & 0xFF) == FIRA_OOB_BLE_CP_UUID_1)
-                                || ((config[2] & 0xFF) == FIRA_OOB_BLE_CS_UUID_0
-                                        && (config[3] & 0xFF) == FIRA_OOB_BLE_CS_UUID_1))) {
-            // BLE technology specific header
-            subElementHeaderOffset = 4;
-            totalLength = (config[0] & 0xFF) + 1;
-        } else if (config.length >= FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH
+                && (config[1] & 0xFF) == FIRA_OOB_BLE_DATA_TYPE_UUID_16BITS) {
+            int u0 = config[2] & 0xFF;
+            int u1 = config[3] & 0xFF;
+            if ((u0 == FIRA_OOB_BLE_CP_UUID_0 && u1 == FIRA_OOB_BLE_CP_UUID_1)
+                    || (u0 == FIRA_OOB_BLE_CS_UUID_0 && u1 == FIRA_OOB_BLE_CS_UUID_1)) {
+                isBle = true;
+            }
+        }
+
+        if (!isBle && config.length >= FIRA_OOB_WIFI_VSE_MINIMUM_TOTAL_LENGTH
                 && (config[0] & 0xFF) == FIRA_OOB_WIFI_VSE_ID
-                && config.length >= (config[1] & 0xFF) + 2
                 && (config[2] & 0xFF) == FIRA_OOB_WIFI_OUI_0
                 && (config[3] & 0xFF) == FIRA_OOB_WIFI_OUI_1
                 && (config[4] & 0xFF) == FIRA_OOB_WIFI_OUI_2) {
-            // WiFi technology specific header
-            subElementHeaderOffset = 5;
-            totalLength = (config[1] & 0xFF) + 2;
+            isWifi = true;
+        }
+
+        if (isBle) {
+            while (adOffset + 3 < config.length) {
+                int adLength = config[adOffset] & 0xFF;
+                if (adLength < 3 || adOffset + 1 + adLength > config.length) break;
+                int adType = config[adOffset + 1] & 0xFF;
+                if (adType == FIRA_OOB_BLE_DATA_TYPE_UUID_16BITS) {
+                    int u0 = config[adOffset + 2] & 0xFF;
+                    int u1 = config[adOffset + 3] & 0xFF;
+                    if ((u0 == FIRA_OOB_BLE_CP_UUID_0 && u1 == FIRA_OOB_BLE_CP_UUID_1)
+                            || (u0 == FIRA_OOB_BLE_CS_UUID_0 && u1 == FIRA_OOB_BLE_CS_UUID_1)) {
+                        int payloadStart = adOffset + 4;
+                        int payloadLen = adLength - 3;
+                        if (payloadLen > 0 && (config[payloadStart] & 0xF0) == 0xF0) {
+                            // Skip fragmentation indication
+                            payloadStart++;
+                            payloadLen--;
+                        }
+                        payloadStream.write(config, payloadStart, payloadLen);
+                    }
+                }
+                adOffset += 1 + adLength;
+            }
+        } else if (isWifi) {
+            while (adOffset + 4 < config.length) {
+                if ((config[adOffset] & 0xFF) != FIRA_OOB_WIFI_VSE_ID) break;
+                int adLength = config[adOffset + 1] & 0xFF;
+                if (adLength < 3 || adOffset + 2 + adLength > config.length) break;
+                int o0 = config[adOffset + 2] & 0xFF;
+                int o1 = config[adOffset + 3] & 0xFF;
+                int o2 = config[adOffset + 4] & 0xFF;
+                if (o0 == FIRA_OOB_WIFI_OUI_0 && o1 == FIRA_OOB_WIFI_OUI_1
+                        && o2 == FIRA_OOB_WIFI_OUI_2) {
+                    payloadStream.write(config, adOffset + 5, adLength - 3);
+                }
+                adOffset += 2 + adLength;
+            }
         } else {
             throw new IllegalArgumentException("Unsupported or malformed OOB VSE.");
+        }
+
+        byte[] payload = payloadStream.toByteArray();
+        if (payload.length == 0) {
+            throw new IllegalArgumentException("No FiRa payload found.");
         }
 
         // mandatory fields
@@ -213,30 +256,33 @@ public final class DlTdoaRangingParams implements Parcelable {
         Set<Byte> extractedRangingRoundIndexes = new LinkedHashSet<>();
         Integer measurementVersion = null;
 
-        int subElementOffset = subElementHeaderOffset;
-        while (subElementOffset < totalLength) {
-            int header = config[subElementOffset] & 0xFF;
+        // Now parse sub-elements from collected payload
+        int offset = 0;
+        while (offset < payload.length) {
+            int header = payload[offset] & 0xFF;
             int type = (header & 0xF0) >> 4;
             int length = header & 0x0F;
-            int subElementDataOffset = subElementOffset + 1;
+            int subElementDataOffset = offset + 1;
 
             if (length == 0x0F) {
                 // parse extra bytes for length extension
                 int lengthExtensionOffset = subElementDataOffset;
-                if (lengthExtensionOffset >= totalLength) {
+                if (lengthExtensionOffset >= payload.length) {
                     throw new IllegalArgumentException("Invalid sub-element length extension.");
                 }
-                int lengthExtension = config[lengthExtensionOffset++] & 0xFF;
-                while (lengthExtension == 0xFF && lengthExtensionOffset < totalLength) {
-                    length += lengthExtension;
-                    lengthExtension = config[lengthExtensionOffset++] & 0xFF;
+                int extendedLength = 0x0F;
+                int lengthExtension = payload[lengthExtensionOffset++] & 0xFF;
+                while (lengthExtension == 0xFF && lengthExtensionOffset < payload.length) {
+                    extendedLength += lengthExtension;
+                    lengthExtension = payload[lengthExtensionOffset++] & 0xFF;
                 }
-                length += lengthExtension;
+                extendedLength += lengthExtension;
+                length = extendedLength;
                 // update offset for sub-element data
                 subElementDataOffset = lengthExtensionOffset;
             }
 
-            if ((subElementDataOffset + length) > totalLength) {
+            if ((subElementDataOffset + length) > payload.length) {
                 throw new IllegalArgumentException(
                         "Not enough bytes for Sub-Element content.");
             }
@@ -248,25 +294,25 @@ public final class DlTdoaRangingParams implements Parcelable {
                 }
 
                 // Validate UWB configuration data header
-                if ((config[subElementDataOffset] & 0xFF)
+                if ((payload[subElementDataOffset] & 0xFF)
                         != FIRA_UWB_UNTRACKED_NAVIGATION_PROFILE_ID) {
                     throw new IllegalArgumentException(
                             "Invalid UWB Configuration Sub-Element header.");
                 }
 
-                int offset = subElementDataOffset + FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH;
+                int tagOffset = subElementDataOffset + FIRA_OOB_UWB_CONFIGURATION_HEADER_LENGTH;
                 int subElementEnd = subElementDataOffset + length;
-                while (offset + 1 < subElementEnd) {
-                    int tag = config[offset++] & 0xFF;
-                    int tagLength = config[offset++] & 0xFF;
+                while (tagOffset + 1 < subElementEnd) {
+                    int tag = payload[tagOffset++] & 0xFF;
+                    int tagLength = payload[tagOffset++] & 0xFF;
 
-                    if (offset + tagLength > subElementEnd) {
+                    if (tagOffset + tagLength > subElementEnd) {
                         throw new IllegalArgumentException(
                                 "Not enough bytes for UWB Configuration Parameter List content.");
                     }
 
                     // Helper to read Little Endian values
-                    ByteBuffer buffer = ByteBuffer.wrap(config, offset, tagLength).order(
+                    ByteBuffer buffer = ByteBuffer.wrap(payload, tagOffset, tagLength).order(
                             ByteOrder.LITTLE_ENDIAN);
 
                     switch (tag) {
@@ -342,6 +388,11 @@ public final class DlTdoaRangingParams implements Parcelable {
                                         "Invalid measurement version.");
                             };
                         }
+                        case TAG_INITIATOR_DT_ANCHOR_ROUND_INDEX -> {
+                            for (int i = 0; i < tagLength; i++) {
+                                extractedRangingRoundIndexes.add(buffer.get());
+                            }
+                        }
                         case TAG_SESSION_ID -> {
                             if (tagLength != 4) {
                                 throw new IllegalArgumentException(
@@ -353,14 +404,14 @@ public final class DlTdoaRangingParams implements Parcelable {
                             // Skip unknown tags
                         }
                     }
-                    // Move offset past the value
-                    offset += tagLength;
+                    // Move tagOffset past the value
+                    tagOffset += tagLength;
                 }
             } else if (type == FIRA_SUB_ELEMENT_TYPE_WIFI_TIME_SYNC) {
                 if (length >= 2) {
                     int pos = subElementDataOffset;
                     pos++; // Skip Profile ID
-                    int modeAndControl = config[pos++] & 0xFF;
+                    int modeAndControl = payload[pos++] & 0xFF;
                     int addressMode = (modeAndControl & 0xF0) >> 4;
                     int infoControl = modeAndControl & 0x0F;
 
@@ -369,20 +420,20 @@ public final class DlTdoaRangingParams implements Parcelable {
                         pos += addrLen; // Skip DT-Anchor Address
 
                         if ((infoControl & 0x01) != 0) { // b0 = 1
-                            if (pos + 4 + 2 + 1 <= subElementDataOffset + length) {
-                                pos += 4; // Skip Time Offset
-                                pos += 2; // Skip Time Offset Uncertainty
-                                extractedRangingRoundIndexes.add(config[pos++]);
-                            }
+                            pos += 6; // Skip Time Offset (4) and Uncertainty (2)
+                        }
+
+                        if (pos + 1 <= subElementDataOffset + length) {
+                            extractedRangingRoundIndexes.add(payload[pos++]);
                         }
 
                         if ((infoControl & 0x02) != 0) { // b1 = 1
                             if (pos + 1 <= subElementDataOffset + length) {
-                                int count = config[pos++] & 0xFF;
+                                int count = payload[pos++] & 0xFF;
                                 for (int i = 0; i < count; i++) {
                                     if (pos + addrLen + 1 <= subElementDataOffset + length) {
                                         pos += addrLen; // Skip Address
-                                        extractedRangingRoundIndexes.add(config[pos++]);
+                                        extractedRangingRoundIndexes.add(payload[pos++]);
                                     } else {
                                         break;
                                     }
@@ -393,7 +444,7 @@ public final class DlTdoaRangingParams implements Parcelable {
                 }
             }
 
-            subElementOffset = subElementDataOffset + length;
+            offset = subElementDataOffset + length;
         }
 
         if (sessionId == null) {

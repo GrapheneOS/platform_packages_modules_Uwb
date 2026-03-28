@@ -299,6 +299,18 @@ public class WifiPdAdapter implements RangingAdapter {
                                     .setLci(result.getLci())
                                     .setDistanceStandardDeviationMeters(
                                             result.getDistanceStdDevMm() / 1000.0)
+                                    .setNtbMinMeasurementTimeMicros(
+                                            result.getMinTimeBetweenNtbMeasurementsMicros())
+                                    .setNtbMaxMeasurementTimeMicros(
+                                            result.getMaxTimeBetweenNtbMeasurementsMicros())
+                                    .setI2rTxLtfRepetitions(
+                                            result.get80211azInitiatorTxLtfRepetitionsCount())
+                                    .setR2iTxLtfRepetitions(
+                                            result.get80211azResponderTxLtfRepetitionsCount())
+                                    .setNumTxSpatialStreams(
+                                            result.get80211azNumberOfTxSpatialStreams())
+                                    .setNumRxSpatialStreams(
+                                            result.get80211azNumberOfRxSpatialStreams())
                                     .build())
                             .build());
                     synchronized (mLock) {

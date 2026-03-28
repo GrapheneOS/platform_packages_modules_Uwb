@@ -41,6 +41,12 @@ public final class WifiRttSpecificData implements Parcelable {
     private final int mMeasurementChannelFrequencyMHz;
     private final byte[] mLci;
     private final double mDistanceStdDevMeters;
+    private final long mNtbMinMeasurementTime;
+    private final long mNtbMaxMeasurementTime;
+    private final int mI2rTxLtfRepetitions;
+    private final int mR2iTxLtfRepetitions;
+    private final int mNumTxSpatialStreams;
+    private final int mNumRxSpatialStreams;
 
     private WifiRttSpecificData(Builder builder) {
         mNumAttemptedMeasurements = builder.mNumAttemptedMeasurements;
@@ -49,6 +55,12 @@ public final class WifiRttSpecificData implements Parcelable {
         mMeasurementChannelFrequencyMHz = builder.mMeasurementChannelFrequencyMHz;
         mLci = builder.mLci;
         mDistanceStdDevMeters = builder.mDistanceStdDevMeters;
+        mNtbMinMeasurementTime = builder.mNtbMinMeasurementTime;
+        mNtbMaxMeasurementTime = builder.mNtbMaxMeasurementTime;
+        mI2rTxLtfRepetitions = builder.mI2rTxLtfRepetitions;
+        mR2iTxLtfRepetitions = builder.mR2iTxLtfRepetitions;
+        mNumTxSpatialStreams = builder.mNumTxSpatialStreams;
+        mNumRxSpatialStreams = builder.mNumRxSpatialStreams;
     }
 
     private WifiRttSpecificData(Parcel in) {
@@ -58,6 +70,12 @@ public final class WifiRttSpecificData implements Parcelable {
         mMeasurementChannelFrequencyMHz = in.readInt();
         mLci = in.createByteArray();
         mDistanceStdDevMeters = in.readDouble();
+        mNtbMinMeasurementTime = in.readLong();
+        mNtbMaxMeasurementTime = in.readLong();
+        mI2rTxLtfRepetitions = in.readInt();
+        mR2iTxLtfRepetitions = in.readInt();
+        mNumTxSpatialStreams = in.readInt();
+        mNumRxSpatialStreams = in.readInt();
     }
 
     @NonNull
@@ -129,6 +147,70 @@ public final class WifiRttSpecificData implements Parcelable {
         return mDistanceStdDevMeters;
     }
 
+    /**
+     * Gets the minimum time between measurements in microseconds for IEEE 802.11az non-trigger
+     * based ranging.
+     *
+     * @return the minimum time between measurements in microseconds
+     * @hide
+     */
+    public long getNtbMinMeasurementTimeMicros() {
+        return mNtbMinMeasurementTime;
+    }
+
+    /**
+     * Gets the maximum time between measurements in microseconds for IEEE 802.11az non-trigger
+     * based ranging.
+     *
+     * @return the maximum time between measurements in microseconds
+     * @hide
+     */
+    public long getNtbMaxMeasurementTimeMicros() {
+        return mNtbMaxMeasurementTime;
+    }
+
+    /**
+     * Gets the LTF repetitions that the initiator station used in the preamble for IEEE 802.11az.
+     *
+     * @return the LTF repetition count
+     * @hide
+     */
+    public int getI2rTxLtfRepetitions() {
+        return mI2rTxLtfRepetitions;
+    }
+
+    /**
+     * Gets the LTF repetitions that the responder station used in the preamble for IEEE 802.11az.
+     *
+     * @return the LTF repetition count
+     * @hide
+     */
+    public int getR2iTxLtfRepetitions() {
+        return mR2iTxLtfRepetitions;
+    }
+
+    /**
+     * Gets the number of transmit spatial streams that the initiator station used for the
+     * ranging result for IEEE 802.11az.
+     *
+     * @return the number of transmit spatial streams
+     * @hide
+     */
+    public int getNumTxSpatialStreams() {
+        return mNumTxSpatialStreams;
+    }
+
+    /**
+     * Gets the number of receive spatial streams that the initiator station used for the
+     * ranging result for IEEE 802.11az.
+     *
+     * @return the number of receive spatial streams
+     * @hide
+     */
+    public int getNumRxSpatialStreams() {
+        return mNumRxSpatialStreams;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -142,6 +224,12 @@ public final class WifiRttSpecificData implements Parcelable {
         dest.writeInt(mMeasurementChannelFrequencyMHz);
         dest.writeByteArray(mLci);
         dest.writeDouble(mDistanceStdDevMeters);
+        dest.writeLong(mNtbMinMeasurementTime);
+        dest.writeLong(mNtbMaxMeasurementTime);
+        dest.writeInt(mI2rTxLtfRepetitions);
+        dest.writeInt(mR2iTxLtfRepetitions);
+        dest.writeInt(mNumTxSpatialStreams);
+        dest.writeInt(mNumRxSpatialStreams);
     }
 
     @Override
@@ -154,13 +242,21 @@ public final class WifiRttSpecificData implements Parcelable {
                 && mMeasurementBandwidth == that.mMeasurementBandwidth
                 && mMeasurementChannelFrequencyMHz == that.mMeasurementChannelFrequencyMHz
                 && Arrays.equals(mLci, that.mLci)
-                && Double.compare(that.mDistanceStdDevMeters, mDistanceStdDevMeters) == 0;
+                && Double.compare(that.mDistanceStdDevMeters, mDistanceStdDevMeters) == 0
+                && mNtbMinMeasurementTime == that.mNtbMinMeasurementTime
+                && mNtbMaxMeasurementTime == that.mNtbMaxMeasurementTime
+                && mI2rTxLtfRepetitions == that.mI2rTxLtfRepetitions
+                && mR2iTxLtfRepetitions == that.mR2iTxLtfRepetitions
+                && mNumTxSpatialStreams == that.mNumTxSpatialStreams
+                && mNumRxSpatialStreams == that.mNumRxSpatialStreams;
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hash(mNumAttemptedMeasurements, mNumSuccessfulMeasurements,
-                mMeasurementBandwidth, mMeasurementChannelFrequencyMHz, mDistanceStdDevMeters);
+                mMeasurementBandwidth, mMeasurementChannelFrequencyMHz, mDistanceStdDevMeters,
+                mNtbMinMeasurementTime, mNtbMaxMeasurementTime, mI2rTxLtfRepetitions,
+                mR2iTxLtfRepetitions, mNumTxSpatialStreams, mNumRxSpatialStreams);
         result = 31 * result + Arrays.hashCode(mLci);
         return result;
     }
@@ -177,6 +273,12 @@ public final class WifiRttSpecificData implements Parcelable {
         private int mMeasurementChannelFrequencyMHz = Integer.MIN_VALUE;
         private byte[] mLci = null;
         private double mDistanceStdDevMeters = Double.NaN;
+        private long mNtbMinMeasurementTime = Long.MIN_VALUE;
+        private long mNtbMaxMeasurementTime = Long.MIN_VALUE;
+        private int mI2rTxLtfRepetitions = Integer.MIN_VALUE;
+        private int mR2iTxLtfRepetitions = Integer.MIN_VALUE;
+        private int mNumTxSpatialStreams = Integer.MIN_VALUE;
+        private int mNumRxSpatialStreams = Integer.MIN_VALUE;
 
         /**
          * Sets num attempted measurements.
@@ -252,6 +354,82 @@ public final class WifiRttSpecificData implements Parcelable {
         }
 
         /**
+         * Sets minimum time between measurements in microseconds for IEEE 802.11az non-trigger
+         * based ranging.
+         *
+         * @param ntbMinMeasurementTime the minimum time between measurements in microseconds
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setNtbMinMeasurementTimeMicros(long ntbMinMeasurementTime) {
+            mNtbMinMeasurementTime = ntbMinMeasurementTime;
+            return this;
+        }
+
+        /**
+         * Sets maximum time between measurements in microseconds for IEEE 802.11az non-trigger
+         * based ranging.
+         *
+         * @param ntbMaxMeasurementTime the maximum time between measurements in microseconds
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setNtbMaxMeasurementTimeMicros(long ntbMaxMeasurementTime) {
+            mNtbMaxMeasurementTime = ntbMaxMeasurementTime;
+            return this;
+        }
+
+        /**
+         * Sets LTF repetitions that the initiator station used in the preamble for IEEE 802.11az.
+         *
+         * @param i2rTxLtfRepetitions the LTF repetition count
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setI2rTxLtfRepetitions(int i2rTxLtfRepetitions) {
+            mI2rTxLtfRepetitions = i2rTxLtfRepetitions;
+            return this;
+        }
+
+        /**
+         * Sets LTF repetitions that the responder station used in the preamble for IEEE 802.11az.
+         *
+         * @param r2iTxLtfRepetitions the LTF repetition count
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setR2iTxLtfRepetitions(int r2iTxLtfRepetitions) {
+            mR2iTxLtfRepetitions = r2iTxLtfRepetitions;
+            return this;
+        }
+
+        /**
+         * Sets number of transmit spatial streams that the initiator station used for the
+         * ranging result for IEEE 802.11az.
+         *
+         * @param numTxSpatialStreams the number of transmit spatial streams
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setNumTxSpatialStreams(int numTxSpatialStreams) {
+            mNumTxSpatialStreams = numTxSpatialStreams;
+            return this;
+        }
+
+        /**
+         * Sets number of receive spatial streams that the initiator station used for the
+         * ranging result for IEEE 802.11az.
+         *
+         * @param numRxSpatialStreams the number of receive spatial streams
+         * @return the Builder instance
+         */
+        @NonNull
+        public Builder setNumRxSpatialStreams(int numRxSpatialStreams) {
+            mNumRxSpatialStreams = numRxSpatialStreams;
+            return this;
+        }
+
+        /**
          * Build additional ranging data.
          *
          * @return the additional ranging data
@@ -271,6 +449,12 @@ public final class WifiRttSpecificData implements Parcelable {
                 + ", mMeasurementChannelFrequencyMHz=" + mMeasurementChannelFrequencyMHz
                 + ", mLci=" + Arrays.toString(mLci)
                 + ", mDistanceStdDevMeters=" + mDistanceStdDevMeters
+                + ", mNtbMinMeasurementTime=" + mNtbMinMeasurementTime
+                + ", mNtbMaxMeasurementTime=" + mNtbMaxMeasurementTime
+                + ", mI2rTxLtfRepetitions=" + mI2rTxLtfRepetitions
+                + ", mR2iTxLtfRepetitions=" + mR2iTxLtfRepetitions
+                + ", mNumTxSpatialStreams=" + mNumTxSpatialStreams
+                + ", mNumRxSpatialStreams=" + mNumRxSpatialStreams
                 + '}';
     }
 }
