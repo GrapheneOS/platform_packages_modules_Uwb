@@ -47,6 +47,7 @@ public abstract class FiraParams extends Params {
 
     public static final FiraProtocolVersion PROTOCOL_VERSION_1_1 = new FiraProtocolVersion(1, 1);
     public static final FiraProtocolVersion PROTOCOL_VERSION_2_0 = new FiraProtocolVersion(2, 0);
+    public static final FiraProtocolVersion PROTOCOL_VERSION_4_0 = new FiraProtocolVersion(4, 0);
 
     /** Service ID for FiRa profile */
     @IntDef(
