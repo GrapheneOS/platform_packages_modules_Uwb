@@ -1622,10 +1622,19 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     tags = [self.initiator, self.responder]
 
-    asserts.skip_if(
-        any(tag.ad.is_emulator for tag in tags),
-        "Skipping DL-TDoA test on emulator",
-    )
+    for tag in tags:
+      asserts.skip_if(
+          tag.ad.is_emulator,
+          "Skipping DL-TDoA test on emulator",
+      )
+      asserts.skip_if(
+          not tag.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"Skipping DL-TDoA test, UWB not supported by tag",
+      )
+      asserts.skip_if(
+          not tag.ad.ranging.getUwbCapabilities()["is_dl_tdoa_supported"],
+          f"Skipping DL-TDoA test, DL-TDoA not supported by tag",
+      )
 
     SESSION_HANDLE = str(uuid.uuid4())
 
