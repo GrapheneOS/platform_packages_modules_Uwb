@@ -152,6 +152,7 @@ public class FiraTests {
         int maxNumberOfMeasurements = 1;
         int secureRangingNefaLevel = 0;
         int secureRangingCswLength = 4;
+        int dlTdoaRrsPerBlock = 5;
 
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -169,6 +170,7 @@ public class FiraTests {
                         .setSlotsPerRangingRound(slotsPerRangingRound)
                         .setRangingIntervalMs(rangingIntervalMs)
                         .setBlockStrideLength(blockStrideLength)
+                        .setDlTdoaRrsPerBlock(dlTdoaRrsPerBlock)
                         .setMaxRangingRoundRetries(maxRangingRoundRetries)
                         .setSessionPriority(sessionPriority)
                         .setMacAddressMode(addressMode)
@@ -243,6 +245,7 @@ public class FiraTests {
         assertEquals(params.getSlotsPerRangingRound(), slotsPerRangingRound);
         assertEquals(params.getRangingIntervalMs(), rangingIntervalMs);
         assertEquals(params.getBlockStrideLength(), blockStrideLength);
+        assertEquals(params.getDlTdoaRrsPerBlock(), dlTdoaRrsPerBlock);
         assertEquals(params.getMaxRangingRoundRetries(), maxRangingRoundRetries);
         assertEquals(params.getSessionPriority(), sessionPriority);
         assertEquals(params.getMacAddressMode(), addressMode);

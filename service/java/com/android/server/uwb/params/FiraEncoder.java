@@ -168,6 +168,10 @@ public class FiraEncoder extends TlvEncoder {
             } else {
                 tlvBufferBuilder.putByte(ConfigParam.DL_TDOA_BLOCK_STRIDING,
                     (byte) params.getDlTdoaBlockStriding());
+                if (uwbsFiraProtocolVersion.getMajor() >= 4) {
+                    tlvBufferBuilder.putByte(ConfigParam.DL_TDOA_RRS_PER_BLOCK,
+                            (byte) params.getDlTdoaRrsPerBlock());
+                }
             }
             tlvBufferBuilder.putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode())
                     .putByte(ConfigParam.DATA_REPETITION_COUNT,
