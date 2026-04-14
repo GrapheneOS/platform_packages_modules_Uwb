@@ -265,6 +265,9 @@
      ANDROID_GID (0x0c) and ANDROID_TIMESTAMP_ANCHOR_TO_UWBS(0x03)-->
     <bool name = "android_specific_timesync_supported">false</bool>
 
+    <!-- Whether AOSP timesync implementation is supported -->
+    <bool name = "aosp_timesync_supported">true</bool>
+
     <!-- Device with high uncertainty for timesync. 255 is max, set it to 0 if timesync is reliable.
     Value [µsec] = 2^(timesync_uncertainty_override/8)
     -->

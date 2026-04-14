@@ -97,6 +97,8 @@ import com.google.uwb.support.aliro.AliroProtocolVersion;
 import com.google.uwb.support.aliro.AliroPulseShapeCombo;
 import com.google.uwb.support.aliro.AliroSpecificationParams;
 import com.google.uwb.support.aliro.AliroStartRangingParams;
+import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraControleeParams;
@@ -1273,6 +1275,24 @@ public class UwbManagerTest {
                 return null;
             }
             return AliroSpecificationParams.fromBundle(bundle);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private CccSpecificationParams getCccSpecificationParams() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Only hold UWB_PRIVILEGED permission
+            uiAutomation.adoptShellPermissionIdentity();
+            PersistableBundle bundle = mUwbManager.getSpecificationInfo();
+            if (bundle.keySet().contains(CccParams.PROTOCOL_NAME)) {
+                bundle = requireNonNull(bundle.getPersistableBundle(CccParams.PROTOCOL_NAME));
+            } else {
+                Log.i(TAG, "No CCC specification info found.");
+                return null;
+            }
+            return CccSpecificationParams.fromBundle(bundle);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -3128,6 +3148,16 @@ public class UwbManagerTest {
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_STACK_UPDATES_26_Q_2)
     public void testTimesyncCallback() throws Exception {
         assumeFalse(isEmulator());
+
+        CccSpecificationParams cccParams = getCccSpecificationParams();
+        if (cccParams != null) {
+            assumeTrue(cccParams.isAospTimesyncSupported());
+        }
+        AliroSpecificationParams aliroParams = getAliroSpecificationParams();
+        if (aliroParams != null) {
+            assumeTrue(aliroParams.isAospTimesyncSupported());
+        }
+
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         String macAddress = "00:11:22:AA:BB:CC";
         int addressType = BluetoothDevice.ADDRESS_TYPE_PUBLIC;

@@ -324,6 +324,7 @@ public class AliroDecoder extends TlvDecoder {
 
         builder.setTimesyncAccuracyVerified(
                 mUwbInjector.getDeviceConfigFacade().isTimesyncAccuracyVerified());
+        builder.setAospTimesyncSupported(mUwbInjector.isAospTimesyncSupported());
 
         return builder.build();
     }

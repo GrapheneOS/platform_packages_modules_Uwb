@@ -524,6 +524,10 @@ public class UwbInjector {
         }
     }
 
+    public boolean isAospTimesyncSupported() {
+        return mDeviceConfigFacade.isAospTimesyncSupported();
+    }
+
     public boolean isCccSupportedTwoByteConfigIdLittleEndian() {
         if (mContext.getResources() != null) {
             return mContext.getResources().getBoolean(

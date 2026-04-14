@@ -18,6 +18,7 @@ package com.google.uwb.support;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.os.PersistableBundle;
@@ -329,6 +330,7 @@ public class AliroTests {
         }
 
         paramsBuilder.setTimesyncAccuracyVerified(true);
+        paramsBuilder.setAospTimesyncSupported(false);
 
         AliroSpecificationParams params = paramsBuilder.build();
         assertArrayEquals(params.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
@@ -342,6 +344,7 @@ public class AliroTests {
         assertArrayEquals(params.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertArrayEquals(params.getMacModes().toArray(), MAC_MODES);
         assertTrue(params.isTimesyncAccuracyVerified());
+        assertFalse(params.isAospTimesyncSupported());
 
         AliroSpecificationParams fromBundle =
                 AliroSpecificationParams.fromBundle(params.toBundle());
@@ -356,6 +359,7 @@ public class AliroTests {
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertArrayEquals(fromBundle.getMacModes().toArray(), MAC_MODES);
         assertTrue(fromBundle.isTimesyncAccuracyVerified());
+        assertFalse(fromBundle.isAospTimesyncSupported());
 
         verifyProtocolPresent(params);
         assertTrue(params.equals(fromBundle));

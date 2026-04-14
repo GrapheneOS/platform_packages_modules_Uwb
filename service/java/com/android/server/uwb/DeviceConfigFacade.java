@@ -108,6 +108,7 @@ public class DeviceConfigFacade {
     private boolean mFiraExtensionForCCCSupported;
     private boolean mIs16ByteHopmodekeyEnabled;
     private boolean mIsAndroidSpecificTimesyncSupported;
+    private boolean mIsAospTimesyncSupported;
     private int mTimesyncUncertainty;
     private int mTimesyncDeviceOffset;
     private int mTimesyncClockSkewPpm;
@@ -352,6 +353,12 @@ public class DeviceConfigFacade {
                     "android_specific_timesync_supported",
                     mContext.getResources().getBoolean(R.bool.android_specific_timesync_supported)
             );
+
+            mIsAospTimesyncSupported = DeviceConfig.getBoolean(
+                    DeviceConfig.NAMESPACE_UWB,
+                    "aosp_timesync_supported",
+                    mContext.getResources().getBoolean(R.bool.aosp_timesync_supported)
+            );
             mTimesyncUncertainty = DeviceConfig.getInt(
                     DeviceConfig.NAMESPACE_UWB,
                     "timesync_uncertainty_override",
@@ -452,6 +459,7 @@ public class DeviceConfigFacade {
             mIsRandomHopmodekeySupported = false;
             mIs16ByteHopmodekeyEnabled = false;
             mIsAndroidSpecificTimesyncSupported = false;
+            mIsAospTimesyncSupported = true;
             mTimesyncUncertainty = 255;
             mTimesyncDeviceOffset = -36000;
             mTimesyncClockSkewPpm = 100;
@@ -830,6 +838,13 @@ public class DeviceConfigFacade {
      */
     public boolean isAndroidSpecificTimesyncSupported() {
         return mIsAndroidSpecificTimesyncSupported;
+    }
+
+    /**
+     * Returns whether the device supports AOSP timesync implementation.
+     */
+    public boolean isAospTimesyncSupported() {
+        return mIsAospTimesyncSupported;
     }
 
     public int getTimesyncBleTimeUncertainty() {
