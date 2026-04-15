@@ -2078,7 +2078,7 @@ public class RangingManagerTest {
         assertThat(params.getComplexChannel().getPreambleIndex()).isEqualTo(10);
         assertThat(params.getRangingIntervalMillis()).isEqualTo(200);
         assertThat(params.getSlotDuration()).isEqualTo(UwbRangingParams.DURATION_2_MS);
-        assertThat(params.getSlotsPerRangingRound()).isEqualTo(25);
+        assertThat(params.getSlotsPerRangingRound()).isEqualTo(10);
         assertThat(params.getRangingRoundIndexes()).isEqualTo(new byte[] {0});
         assertThat(params.getMeasurementVersion()).isEqualTo(
                 DlTdoaRangingParams.MEASUREMENT_VERSION_1);

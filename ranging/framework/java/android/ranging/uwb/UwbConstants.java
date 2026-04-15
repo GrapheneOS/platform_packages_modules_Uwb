@@ -114,6 +114,6 @@ public final class UwbConstants {
     public static final int DEFAULT_DLTDOA_PREAMBLE_INDEX_10 = 10;
     public static final int DEFAULT_DLTDOA_RANGING_INTERVAL_200_MS = 200;
     public static final int DEFAULT_DLTDOA_SLOT_DURATION_2_MS = UwbRangingParams.DURATION_2_MS;
-    public static final int DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_25 = 25;
+    public static final int DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_10 = 10;
     public static final byte[] DEFAULT_DLTDOA_RANGING_ROUND_INDEXES = new byte[] {0};
 }

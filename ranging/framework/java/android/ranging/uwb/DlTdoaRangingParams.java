@@ -670,7 +670,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         private int mRangingIntervalMs = UwbConstants.DEFAULT_DLTDOA_RANGING_INTERVAL_200_MS;
         @SlotDuration
         private int mSlotDuration = UwbConstants.DEFAULT_DLTDOA_SLOT_DURATION_2_MS;
-        private int mSlotsPerRangingRound = UwbConstants.DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_25;
+        private int mSlotsPerRangingRound = UwbConstants.DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_10;
         private byte[] mRangingRoundIndexes =
                 UwbConstants.DEFAULT_DLTDOA_RANGING_ROUND_INDEXES.clone();
         @MeasurementVersion
@@ -762,7 +762,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         /**
          * Sets the number of slots per ranging round.
          *
-         * <p>If not set, 25 is used as default.
+         * <p>If not set, 10 is used as default.
          *
          * @param slotsPerRangingRound The number of slots per ranging round.
          * @return this {@link Builder} instance.
