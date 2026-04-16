@@ -327,6 +327,20 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     """
     return device.ad.uwb.getSpecificationInfo()["fira"]["uci_version"]
 
+  def _is_aosp_timesync_supported(
+      self, device: uwb_ranging_decorator.UwbRangingDecorator):
+    """Checks if device supports AOSP timesync.
+
+    Args:
+      device: uwb device object.
+    """
+    spec_info = device.ad.uwb.getSpecificationInfo()
+    if "ccc" in spec_info:
+        return spec_info["ccc"].get("aosp_timesync_supported", True)
+    if "aliro" in spec_info:
+        return spec_info["aliro"].get("aosp_timesync_supported", True)
+    return True
+
   def _verify_one_to_one_ranging_airplane_mode_toggle(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
       responder: uwb_ranging_decorator.UwbRangingDecorator,
@@ -2038,9 +2052,9 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                           f"Skipping Timesync test on emulators")
     asserts.skip_if(
-            self._get_uci_version(self.initiator) & 0xFF < 2
-            or self._get_uci_version(self.responder) & 0xFF < 2,
-            f"Skipping Timesync test on devices if Fira version is not at lease 2.0",
+            not self._is_aosp_timesync_supported(self.initiator)
+            or not self._is_aosp_timesync_supported(self.responder),
+            f"Skipping Timesync test on devices if AOSP timesync is not supported",
         )
     uuid = "00001101-0000-1000-8000-00805f9b34fb"
     uwb_test_utils.set_bt_state_and_verify(self.responder.ad, True)

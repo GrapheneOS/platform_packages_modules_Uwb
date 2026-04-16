@@ -34,6 +34,7 @@ import android.ranging.RangingSession;
 import android.ranging.oob.TransportHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.wifi.pd.WifiPdRangingCapabilities;
+import android.ranging.uwb.UwbRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -492,6 +493,37 @@ public class RangingSnippet implements Snippet {
         j.put("supported_discovery_channel_frequencies_mhz",
                 new JSONArray(wifiPdCaps.getSupportedDiscoveryChannelFrequenciesMhz()));
         j.put("mac_address", wifiPdCaps.getProximityDetectionMacAddress().toString());
+        return j;
+    }
+
+    @Rpc(description = "Get UWB capabilities")
+    public JSONObject getUwbCapabilities() throws JSONException {
+        RangingCapabilities capabilities = mRangingCapabilities.get();
+        if (capabilities == null) {
+            return null;
+        }
+        UwbRangingCapabilities uwbCaps = capabilities.getUwbCapabilities();
+        if (uwbCaps == null) {
+            return null;
+        }
+        JSONObject j = new JSONObject();
+        j.put("is_distance_measurement_supported", uwbCaps.isDistanceMeasurementSupported());
+        j.put("is_azimuthal_angle_supported", uwbCaps.isAzimuthalAngleSupported());
+        j.put("is_elevation_angle_supported", uwbCaps.isElevationAngleSupported());
+        j.put("is_ranging_interval_reconfiguration_supported",
+                uwbCaps.isRangingIntervalReconfigurationSupported());
+        j.put("minimum_ranging_interval_millis", uwbCaps.getMinimumRangingInterval().toMillis());
+        j.put("supported_channels", new JSONArray(uwbCaps.getSupportedChannels()));
+        j.put("supported_preamble_indexes", new JSONArray(uwbCaps.getSupportedPreambleIndexes()));
+        j.put("supported_notification_configurations",
+                new JSONArray(uwbCaps.getSupportedNotificationConfigurations()));
+        j.put("supported_config_ids", new JSONArray(uwbCaps.getSupportedConfigIds()));
+        j.put("supported_slot_durations", new JSONArray(uwbCaps.getSupportedSlotDurations()));
+        j.put("supported_ranging_update_rates",
+                new JSONArray(uwbCaps.getSupportedRangingUpdateRates()));
+        j.put("is_background_ranging_supported", uwbCaps.isBackgroundRangingSupported());
+        j.put("is_dl_tdoa_supported", uwbCaps.isDlTdoaSupported());
+        j.put("supported_antenna_modes", new JSONArray(uwbCaps.getSupportedAntennaModes()));
         return j;
     }
 

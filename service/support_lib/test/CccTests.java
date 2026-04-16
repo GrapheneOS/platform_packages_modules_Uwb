@@ -18,6 +18,7 @@ package com.google.uwb.support;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.os.PersistableBundle;
@@ -307,6 +308,7 @@ public class CccTests {
         }
 
         paramsBuilder.setTimesyncAccuracyVerified(true);
+        paramsBuilder.setAospTimesyncSupported(false);
 
         CccSpecificationParams params = paramsBuilder.build();
         assertArrayEquals(params.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
@@ -319,6 +321,7 @@ public class CccTests {
         assertArrayEquals(params.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(params.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertTrue(params.isTimesyncAccuracyVerified());
+        assertFalse(params.isAospTimesyncSupported());
 
         CccSpecificationParams fromBundle = CccSpecificationParams.fromBundle(params.toBundle());
         assertArrayEquals(fromBundle.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
@@ -331,6 +334,7 @@ public class CccTests {
         assertArrayEquals(fromBundle.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
         assertTrue(fromBundle.isTimesyncAccuracyVerified());
+        assertFalse(fromBundle.isAospTimesyncSupported());
 
         verifyProtocolPresent(params);
         assertTrue(params.equals(fromBundle));

@@ -56,6 +56,7 @@ public class CccSpecificationParams extends CccParams {
     @HoppingSequence private final List<Integer> mHoppingSequences;
     private final int mUwbsMaxPPM;
     private final boolean mCccTimesyncAccuracyVerified;
+    private final boolean mAospTimesyncSupported;
 
     private static final String KEY_PROTOCOL_VERSIONS = "protocol_versions";
     private static final String KEY_UWB_CONFIGS = "uwb_configs";
@@ -71,6 +72,8 @@ public class CccSpecificationParams extends CccParams {
     private static final String KEY_UWBS_MAX_PPM = "uwbs_max_ppm";
     private static final String KEY_TIMESYNC_ACCURACY_VERIFIED =
             "timesync_accuracy_verified";
+    private static final String KEY_AOSP_TIMESYNC_SUPPORTED =
+            "aosp_timesync_supported";
 
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 1;
 
@@ -87,7 +90,8 @@ public class CccSpecificationParams extends CccParams {
             @HoppingConfigMode List<Integer> hoppingConfigModes,
             @HoppingSequence List<Integer> hoppingSequences,
             int uwbsMaxPPM,
-            boolean cccTimesyncAccuracyVerified) {
+            boolean cccTimesyncAccuracyVerified,
+            boolean aospTimesyncSupported) {
         mProtocolVersions = protocolVersions;
         mUwbConfigs = uwbConfigs;
         mPulseShapeCombos = pulseShapeCombos;
@@ -101,6 +105,7 @@ public class CccSpecificationParams extends CccParams {
         mHoppingSequences = hoppingSequences;
         mUwbsMaxPPM = uwbsMaxPPM;
         mCccTimesyncAccuracyVerified = cccTimesyncAccuracyVerified;
+        mAospTimesyncSupported = aospTimesyncSupported;
     }
 
     @Override
@@ -132,6 +137,7 @@ public class CccSpecificationParams extends CccParams {
         bundle.putIntArray(KEY_HOPPING_SEQUENCES, toIntArray(mHoppingSequences));
         bundle.putInt(KEY_UWBS_MAX_PPM, mUwbsMaxPPM);
         bundle.putBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, mCccTimesyncAccuracyVerified);
+        bundle.putBoolean(KEY_AOSP_TIMESYNC_SUPPORTED, mAospTimesyncSupported);
         return bundle;
     }
 
@@ -202,6 +208,8 @@ public class CccSpecificationParams extends CccParams {
 
         builder.setTimesyncAccuracyVerified(
                 bundle.getBoolean(KEY_TIMESYNC_ACCURACY_VERIFIED, false));
+        builder.setAospTimesyncSupported(
+                bundle.getBoolean(KEY_AOSP_TIMESYNC_SUPPORTED, true));
 
         return builder.build();
     }
@@ -273,6 +281,10 @@ public class CccSpecificationParams extends CccParams {
         return mCccTimesyncAccuracyVerified;
     }
 
+    public boolean isAospTimesyncSupported() {
+        return mAospTimesyncSupported;
+    }
+
     @Override
     public boolean equals(@Nullable Object other) {
         if (other instanceof CccSpecificationParams) {
@@ -289,6 +301,7 @@ public class CccSpecificationParams extends CccParams {
                 && otherSpecificationParams.mHoppingConfigModes.equals(mHoppingConfigModes)
                 && otherSpecificationParams.mHoppingSequences.equals(mHoppingSequences)
                 && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM
+                && otherSpecificationParams.mAospTimesyncSupported == mAospTimesyncSupported
                 && otherSpecificationParams.mCccTimesyncAccuracyVerified
                     == mCccTimesyncAccuracyVerified;
         }
@@ -312,6 +325,7 @@ public class CccSpecificationParams extends CccParams {
                 mHoppingSequences.hashCode(),
                 mUwbsMaxPPM,
                 mCccTimesyncAccuracyVerified ? 1 : 0,
+                mAospTimesyncSupported ? 1 : 0,
             });
     }
 
@@ -330,6 +344,7 @@ public class CccSpecificationParams extends CccParams {
         @HoppingConfigMode private List<Integer> mHoppingConfigModes = new ArrayList<>();
         private int mUwbsMaxPPM = 0;
         private boolean mCccTimesyncAccuracyVerified = false;
+        private boolean mAospTimesyncSupported = true;
 
         public Builder addProtocolVersion(@NonNull CccProtocolVersion version) {
             mProtocolVersions.add(version);
@@ -415,6 +430,11 @@ public class CccSpecificationParams extends CccParams {
             return this;
         }
 
+        public Builder setAospTimesyncSupported(boolean aospTimesyncSupported) {
+            mAospTimesyncSupported = aospTimesyncSupported;
+            return this;
+        }
+
         public CccSpecificationParams build() {
             if (mProtocolVersions.size() == 0) {
                 throw new IllegalStateException("No protocol versions set");
@@ -457,7 +477,8 @@ public class CccSpecificationParams extends CccParams {
                     mHoppingConfigModes,
                     mHoppingSequences,
                     mUwbsMaxPPM,
-                    mCccTimesyncAccuracyVerified);
+                    mCccTimesyncAccuracyVerified,
+                    mAospTimesyncSupported);
         }
     }
 }
