@@ -667,7 +667,7 @@ public final class DlTdoaRangingParams implements Parcelable {
                         .setChannel(UwbConstants.DEFAULT_DLTDOA_CHANNEL_9)
                         .setPreambleIndex(UwbConstants.DEFAULT_DLTDOA_PREAMBLE_INDEX_10)
                         .build();
-        private int mRangingIntervalMs = UwbConstants.DEFAULT_DLTDOA_RANGING_INTERVAL_200_MS;
+        private int mRangingIntervalMs = UwbConstants.DEFAULT_DLTDOA_RANGING_INTERVAL_250_MS;
         @SlotDuration
         private int mSlotDuration = UwbConstants.DEFAULT_DLTDOA_SLOT_DURATION_2_MS;
         private int mSlotsPerRangingRound = UwbConstants.DEFAULT_DLTDOA_SLOTS_PER_RANGING_ROUND_10;
@@ -702,7 +702,8 @@ public final class DlTdoaRangingParams implements Parcelable {
         /**
          * Sets the session key information.
          *
-         * <p>If not set, {@code {7, 8, 1, 2, 3, 4, 5, 6}} is used as default.
+         * <p>If not set, {@code {0x00, 0x00, 0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6}} is used as
+         * default.
          *
          * @param sessionKeyInfo The session key information.
          * @return this {@link Builder} instance.
@@ -730,7 +731,7 @@ public final class DlTdoaRangingParams implements Parcelable {
         /**
          * Sets the ranging interval in milliseconds.
          *
-         * <p>If not set, 200ms is used as default.
+         * <p>If not set, 250ms is used as default.
          *
          * @param rangingIntervalMs The ranging interval in milliseconds.
          * @return this {@link Builder} instance.
