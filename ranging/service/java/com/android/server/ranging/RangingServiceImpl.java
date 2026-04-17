@@ -113,26 +113,31 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
 
     @Override
     public void oobDataReceived(OobHandle oobHandle, byte[] data) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().oobDataReceived(oobHandle, data);
     }
 
     @Override
     public void deviceOobDisconnected(OobHandle oobHandle) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().deviceOobDisconnected(oobHandle);
     }
 
     @Override
     public void deviceOobReconnected(OobHandle oobHandle) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().deviceOobReconnected(oobHandle);
     }
 
     @Override
     public void deviceOobClosed(OobHandle oobHandle) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().deviceOobClosed(oobHandle);
     }
 
     @Override
     public void registerOobSendDataListener(IOobSendDataListener oobSendDataListener) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().registerOobSendDataListener(
                 oobSendDataListener);
     }
