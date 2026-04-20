@@ -42,13 +42,15 @@ public final class UwbAnchorLocation {
      * Represents a location in the WGS-84 coordinate system.
      */
     public static final class UwbWgs84Location {
-        private static int WGS84_BYTE_COUNT = 12;
-        private static int Q9_24_BIT_COUNT = 33;
-        private static int Q9_24_INTEGER_BIT_COUNT = 8;
-        private static int Q9_24_FRACTIONAL_BIT_COUNT = 24;
-        private static int Q9_21_BIT_COUNT = 30;
-        private static int Q9_21_INTEGER_BIT_COUNT = 8;
-        private static int Q9_21_FRACTIONAL_BIT_COUNT = 21;
+        private static final int WGS84_BYTE_COUNT = 12;
+
+        private static final int LAT_LONG_BITS = 33;
+        private static final int LAT_LONG_INTEGER_BITS = 8;
+        private static final int LAT_LONG_FRACTIONAL_BITS = 24;
+
+        private static final int ALTITUDE_BITS = 30;
+        private static final int ALTITUDE_INTEGER_BITS = 8;
+        private static final int ALTITUDE_FRACTIONAL_BITS = 21;
 
         private final FixedPointNumber mLatitude;
         private final FixedPointNumber mLongitude;
@@ -60,41 +62,86 @@ public final class UwbAnchorLocation {
             if (offset < 0 || bytes.length < offset + WGS84_BYTE_COUNT) {
                 throw new IllegalArgumentException(
                         "Invalid byte length: " + bytes.length + ", offset: " + offset
-                        + ", required bytes: " + WGS84_BYTE_COUNT);
+                                + ", required bytes: " + WGS84_BYTE_COUNT);
             }
-            int bitOffset = 0;
 
-            // Q9.24 format: 1 bit sign, 8 bits integer, 24 bits fractional.
-            long rawLatitude =
-                    BitChunk.getBitsFromBytes(bytes, offset, bitOffset, Q9_24_BIT_COUNT, true);
-            offset += (bitOffset + Q9_24_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + Q9_24_BIT_COUNT) % 8;
+            // FiRa WGS84 12-byte format uses a contiguous bit string of 33+33+30 bits.
+            // This results in unusual byte-crossing shifts:
+            // - Latitude: 33 bits (no shift relative to start)
+            // - Longitude: 33 bits (shifted by 1 bit within bytes 4-8)
+            // - Altitude: 30 bits (shifted by 2 bits within bytes 8-11)
 
-            // Q9.24 format: 1 bit sign, 8 bits integer, 24 bits fractional.
-            long rawLongitude =
-                    BitChunk.getBitsFromBytes(bytes, offset, bitOffset, Q9_24_BIT_COUNT, true);
-            offset += (bitOffset + Q9_24_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + Q9_24_BIT_COUNT) % 8;
-
-            // Q9.21 format: 1 bit sign, 8 bits integer, 21 bits fractional.
-            long rawAltitude =
-                    BitChunk.getBitsFromBytes(bytes, offset, bitOffset, Q9_21_BIT_COUNT, true);
-            offset += (bitOffset + Q9_21_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + Q9_21_BIT_COUNT) % 8;
+            long rawLatitude = parse33BitLatitude(bytes, offset);
+            long rawLongitude = parse33BitLongitude(bytes, offset);
+            long rawAltitude = parse30BitAltitude(bytes, offset);
 
             return new UwbWgs84Location(rawLatitude, rawLongitude, rawAltitude);
+        }
+
+        /** Parses 33-bit Latitude from bytes 0-4. */
+        private static long parse33BitLatitude(byte[] bytes, int offset) {
+            long b0 = bytes[offset] & 0xFFL;
+            long b1 = bytes[offset + 1] & 0xFFL;
+            long b2 = bytes[offset + 2] & 0xFFL;
+            long b3 = bytes[offset + 3] & 0xFFL;
+            long b4 = bytes[offset + 4] & 0xFFL;
+
+            // Bits 0..31 are bytes 0..3. Bit 32 is bit 7 of byte 4.
+            long value = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24) | ((b4 & 0x80) << 25);
+            return signExtend(value, LAT_LONG_BITS);
+        }
+
+        /** Parses 33-bit Longitude from bytes 4-8, shifted by 1 bit. */
+        private static long parse33BitLongitude(byte[] bytes, int offset) {
+            long b4 = bytes[offset + 4] & 0xFFL;
+            long b5 = bytes[offset + 5] & 0xFFL;
+            long b6 = bytes[offset + 6] & 0xFFL;
+            long b7 = bytes[offset + 7] & 0xFFL;
+            long b8 = bytes[offset + 8] & 0xFFL;
+
+            // Longitude is recovered by shifting bits from bytes 4..8 by 1.
+            long l0 = ((b4 & 0x7F) << 1) | (b5 >> 7);
+            long l1 = ((b5 & 0x7F) << 1) | (b6 >> 7);
+            long l2 = ((b6 & 0x7F) << 1) | (b7 >> 7);
+            long l3 = ((b7 & 0x7F) << 1) | (b8 >> 7);
+            long signBit = (b8 & 0x40) >> 6;
+
+            long value = l0 | (l1 << 8) | (l2 << 16) | (l3 << 24) | (signBit << 32);
+            return signExtend(value, LAT_LONG_BITS);
+        }
+
+        /** Parses 30-bit Altitude from bytes 8-11, shifted by 2 bits. */
+        private static long parse30BitAltitude(byte[] bytes, int offset) {
+            long b8 = bytes[offset + 8] & 0xFFL;
+            long b9 = bytes[offset + 9] & 0xFFL;
+            long b10 = bytes[offset + 10] & 0xFFL;
+            long b11 = bytes[offset + 11] & 0xFFL;
+
+            // Altitude is recovered by shifting bits from bytes 8..11 by 2.
+            long a0 = ((b8 & 0x3F) << 2) | (b9 >> 6);
+            long a1 = ((b9 & 0x3F) << 2) | (b10 >> 6);
+            long a2 = ((b10 & 0x3F) << 2) | (b11 >> 6);
+            long remaining = (b11 & 0x3F);
+
+            long value = a0 | (a1 << 8) | (a2 << 16) | (remaining << 24);
+            return signExtend(value, ALTITUDE_BITS);
+        }
+
+        private static long signExtend(long value, int bits) {
+            int shift = 64 - bits;
+            return (value << shift) >> shift;
         }
 
         private UwbWgs84Location(long rawLatitude, long rawLongitude, long rawAltitude) {
             // Q9.24 format: 1 bit sign, 8 bits integer, 24 bits fractional.
             mLatitude = FixedPointNumber.create(
-                    true, Q9_24_INTEGER_BIT_COUNT, Q9_24_FRACTIONAL_BIT_COUNT, rawLatitude);
+                    true, LAT_LONG_INTEGER_BITS, LAT_LONG_FRACTIONAL_BITS, rawLatitude);
             // Q9.24 format: 1 bit sign, 8 bits integer, 24 bits fractional.
             mLongitude = FixedPointNumber.create(
-                    true, Q9_24_INTEGER_BIT_COUNT, Q9_24_FRACTIONAL_BIT_COUNT, rawLongitude);
+                    true, LAT_LONG_INTEGER_BITS, LAT_LONG_FRACTIONAL_BITS, rawLongitude);
             // Q9.21 format: 1 bit sign, 8 bits integer, 21 bits fractional.
             mAltitude = FixedPointNumber.create(
-                    true, Q9_21_INTEGER_BIT_COUNT, Q9_21_FRACTIONAL_BIT_COUNT, rawAltitude);
+                    true, ALTITUDE_INTEGER_BITS, ALTITUDE_FRACTIONAL_BITS, rawAltitude);
         }
 
         /**
@@ -153,10 +200,10 @@ public final class UwbAnchorLocation {
      * Represents a location in a relative coordinate system.
      */
     public static final class UwbRelativeLocation {
-        private static int XYZ_BYTE_COUNT = 10;
-        private static int X_BIT_COUNT = 28;
-        private static int Y_BIT_COUNT = 28;
-        private static int Z_BIT_COUNT = 24;
+        private static final int XYZ_BYTE_COUNT = 10;
+        private static final int X_BITS = 28;
+        private static final int Y_BITS = 28;
+        private static final int Z_BITS = 24;
 
         private final int mX;
         private final int mY;
@@ -169,26 +216,59 @@ public final class UwbAnchorLocation {
             if (offset < 0 || bytes.length < offset + XYZ_BYTE_COUNT) {
                 throw new IllegalArgumentException(
                         "Invalid byte length: " + bytes.length + ", offset: " + offset
-                        + ", required bytes: " + XYZ_BYTE_COUNT);
+                                + ", required bytes: " + XYZ_BYTE_COUNT);
             }
-            int bitOffset = 0;
 
-            // 1 bit sign, 27 bits integer
-            int x = (int) BitChunk.getBitsFromBytes(bytes, offset, bitOffset, X_BIT_COUNT, true);
-            offset += (bitOffset + X_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + X_BIT_COUNT) % 8;
+            // FiRa Relative 10-byte format uses a contiguous bit string:
+            // - X: 28 bits (B0, B1, B2, and high nibble of B3)
+            // - Y: 28 bits (low nibble of B3, B4, B5, and high nibble of B6)
+            // - Z: 24 bits (B7, B8, B9)
 
-            // 1 bit sign, 27 bits integer
-            int y = (int) BitChunk.getBitsFromBytes(bytes, offset, bitOffset, Y_BIT_COUNT, true);
-            offset += (bitOffset + Y_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + Y_BIT_COUNT) % 8;
-
-            // 1 bit sign, 23 bits integer
-            int z = (int) BitChunk.getBitsFromBytes(bytes, offset, bitOffset, Z_BIT_COUNT, true);
-            offset += (bitOffset + Z_BIT_COUNT) / 8;
-            bitOffset = (bitOffset + Z_BIT_COUNT) % 8;
+            int x = parse28BitX(bytes, offset);
+            int y = parse28BitY(bytes, offset);
+            int z = parse24BitZ(bytes, offset);
 
             return new UwbRelativeLocation(x, y, z);
+        }
+
+        private static int parse28BitX(byte[] bytes, int offset) {
+            long b0 = bytes[offset] & 0xFFL;
+            long b1 = bytes[offset + 1] & 0xFFL;
+            long b2 = bytes[offset + 2] & 0xFFL;
+            long b3 = bytes[offset + 3] & 0xFFL;
+
+            long value = b0 | (b1 << 8) | (b2 << 16) | ((b3 & 0xF0) << 20);
+            return (int) signExtend(value, X_BITS);
+        }
+
+        private static int parse28BitY(byte[] bytes, int offset) {
+            long b3 = bytes[offset + 3] & 0xFFL;
+            long b4 = bytes[offset + 4] & 0xFFL;
+            long b5 = bytes[offset + 5] & 0xFFL;
+            long b6 = bytes[offset + 6] & 0xFFL;
+
+            // Y starts at the low nibble of B3.
+            long y0 = ((b3 & 0x0F) << 4) | (b4 >> 4);
+            long y1 = ((b4 & 0x0F) << 4) | (b5 >> 4);
+            long y2 = ((b5 & 0x0F) << 4) | (b6 >> 4);
+            long signBit = (b6 & 0x08) >> 3;
+
+            long value = y0 | (y1 << 8) | (y2 << 16) | (signBit << 24);
+            return (int) signExtend(value, Y_BITS);
+        }
+
+        private static int parse24BitZ(byte[] bytes, int offset) {
+            long b7 = bytes[offset + 7] & 0xFFL;
+            long b8 = bytes[offset + 8] & 0xFFL;
+            long b9 = bytes[offset + 9] & 0xFFL;
+
+            long value = b7 | (b8 << 8) | (b9 << 16);
+            return (int) signExtend(value, Z_BITS);
+        }
+
+        private static long signExtend(long value, int bits) {
+            int shift = 64 - bits;
+            return (value << shift) >> shift;
         }
 
         private UwbRelativeLocation(int x, int y, int z) {
@@ -287,7 +367,7 @@ public final class UwbAnchorLocation {
             if (offset < 0 || bytes.length < offset + Z_ELEMENT_EXTENSION_BYTE_COUNT) {
                 throw new IllegalArgumentException(
                         "Invalid byte length: " + bytes.length + ", offset: " + offset
-                        + ", required bytes: " + Z_ELEMENT_EXTENSION_BYTE_COUNT);
+                                + ", required bytes: " + Z_ELEMENT_EXTENSION_BYTE_COUNT);
             }
             int bitOffset = 0;
 
@@ -305,7 +385,7 @@ public final class UwbAnchorLocation {
             bitOffset = (bitOffset + EXPECTED_TO_MOVE_BIT_COUNT) % 8;
 
             // Q12.12 format: 1 bit sign, 11 bits integer part, 12 bits fractional part.
-            long  rawAnchorHeightAboveFloor =
+            long rawAnchorHeightAboveFloor =
                     BitChunk.getBitsFromBytes(bytes, offset, bitOffset,
                             ANCHOR_HEIGHT_ABOVE_FLOOR_BIT_COUNT, true);
             offset += (bitOffset + ANCHOR_HEIGHT_ABOVE_FLOOR_BIT_COUNT) / 8;
@@ -385,12 +465,12 @@ public final class UwbAnchorLocation {
          * <p>The anchor height above floor is unknown if the value is Double.NaN.
          *
          * @return the anchor height above floor or Double.NaN if the anchor height above floor is
-         *         unknown.
+         * unknown.
          */
         public double getAnchorHeightAboveFloor() {
             return mAnchorHeightAboveFloor.getRawValue() ==
                     ANCHOR_HEIGHT_ABOVE_FLOOR_UNKNOWN_RAW_VALUE
-                            ? Double.NaN : mAnchorHeightAboveFloor.getDoubleValue();
+                    ? Double.NaN : mAnchorHeightAboveFloor.getDoubleValue();
         }
 
         /**
@@ -462,7 +542,7 @@ public final class UwbAnchorLocation {
                     && mExpectedToMove == other.mExpectedToMove
                     && Objects.equals(mAnchorHeightAboveFloor, other.mAnchorHeightAboveFloor)
                     && mAnchorHeightAboveFloorUncertainty ==
-                            other.mAnchorHeightAboveFloorUncertainty;
+                    other.mAnchorHeightAboveFloorUncertainty;
         }
 
         @Override
@@ -531,7 +611,7 @@ public final class UwbAnchorLocation {
                         data, offset + UwbWgs84Location.WGS84_BYTE_COUNT);
             }
             case COORDINATE_RELATIVE_PLUS_Z_ELEMENT,
-                    COORDINATE_RELATIVE_WITH_Z_GRAVITY_ALIGNED_PLUS_Z_ELEMENT -> {
+                 COORDINATE_RELATIVE_WITH_Z_GRAVITY_ALIGNED_PLUS_Z_ELEMENT -> {
                 relativeLocation = UwbRelativeLocation.fromBytes(data, offset);
                 zElementExtension = UwbZElementExtension.fromBytes(
                         data, offset + UwbRelativeLocation.XYZ_BYTE_COUNT);
