@@ -31,14 +31,20 @@ import androidx.annotation.NonNull;
  * @hide
  */
 public class BleRssiRangingCapabilities implements Parcelable, TechnologyCapabilities {
+    private static final String DEFAULT_MAC_ADDRESS = "00:00:00:00:00:00";
+
     private final String mBluetoothAddress;
 
     public BleRssiRangingCapabilities(String address) {
         mBluetoothAddress = address;
     }
 
+    /**
+     * For security reasons, use a fake mac address to prevent the actual device mac address from
+     * being leaked to user apps.
+     */
     protected BleRssiRangingCapabilities(Parcel in) {
-        mBluetoothAddress = in.readString();
+        mBluetoothAddress = DEFAULT_MAC_ADDRESS;
     }
 
     public static final Creator<BleRssiRangingCapabilities> CREATOR = new Creator<>() {
@@ -53,6 +59,11 @@ public class BleRssiRangingCapabilities implements Parcelable, TechnologyCapabil
         }
     };
 
+    /**
+     * Get the device's bluetooth address. Internal usage only. Clients of the ranging API should
+     * use {@link BluetoothAdapter#getAddress()} instead.
+     */
+    @NonNull
     public String getBluetoothAddress() {
         return mBluetoothAddress;
     }
@@ -67,10 +78,9 @@ public class BleRssiRangingCapabilities implements Parcelable, TechnologyCapabil
         return 0;
     }
 
+    /** For security reasons, do not write actual mac address to the parcel */
     @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(mBluetoothAddress);
-    }
+    public void writeToParcel(@NonNull Parcel dest, int flags) {}
 
     @Override public String toString() {
         return "BleRssiCapabilities{" +

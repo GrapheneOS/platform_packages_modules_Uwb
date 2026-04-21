@@ -66,6 +66,8 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
      */
     public static final int CS_SECURITY_LEVEL_FOUR = 4;
 
+    private static final String DEFAULT_MAC_ADDRESS = "00:00:00:00:00:00";
+
     private final List<Integer> mSupportedSecurityLevels;
     private final String mBluetoothAddress;
 
@@ -86,10 +88,14 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
         mBluetoothAddress = builder.mBluetoothAddress;
     }
 
+    /**
+     * For security reasons, use a fake mac address to prevent the actual device mac address from
+     * being leaked to user apps.
+     */
     private BleCsRangingCapabilities(Parcel in) {
         mSupportedSecurityLevels = new ArrayList<>();
         in.readList(mSupportedSecurityLevels, Integer.class.getClassLoader(), Integer.class);
-        mBluetoothAddress = in.readString();
+        mBluetoothAddress = DEFAULT_MAC_ADDRESS;
     }
 
     @NonNull
@@ -134,10 +140,10 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
         return 0;
     }
 
+    /** For security reasons, do not write actual mac address to the parcel */
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeList(mSupportedSecurityLevels);
-        dest.writeString(mBluetoothAddress);
     }
 
     /**
