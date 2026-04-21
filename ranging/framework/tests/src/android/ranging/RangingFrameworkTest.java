@@ -45,10 +45,12 @@ import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.Parcel;
 import android.os.Process;
 import android.os.RemoteException;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
@@ -87,6 +89,7 @@ public class RangingFrameworkTest {
     private Context mMockContext;
     private static final int UID = Process.myUid();
     private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final String FAKE_MAC_ADDRESS = "00:00:00:00:00:00";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -460,6 +463,46 @@ public class RangingFrameworkTest {
                         RangingManager.BLE_RSSI,
                         RangingCapabilities.NOT_SUPPORTED).intValue(), RangingCapabilities.ENABLED);
 
+    }
+
+    @Test
+    public void testBleCsRangingCapabilitiesParcel() {
+        String realAddress = "11:22:33:44:55:66";
+        BleCsRangingCapabilities csCapabilities =
+                new BleCsRangingCapabilities.Builder()
+                        .setSupportedSecurityLevels(new java.util.ArrayList<>())
+                        .setBluetoothAddress(realAddress)
+                        .build();
+        // Service side: should have the real address
+        assertEquals(realAddress, csCapabilities.getBluetoothAddress());
+
+        Parcel parcel = Parcel.obtain();
+        csCapabilities.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        BleCsRangingCapabilities fromParcel =
+                BleCsRangingCapabilities.CREATOR.createFromParcel(parcel);
+        // App side: should have the fake address
+        assertEquals(FAKE_MAC_ADDRESS, fromParcel.getBluetoothAddress());
+        parcel.recycle();
+    }
+
+    @Test
+    public void testBleRssiRangingCapabilitiesParcel() {
+        String realAddress = "11:22:33:44:55:66";
+        BleRssiRangingCapabilities rssiCapabilities = new BleRssiRangingCapabilities(realAddress);
+        // Service side: should have the real address
+        assertEquals(realAddress, rssiCapabilities.getBluetoothAddress());
+
+        Parcel parcel = Parcel.obtain();
+        rssiCapabilities.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        BleRssiRangingCapabilities fromParcel =
+                BleRssiRangingCapabilities.CREATOR.createFromParcel(parcel);
+        // App side: should have the fake address
+        assertEquals(FAKE_MAC_ADDRESS, fromParcel.getBluetoothAddress());
+        parcel.recycle();
     }
 
     private static Executor getExecutor() {
