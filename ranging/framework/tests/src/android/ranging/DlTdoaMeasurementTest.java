@@ -48,10 +48,10 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testRelativeLocation_getters() {
-        RelativeLocation relativeLocation = new RelativeLocation(100, 200, 300);
-        assertThat(relativeLocation.getX()).isEqualTo(100);
-        assertThat(relativeLocation.getY()).isEqualTo(200);
-        assertThat(relativeLocation.getZ()).isEqualTo(300);
+        RelativeLocation relativeLocation = new RelativeLocation(1000, 2000, 3000);
+        assertThat(relativeLocation.getX()).isEqualTo(1000);
+        assertThat(relativeLocation.getY()).isEqualTo(2000);
+        assertThat(relativeLocation.getZ()).isEqualTo(3000);
     }
 
     @Test
@@ -72,7 +72,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Wgs84() {
-        Wgs84Location wgs84Location = new Wgs84Location(0.0, 0.0, 0.0);
+        Wgs84Location wgs84Location = new Wgs84Location(45.0, 90.0, 100.0);
         AnchorLocation anchorLocation = new AnchorLocation(
                 AnchorLocation.COORDINATE_WGS84, new byte[12], wgs84Location, null, null);
         assertThat(anchorLocation.getCoordinateType()).isEqualTo(AnchorLocation.COORDINATE_WGS84);
@@ -84,7 +84,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Relative() {
-        RelativeLocation relativeLocation = new RelativeLocation(0, 0, 0);
+        RelativeLocation relativeLocation = new RelativeLocation(1000, 2000, 3000);
         AnchorLocation anchorLocation = new AnchorLocation(
                 AnchorLocation.COORDINATE_RELATIVE, new byte[10], null, relativeLocation, null);
         assertThat(anchorLocation.getCoordinateType())
@@ -97,7 +97,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Wgs84_ZElement() {
-        Wgs84Location wgs84Location = new Wgs84Location(0.0, 0.0, 0.0);
+        Wgs84Location wgs84Location = new Wgs84Location(45.0, 90.0, 100.0);
         ZElementExtension zElementExtension = new ZElementExtension(
                 0.0, ZElementExtension.MOVEMENT_EXPECTATION_STATIONARY, 0.0, 0,
                 false, false, Double.NaN, Double.NaN);
@@ -114,7 +114,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Relative_ZElement() {
-        RelativeLocation relativeLocation = new RelativeLocation(0, 0, 0);
+        RelativeLocation relativeLocation = new RelativeLocation(1000, 2000, 3000);
         ZElementExtension zElementExtension = new ZElementExtension(
                 0.0, ZElementExtension.MOVEMENT_EXPECTATION_STATIONARY, 0.0, 0,
                 false, false, Double.NaN, Double.NaN);
@@ -131,7 +131,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Relative_GravityAligned() {
-        RelativeLocation relativeLocation = new RelativeLocation(0, 0, 0);
+        RelativeLocation relativeLocation = new RelativeLocation(1000, 2000, 3000);
         AnchorLocation anchorLocation = new AnchorLocation(
                 AnchorLocation.COORDINATE_RELATIVE_WITH_Z_GRAVITY_ALIGNED, new byte[10],
                 null, relativeLocation, null);
@@ -145,7 +145,7 @@ public class DlTdoaMeasurementTest {
 
     @Test
     public void testAnchorLocation_Relative_GravityAligned_ZElement() {
-        RelativeLocation relativeLocation = new RelativeLocation(0, 0, 0);
+        RelativeLocation relativeLocation = new RelativeLocation(1000, 2000, 3000);
         ZElementExtension zElementExtension = new ZElementExtension(
                 0.0, ZElementExtension.MOVEMENT_EXPECTATION_STATIONARY, 0.0, 0,
                 false, false, Double.NaN, Double.NaN);

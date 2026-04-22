@@ -2073,10 +2073,11 @@ public class RangingManagerTest {
         DlTdoaRangingParams params = new DlTdoaRangingParams.Builder(12345678).build();
         assertThat(params.getSessionId()).isEqualTo(12345678);
         assertThat(params.getSessionKeyInfo()).isEqualTo(
-                new byte[] {7, 8, 1, 2, 3, 4, 5, 6});
+                new byte[] {(byte) 0x0, (byte) 0x0, (byte) 0xA1, (byte) 0xB2, (byte) 0xC3,
+                        (byte) 0xD4, (byte) 0xE5, (byte) 0xF6});
         assertThat(params.getComplexChannel().getChannel()).isEqualTo(9);
         assertThat(params.getComplexChannel().getPreambleIndex()).isEqualTo(10);
-        assertThat(params.getRangingIntervalMillis()).isEqualTo(200);
+        assertThat(params.getRangingIntervalMillis()).isEqualTo(250);
         assertThat(params.getSlotDuration()).isEqualTo(UwbRangingParams.DURATION_2_MS);
         assertThat(params.getSlotsPerRangingRound()).isEqualTo(10);
         assertThat(params.getRangingRoundIndexes()).isEqualTo(new byte[] {0});
