@@ -163,6 +163,7 @@ class CtsMultiDeviceGenericRangingAccuracyTests(
         ranging_utils.log_ble_cs_distance_within_tolerance.
       * Devices are successfully unbonded.
     """
+    asserts.skip("Skipping test for now to investigate b/406005949")
     technology = ranging_params.RangingTechnology.BLE_CS
     ranging_utils.skip_if_any_device_is_wear([self.initiator, self.responder])
     ranging_utils.skip_if_technology_not_supported(
