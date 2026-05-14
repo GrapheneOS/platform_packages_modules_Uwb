@@ -339,7 +339,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         return spec_info["ccc"].get("aosp_timesync_supported", True)
     if "aliro" in spec_info:
         return spec_info["aliro"].get("aosp_timesync_supported", True)
-    return True
+    return False
 
   def _verify_one_to_one_ranging_airplane_mode_toggle(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
